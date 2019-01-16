@@ -1,0 +1,419 @@
+bootcmd:
+  - blkid /dev/disk/by-id/google-data || mkfs.ext4 -L data /dev/disk/by-id/google-data
+  - mkdir -p /mnt/disks/data
+mounts:
+  - [ /dev/disk/by-id/google-data, /mnt/disks/data, auto, "rw,noatime,discard,nobarrier,nodev" ]
+
+users:
+  - name: bs
+    uid: 2000
+
+write_files:
+  - path: /home/bs/bitcoin.conf
+    permissions: 0644
+    owner: root
+    content: |
+        rpcuser=${rpcuser}
+        rpcpassword=${rpcpass}
+        rpcport=${rpcport}
+        txindex=1
+        dbcache=4000
+
+  - path: /home/bs/lightning.conf
+    permissions: 0644
+    owner: root
+    content: |
+        alias=ionosphere
+        bitcoin-rpcuser=${rpcuser}
+        bitcoin-rpcpassword=${rpcpass}
+        bitcoin-rpcport=${rpcport}
+        announce-addr=${announce_addr}
+        bind-addr=0.0.0.0
+
+  - path: /home/bs/default.conf
+    permissions: 0644
+    owner: root
+    content: |
+        log_format withtime '$remote_addr - $remote_user [$time_local] '
+                            '"$request" $status $body_bytes_sent '
+                            '"$http_referer" "$http_user_agent" '
+                            'rt="$request_time" uct="$upstream_connect_time" uht="$upstream_header_time" urt="$upstream_response_time"';
+
+        server {
+
+            access_log /var/log/nginx/access.log withtime;
+            error_log /var/log/nginx/error.log;
+
+            server_name ${host};
+            listen 80 default_server;
+            server_tokens off;
+
+            set_real_ip_from 130.211.0.0/22;
+            set_real_ip_from 35.191.0.0/16;
+            real_ip_recursive on;
+            proxy_set_header Host $host;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+
+            # Proxy to main ionosphere API
+            location /api/ {
+                add_header 'Access-Control-Allow-Origin' null always;
+                add_header 'Access-Control-Allow-Headers' null always;
+
+                if ($request_method = 'OPTIONS')
+                {
+                  add_header 'Access-Control-Allow-Origin' '*';
+                  add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS, DELETE';
+                  add_header 'Access-Control-Allow-Headers' 'X-Auth-Token,DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range';
+                  add_header 'X-XSS-Protection' '1; mode=block' always;
+
+                  return 200;
+                }
+
+                if ($http_origin ~ '(preview.)?blockstream.com')
+                {
+                  add_header 'Access-Control-Allow-Origin' '$http_origin' always;
+                  add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS, DELETE' always;
+                  add_header 'Access-Control-Allow-Headers' 'X-Auth-Token,DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range' always;
+                  add_header 'X-XSS-Protection' '1; mode=block' always;
+                }
+
+                proxy_pass http://0.0.0.0:9292/;
+            }
+
+            # Proxy SSE container
+            location /api/subscribe/ {
+                chunked_transfer_encoding off;
+                proxy_buffering off;
+                proxy_request_buffering off;
+                proxy_cache off;
+                proxy_http_version 1.1;
+
+                proxy_pass http://0.0.0.0:4500/stream?channels=;
+            }
+        }
+
+  - path: /home/bs/check_containers.sh
+    permissions: 0744
+    owner: root
+    content: |
+        #!/bin/bash
+
+        # Save # and names of running containers
+        NUM_CONT=$$(docker ps -q | wc -l)
+        RUNNING_CONT="$$(docker ps --format '{{.Names}}' | tr '\n' ', ' | sed -e 's/,$//g')"
+
+        # If less than 10 are running, send alert to opsgenie
+        if [ $${NUM_CONT} != '10' ]
+        then
+               curl -s -X POST https://api.opsgenie.com/v2/alerts \
+                  -H "Content-Type: application/json" \
+                  -H "Authorization: GenieKey ${opsgenie_key}" \
+                  -d \
+              '{
+                  "message": "Satellite API instance does not have all 10 containers running",
+                  "alias": "satapi-missing-containers",
+                  "description":"Currently running '$${NUM_CONT}'/10: '$${RUNNING_CONT}'",
+                  "tags": ["SatAPI","Critical"],
+                  "entity":"satellite.blockstream.com/api",
+                  "priority":"P3"
+              }'
+          else
+                echo "'$${NUM_CONT}'/10 containers are running"
+        fi
+
+  - path: /etc/systemd/system/check-containers.service
+    permissions: 0644
+    owner: root
+    content: |
+        [Unit]
+        Description=Check # of containers every 10 mins
+        Wants=check-containers.timer
+        After=charge.service
+
+        [Service]
+        ExecStart=/bin/bash /home/bs/check_containers.sh
+
+  - path: /etc/systemd/system/check-containers.timer
+    permissions: 0644
+    owner: root
+    content: |
+        [Unit]
+        Description=Run check-containers service every 10 minutes (7 min delay)
+
+        [Timer]
+        OnBootSec=420s
+        OnUnitActiveSec=10m
+        Persistent=true
+
+        [Install]
+        WantedBy=timers.target
+
+  - path: /etc/systemd/system/nginx.service
+    permissions: 0644
+    owner: root
+    content: |
+        [Unit]
+        Description=Nginx proxy
+        Wants=gcr-online.target
+        After=ionosphere.service
+
+        [Service]
+        Restart=always
+        RestartSec=3
+        Environment=HOME=/home/bs
+        ExecStartPre=/usr/bin/docker-credential-gcr configure-docker
+        ExecStartPre=/sbin/iptables -A INPUT -m tcp -p tcp --dport 80 -j ACCEPT
+        ExecStart=/usr/bin/docker run \
+            --network=host \
+            --pid=host \
+            --name=nginx \
+            -v /home/bs/default.conf:/etc/nginx/conf.d/default.conf:ro \
+            "nginx:latest"
+        ExecStop=/usr/bin/docker stop nginx
+        ExecStopPost=/usr/bin/docker rm nginx
+        ExecStopPost=/sbin/iptables -D INPUT -m tcp -p tcp --dport 80 -j ACCEPT
+
+  - path: /etc/systemd/system/node-exporter.service
+    permissions: 0644
+    owner: root
+    content: |
+        [Unit]
+        Description=Prometheus node-exporter
+        Wants=gcr-online.target docker.service
+        After=gcr-online.service docker.service
+
+        [Service]
+        Restart=always
+        RestartSec=3
+        Environment=HOME=/home/bs
+        ExecStartPre=/usr/bin/docker-credential-gcr configure-docker
+        ExecStartPre=/usr/bin/docker pull ${node_exporter_docker}
+        ExecStartPre=/sbin/iptables -A INPUT -m tcp -p tcp --dport 9100 -j ACCEPT
+        ExecStart=/usr/bin/docker run \
+            --name=node-exporter \
+            --network=host \
+            --read-only \
+            -v /proc:/host/proc:ro \
+            -v /sys:/host/sys:ro \
+            -v /:/rootfs:ro \
+            -v metrics:/metrics:ro \
+            -v /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket:ro \
+            "${node_exporter_docker}" --path.procfs /host/proc --path.sysfs /host/sys --collector.textfile.directory /metrics --collector.filesystem.ignored-mount-points "^/(sys|proc|dev|host|etc($|/))" --collector.systemd
+        ExecStop=/usr/bin/docker stop node-exporter
+        ExecStopPost=/usr/bin/docker rm node-exporter
+        ExecStopPost=/sbin/iptables -D INPUT -m tcp -p tcp --dport 9100 -j ACCEPT
+
+  - path: /etc/systemd/system/bitcoin.service
+    permissions: 0644
+    owner: root
+    content: |
+        [Unit]
+        Description=Bitcoin node
+        Wants=gcr-online.target
+        After=gcr-online.service
+
+        [Service]
+        Restart=always
+        RestartSec=3
+        Environment=HOME=/home/bs
+        ExecStartPre=/usr/bin/docker-credential-gcr configure-docker
+        ExecStartPre=/usr/bin/docker pull ${bitcoin_docker}
+        ExecStart=/usr/bin/docker run \
+            --network=host \
+            --pid=host \
+            --name=bitcoin \
+            -v /home/bs/bitcoin.conf:/root/.bitcoin/bitcoin.conf:ro \
+            -v /mnt/disks/data/testnet:/root/.bitcoin:rw \
+            "${bitcoin_docker}" ${bitcoin_cmd}
+        ExecStop=/usr/bin/docker exec bitcoin bitcoin-cli stop
+        ExecStop=/usr/bin/sleep 10
+        ExecStop=/usr/bin/docker stop bitcoin
+        ExecStopPost=/usr/bin/docker rm bitcoin
+
+  - path: /etc/systemd/system/lightning.service
+    permissions: 0644
+    owner: root
+    content: |
+        [Unit]
+        Description=Lightning node
+        Wants=gcr-online.target
+        After=bitcoin.service
+
+        [Service]
+        Restart=always
+        RestartSec=3
+        Environment=HOME=/home/bs
+        ExecStartPre=/usr/bin/docker-credential-gcr configure-docker
+        ExecStartPre=/usr/bin/docker pull ${lightning_docker}
+        ExecStartPre=/sbin/iptables -A INPUT -p tcp --dport ${lightning_port} -j ACCEPT
+        ExecStart=/usr/bin/docker run \
+            --network=host \
+            --pid=host \
+            --name=lightning \
+            -v /home/bs/lightning.conf:/root/.lightning/lightning.conf:ro \
+            -v /mnt/disks/data/lightning:/root/.lightning:rw \
+            "${lightning_docker}" ${lightning_cmd}
+        ExecStop=/usr/bin/docker exec lightning lightning-cli stop
+        ExecStop=/usr/bin/sleep 10
+        ExecStop=/usr/bin/docker stop lightning
+        ExecStopPost=/usr/bin/docker rm lightning
+        ExecStopPost=/sbin/iptables -D INPUT -p tcp --dport ${lightning_port} -j ACCEPT
+
+  - path: /etc/systemd/system/redis.service
+    permissions: 0644
+    owner: root
+    content: |
+        [Unit]
+        Description=Redis db for server-side events
+        Wants=gcr-online.target
+        After=gcr-online.service
+
+        [Service]
+        Restart=always
+        RestartSec=3
+        Environment=HOME=/home/bs
+        ExecStartPre=/usr/bin/docker pull redis:latest
+        ExecStartPre=/sbin/iptables -A INPUT -p tcp -s localhost --dport ${redis_port} -j ACCEPT
+        ExecStart=/usr/bin/docker run \
+            --network=host \
+            --pid=host \
+            --name=sse-redis-db \
+            "redis:latest"
+        ExecStop=/usr/bin/docker stop sse-redis-db
+        ExecStopPost=/usr/bin/docker rm sse-redis-db
+        ExecStopPost=/sbin/iptables -D INPUT -p tcp -s localhost --dport ${redis_port} -j ACCEPT
+
+  - path: /etc/systemd/system/ionosphere.service
+    permissions: 0644
+    owner: root
+    content: |
+        [Unit]
+        Description=Ionosphere daemon
+        Wants=gcr-online.target
+        After=lightning.service
+
+        [Service]
+        Restart=always
+        RestartSec=3
+        Environment=HOME=/home/bs
+        ExecStartPre=/usr/bin/docker-credential-gcr configure-docker
+        ExecStartPre=/usr/bin/docker pull ${ionosphere_docker}
+        ExecStartPre=/sbin/iptables -A INPUT -p tcp -s localhost --dport 9292 -j ACCEPT
+        ExecStartPre=/usr/bin/docker run \
+            --user root \
+            -v /mnt/disks/data/ionosphere:/data \
+            --entrypoint bash \
+            --rm \
+            "${ionosphere_docker}" \
+            -c 'chown -R ionosphere:ionosphere /data'
+        ExecStart=/usr/bin/docker run \
+            --network=host \
+            --pid=host \
+            --name=ionosphere \
+            -v /mnt/disks/data/ionosphere:/data \
+            -e "RACK_ENV=production" \
+            -e "CHARGE_ROOT=http://api-token:${rpcpass}@localhost:9112" \
+            -e "CALLBACK_URI_ROOT=http://localhost:9292" \
+            "${ionosphere_docker}"
+        ExecStop=/usr/bin/docker stop ionosphere
+        ExecStopPost=/usr/bin/docker rm ionosphere
+        ExecStopPost=/sbin/iptables -D INPUT -p tcp -s localhost --dport 9292 -j ACCEPT
+
+  - path: /etc/systemd/system/ionosphere-tx.service
+    permissions: 0644
+    owner: root
+    content: |
+        [Unit]
+        Description=Ionosphere Transmitter daemon
+        Wants=gcr-online.target
+        After=ionosphere.service
+
+        [Service]
+        Restart=always
+        RestartSec=3
+        Environment=HOME=/home/bs
+        ExecStart=/usr/bin/docker run \
+            --network=host \
+            --pid=host \
+            --name=ionosphere-tx \
+            -v /mnt/disks/data/ionosphere:/data \
+            -e "RACK_ENV=production" \
+            "${ionosphere_docker}" ./docker_entrypoint_transmitter.sh
+        ExecStop=/usr/bin/docker stop ionosphere-tx
+        ExecStopPost=/usr/bin/docker rm ionosphere-tx
+
+  - path: /etc/systemd/system/ionosphere-sse.service
+    permissions: 0644
+    owner: root
+    content: |
+        [Unit]
+        Description=Ionosphere Server-Side Events Server
+        Wants=gcr-online.target
+        After=redis.service
+
+        [Service]
+        Restart=always
+        RestartSec=3
+        Environment=HOME=/home/bs
+        ExecStartPre=/usr/bin/docker-credential-gcr configure-docker
+        ExecStartPre=/usr/bin/docker pull ${ionosphere_sse_docker}
+        ExecStart=/usr/bin/docker run \
+            --network=host \
+            --pid=host \
+            --name=ionosphere-sse \
+            -e "SUB_CHANNELS=transmissions" \
+            -e "REDIS_URI=redis://localhost:6379" \
+            "${ionosphere_sse_docker}"
+        ExecStop=/usr/bin/docker stop ionosphere-sse
+        ExecStopPost=/usr/bin/docker rm ionosphere-sse
+
+  - path: /etc/systemd/system/charge.service
+    permissions: 0644
+    owner: root
+    content: |
+        [Unit]
+        Description=Charge instance
+        Wants=gcr-online.target
+        After=ionosphere.service
+
+        [Service]
+        Restart=always
+        RestartSec=200
+        Environment=HOME=/home/bs
+        ExecStartPre=/usr/bin/docker-credential-gcr configure-docker
+        ExecStartPre=/usr/bin/docker pull ${charge_docker}
+        ExecStartPre=/sbin/iptables -A INPUT -p tcp -s localhost --dport 9112 -j ACCEPT
+        ExecStart=/usr/bin/docker run \
+            --network=host \
+            --pid=host \
+            --name=charge \
+            -v /mnt/disks/data/lightning:/etc/lightning:ro \
+            -v /mnt/disks/data/charge:/data:rw \
+            -e "API_TOKEN=${rpcpass}" \
+            "${charge_docker}"
+        ExecStop=/usr/bin/docker stop charge
+        ExecStopPost=/usr/bin/docker rm charge
+        ExecStopPost=/sbin/iptables -D INPUT -p tcp -s localhost --dport 9112 -j ACCEPT
+
+runcmd:
+  - systemctl daemon-reload
+  - systemctl start bitcoin.service
+  - systemctl enable bitcoin.service
+  - systemctl start lightning.service
+  - systemctl enable lightning.service
+  - systemctl start redis.service
+  - systemctl enable redis.service
+  - systemctl start ionosphere.service
+  - systemctl enable ionosphere.service
+  - systemctl start ionosphere-tx.service
+  - systemctl enable ionosphere-tx.service
+  - systemctl start ionosphere-sse.service
+  - systemctl enable ionosphere-sse.service
+  - systemctl start charge.service
+  - systemctl enable charge.service
+  - systemctl start nginx.service
+  - systemctl enable nginx.service
+  - systemctl enable node-exporter.service
+  - systemctl start node-exporter.service
+  - systemctl start check-containers.timer
+  - systemctl enable check-containers.timer

@@ -1,0 +1,61 @@
+version: '3'
+services:
+  blc:
+    image: "blockstream/lightning-charge"
+    ports:
+      - "9112:9112"
+    environment:
+      - API_TOKEN=mySecretToken
+    volumes:
+      - blc:/data
+  ionosphere:
+    image: ionosphere
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - blc
+    ports:
+      - "9292:9292"
+    links:
+      - blc
+    environment:
+      - CHARGE_ROOT=http://api-token:mySecretToken@blc:9112
+      - CALLBACK_URI_ROOT=http://localhost:9292
+      - RACK_ENV=production
+    volumes:
+      - ~/docker/data:/data
+  ionosphere-tx:
+    image: ionosphere
+    depends_on:
+      - ionosphere
+      - redis
+    links:
+      - redis
+    environment:
+      - REDIS_URI=redis://redis:6379
+      - RACK_ENV=production
+    volumes:
+      - ~/docker/data:/data
+    command: ./docker_entrypoint_transmitter.sh
+  ionosphere-sse:
+    image: ionosphere-sse
+    build:
+      context: sse/
+      dockerfile: ../Dockerfile.sse
+    depends_on:
+      - redis
+      - ionosphere-tx
+    ports:
+      - "4500:4500"
+    links:
+      - redis
+    environment:
+      - SUB_CHANNELS=transmissions
+      - REDIS_URI=redis://redis:6379
+  redis:
+    image: "redis:latest"
+    ports:
+      - "6379:6379"
+volumes:
+  blc:

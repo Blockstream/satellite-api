@@ -49,7 +49,7 @@ docker run -e CHARGE_ROOT=http://api-token:mySecretToken@localhost:9112 -e CALLB
 
 ## Example Applications
 
-Example Python applications are available at the [Blockstream Satellite examples directory](https://github.com/Blockstream/satellite/tree/master/examples) as a reference regarding how to implement the interaction with the API. There is one application specifically for sending data to the API, called "API data sender", and another application for reading the API data acquired by the Blockstream Satellite receiver, called "API data reader". Additionally, there is one application that allows testing API data reception directly through the internet, without the actual satellite receiver hardware, called "demo receiver". Refer to the documentation in the given link.
+Example Python applications are available at the [Blockstream Satellite examples directory](https://github.com/Blockstream/satellite/tree/master/api/examples) as a reference regarding how to implement the interaction with the API. There is one application specifically for sending data to the API, called "API data sender", and another application for reading the API data acquired by the Blockstream Satellite receiver, called "API data reader". Additionally, there is one application that allows testing API data reception directly through the internet, without the actual satellite receiver hardware, called "demo receiver". Refer to the documentation in the given link.
 
 ## REST API ##
 

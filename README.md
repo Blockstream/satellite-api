@@ -14,6 +14,7 @@ A lightning app (Lapp) based on c-lightning. Presents an API to submit messages 
     - [GET /order/:uuid](#get-orderuuid)
     - [GET /order/:uuid/sent_message](#get-orderuuidsentmessage)
     - [DELETE /order/:uuid](#delete-orderuuid)
+    - [GET /orders/pending](#get-orderspending)
     - [GET /orders/queued](#get-ordersqueued)
     - [GET /orders/sent](#get-orderssent)
     - [GET /info](#get-info)
@@ -106,9 +107,23 @@ The `auth_token` may be provided as a parameter in the DELETE body as above or m
 curl -v -X DELETE -H "X-Auth-Token: 5248b13a722cd9b2e17ed3a2da8f7ac6bd9a8fe7130357615e074596e3d5872f" $SATELLITE_API/order/409348bc-6af0-4999-b715-4136753979df
 ```
 
+### GET /orders/pending  ###
+
+Retrieve a list of 20 orders awaiting payment ordered by creation time. For pagination, optionally specify a `before` parameter (in ISO 8601 format) that specifies that the 20 orders immediately prior to the given time be returned.
+
+```bash
+curl $SATELLITE_API/orders/pending
+```
+
+```bash
+curl $SATELLITE_API/orders/pending?before=2019-01-16T18:13:46-08:00
+```
+
+The response is a JSON array of records (one for each queued message). The revealed fields for each record include: `uuid`, `bid`, `bid_per_byte`, `message_size`, `message_digest`, `status`, `created_at`, `started_transmission_at`, and `ended_transmission_at`.
+
 ### GET /orders/queued  ###
 
-Retrieve a list of paid, but unsent orders. Both pending orders and the order currently being transmitted are returned. Optionally, accepts a parameter specifying how many queued order to return.
+Retrieve a list of paid, but unsent orders in descending order of bid-per-byte. Both pending orders and the order currently being transmitted are returned. Optionally, accepts a parameter specifying how many queued order to return.
 
 ```bash
 curl $SATELLITE_API/orders/queued
@@ -122,14 +137,14 @@ The response is a JSON array of records (one for each queued message). The revea
 
 ### GET /orders/sent  ###
 
-Retrieves a list of up to 20 sent orders in reverse chronological order. Optionally, accepts the parameter `before` (a timestamp in ISO 8601 format) specifying that only orders before the given time are to be returned.
+Retrieves a list of up to 20 sent orders in reverse chronological order. For pagination, optionally specify a `before` parameter (in ISO 8601 format) that specifies that the 20 orders immediately prior to the given time be returned.
 
 ```bash
 curl $SATELLITE_API/orders/sent
 ```
 
 ```bash
-curl $SATELLITE_API/orders/sent?limit=18
+curl $SATELLITE_API/orders/sent?before=2019-01-16T18:13:46-08:00
 ```
 
 The response is a JSON array of records (one for each queued message). The revealed fields for each record include: `uuid`, `bid`, `bid_per_byte`, `message_size`, `message_digest`, `status`, `created_at`, `started_transmission_at`, and `ended_transmission_at`.

@@ -29,7 +29,7 @@ build:
     - docker push us.gcr.io/blockstream-store/ionosphere-sse:$CI_COMMIT_SHA
     - docker push us.gcr.io/blockstream-store/ionosphere-sse:latest
 
-plan:
+plan_satapi:
   stage: plan
   only:
     - branches@satellite/ionosphere
@@ -37,6 +37,7 @@ plan:
     - master@satellite/ionosphere
     - production@satellite/ionosphere
     - cleanup_staging@satellite/ionosphere
+    - /^misc_.*/
   script:
     - (cd terraform
        && terraform init -input=false
@@ -55,6 +56,24 @@ plan:
          -var "rpcuser=$RPCUSER"
          -var "rpcpass=$RPCPASS"
          -input=false)
+
+# this plan gets triggered only for miscellaneous branches/tags, so make sure the branch/tag name starts with misc_
+plan_misc:
+  stage: plan
+  only:
+    - /^misc_.*/
+  script:
+    - (echo -n "$V3_PK" > terraform/modules/tor/v3.pk)
+    - (echo -n "$V3_PUBK" > terraform/modules/tor/v3.pubk)
+    - (cd terraform
+      && terraform init -input=false
+      && terraform workspace select misc
+      && terraform plan
+        -var "region=$REGION"
+        -var "zone=$ZONE"
+        -var "tor_instance_type=$TOR_INSTANCE_TYPE"
+        -var "onion_host=$ONION_HOST"
+        -input=false)
 
 deploy_staging:
   stage: deploy
@@ -101,6 +120,25 @@ deploy_production:
          -var "rpcuser=$RPCUSER"
          -var "rpcpass=$RPCPASS"
          -input=false -auto-approve)
+
+# This deploys only tags/branches starting with misc_v
+deploy_misc:
+  stage: deploy
+  only:
+    - /^misc_v.*/
+  script:
+    - (echo -n "$V3_PK" > terraform/modules/tor/v3.pk)
+    - (echo -n "$V3_PUBK" > terraform/modules/tor/v3.pubk)
+    - (cd terraform
+      && terraform init -input=false
+      && terraform workspace select misc
+      && terraform plan
+        -var "region=$REGION"
+        -var "zone=$ZONE"
+        -var "tor_instance_type=$TOR_INSTANCE_TYPE"
+        -var "onion_host=$ONION_HOST"
+         -input=false -auto-approve)
+
 
 cleanup_staging:
   stage: deploy

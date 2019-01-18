@@ -3,18 +3,20 @@ resource "google_compute_address" "blc" {
   name    = "${var.name}-external-ip-${var.env}-${count.index}"
   project = "${var.project}"
   region  = "${var.region}"
-  count   = 1
+  count   = "${var.create_resources}"
 }
 
 resource "google_compute_global_address" "lb" {
   name    = "${var.name}-client-lb-${var.env}"
   project = "${var.project}"
+  count   = "${var.create_resources}"
 }
 
 # FW rules
 resource "google_compute_firewall" "blc" {
   name    = "${var.name}-fw-rule-${var.env}"
   network = "${data.google_compute_network.blc.self_link}"
+  count   = "${var.create_resources}"
 
   allow {
     protocol = "tcp"
@@ -29,6 +31,7 @@ resource "google_compute_firewall" "blc" {
 resource "google_compute_firewall" "blc-prom" {
   name    = "${var.name}-prometheus-access-${var.env}"
   network = "${data.google_compute_network.blc.self_link}"
+  count   = "${var.create_resources}"
 
   allow {
     protocol = "tcp"
@@ -51,6 +54,7 @@ resource "google_compute_backend_service" "blc" {
   protocol    = "HTTP"
   port_name   = "http"
   timeout_sec = "${var.timeout}"
+  count       = "${var.create_resources}"
 
   backend {
     group = "${google_compute_instance_group_manager.blc.instance_group}"
@@ -61,7 +65,8 @@ resource "google_compute_backend_service" "blc" {
 
 # Health checks
 resource "google_compute_health_check" "blc" {
-  name = "${var.name}-health-check-${var.env}"
+  name  = "${var.name}-health-check-${var.env}"
+  count = "${var.create_resources}"
 
   check_interval_sec = 5
   timeout_sec        = 3
@@ -72,7 +77,8 @@ resource "google_compute_health_check" "blc" {
 }
 
 resource "google_compute_http_health_check" "blc-http" {
-  name = "${var.name}-health-check-${var.env}"
+  name  = "${var.name}-health-check-${var.env}"
+  count = "${var.create_resources}"
 
   timeout_sec        = 5
   check_interval_sec = 10

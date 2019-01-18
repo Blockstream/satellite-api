@@ -5,10 +5,12 @@ data "google_compute_network" "blc" {
 data "google_compute_image" "blc" {
   family  = "satapi-data-${var.env}"
   project = "${var.project}"
+  count   = "${var.create_resources}"
 }
 
 data "template_file" "blc" {
   template = "${file("${path.module}/cloud-init/blc.yaml")}"
+  count    = "${var.create_resources}"
 
   vars {
     rpcuser               = "${var.rpcuser}"
@@ -33,6 +35,7 @@ data "template_file" "blc" {
 data "template_cloudinit_config" "blc" {
   gzip          = false
   base64_encode = false
+  count         = "${var.create_resources}"
 
   part {
     content_type = "text/cloud-config"

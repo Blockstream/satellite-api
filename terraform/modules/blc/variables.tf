@@ -8,14 +8,16 @@ variable "boot_image" {
   default = "cos-cloud/cos-stable"
 }
 
+variable "create_resources" {
+  type = "string"
+}
+
 variable "rpcuser" {
-  type    = "string"
-  default = ""
+  type = "string"
 }
 
 variable "rpcpass" {
-  type    = "string"
-  default = ""
+  type = "string"
 }
 
 variable "env" {

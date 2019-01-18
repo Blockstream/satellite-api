@@ -1,6 +1,7 @@
 # Instance group
 resource "google_compute_instance_group_manager" "blc" {
-  name = "${var.name}-ig-${var.env}"
+  name  = "${var.name}-ig-${var.env}"
+  count = "${var.create_resources}"
 
   base_instance_name = "${var.name}-ig-${var.env}-${count.index}"
   instance_template  = "${google_compute_instance_template.blc.self_link}"
@@ -22,6 +23,7 @@ resource "google_compute_disk" "blc" {
   type  = "pd-standard"
   image = "${data.google_compute_image.blc.self_link}"
   zone  = "${var.zone}"
+  count = "${var.create_resources}"
 
   lifecycle {
     prevent_destroy = true
@@ -35,6 +37,7 @@ resource "google_compute_instance_template" "blc" {
   description  = "This template is used to create ${var.name} ${var.env} instances."
   machine_type = "${var.instance_type}"
   region       = "${var.region}"
+  count        = "${var.create_resources}"
 
   labels {
     type = "lightning-app"

@@ -62,6 +62,8 @@ plan_misc:
   stage: plan
   only:
     - /^misc_.*/
+  except:
+    - /^misc_v.*/
   script:
     - (echo -n "$V3_PK" > terraform/modules/tor/v3.pk)
     - (echo -n "$V3_PUBK" > terraform/modules/tor/v3.pubk)
@@ -132,7 +134,7 @@ deploy_misc:
     - (cd terraform
       && terraform init -input=false
       && terraform workspace select misc
-      && terraform plan
+      && terraform apply
         -var "region=$REGION"
         -var "zone=$ZONE"
         -var "tor_instance_type=$TOR_INSTANCE_TYPE"

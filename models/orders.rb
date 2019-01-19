@@ -120,7 +120,7 @@ class Order < ActiveRecord::Base
   end
 
   def delete_message_file
-    File.delete(self.message_path)
+    File.delete(self.message_path) if File.file?(self.message_path)
   end
 
 end

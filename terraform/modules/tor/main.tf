@@ -18,11 +18,6 @@ resource "google_compute_region_instance_group_manager" "tor" {
   base_instance_name = "${var.name}"
   instance_template  = "${google_compute_instance_template.tor.self_link}"
   target_size        = 1
-
-  auto_healing_policies {
-    health_check      = "${google_compute_health_check.tor.self_link}"
-    initial_delay_sec = "120"
-  }
 }
 
 resource "google_compute_instance_template" "tor" {

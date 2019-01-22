@@ -75,14 +75,3 @@ resource "google_compute_health_check" "blc" {
     port = "80"
   }
 }
-
-resource "google_compute_http_health_check" "blc-http" {
-  name  = "${var.name}-health-check-${var.env}"
-  count = "${var.create_resources}"
-
-  timeout_sec        = 5
-  check_interval_sec = 10
-
-  port         = "80"
-  request_path = "/"
-}

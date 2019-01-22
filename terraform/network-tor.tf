@@ -60,13 +60,13 @@ resource "google_compute_url_map" "tor-proxy" {
   test {
     service = "${data.terraform_remote_state.blc-prod.blc_backend_service}"
     host    = "${var.onion_host}"
-    path    = "/api"
+    path    = "/api/queue.html"
   }
 
   test {
     service = "${google_compute_backend_bucket.tor_deadhole_backend.self_link}"
     host    = "${google_compute_global_address.tor-lb.address}"
-    path    = "/api"
+    path    = "/*"
   }
 }
 

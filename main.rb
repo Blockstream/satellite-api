@@ -58,7 +58,11 @@ end
 #   array of JSON orders sorted in reverse chronological order
 get '/orders/sent' do
   param :before, String, required: false, default: lambda { Time.now.utc.iso8601 }
-  before = DateTime.iso8601(params[:before])
+  begin
+    before = DateTime.iso8601(params[:before])
+  rescue
+    halt 400, {:message => "Invalid date", :errors => ["Couldn't parse date given by before param"]}.to_json
+  end
   Order.where(status: :sent).where("created_at < ?", before)
        .select(Order::PUBLIC_FIELDS)
        .order(ended_transmission_at: :desc)
@@ -72,7 +76,11 @@ end
 #   array of JSON orders sorted in reverse chronological order
 get '/orders/pending' do
   param :before, String, required: false, default: lambda { Time.now.utc.iso8601 }
-  before = DateTime.iso8601(params[:before])
+  begin
+    before = DateTime.iso8601(params[:before])
+  rescue
+    halt 400, {:message => "Invalid date", :errors => ["Couldn't parse date given by before param"]}.to_json
+  end
   Order.where(status: :pending).where("created_at < ?", before)
        .select(Order::PUBLIC_FIELDS)
        .order(created_at: :desc)

@@ -16,16 +16,16 @@ locals {
 
     "misc" = {
       env             = ""
-      create_misc     = 1
       create_satapi   = 0
+      create_misc     = 1
       create_builders = 0
     }
 
     "builders" = {
       env             = ""
-      create_builders = 1
       create_satapi   = 0
       create_misc     = 0
+      create_builders = 1
     }
   }
 

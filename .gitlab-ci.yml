@@ -16,35 +16,41 @@ before_script:
   - gcloud auth list
   - gcloud --version
 
+# Run tests and build docker images
 build:
   stage: build
+  image: blockstream/satapi-builder@sha256:4f96415f1216c5b6bdb266b1db48558328a497f02da38ce2991ab65b25b7590f
   only:
     - master@satellite/ionosphere
+  before_script:
+    - ""
   script:
-    - docker build -f Dockerfile -t us.gcr.io/blockstream-store/ionosphere:latest -t us.gcr.io/blockstream-store/ionosphere:$CI_COMMIT_SHA .
-    - docker push us.gcr.io/blockstream-store/ionosphere:$CI_COMMIT_SHA
-    - docker push us.gcr.io/blockstream-store/ionosphere:latest
+    - echo $DOCKERHUB_PW | docker login -u $DOCKERHUB_USER --password-stdin 
+    - docker build -f Dockerfile -t blockstream/satellite-api:latest -t blockstream/satellite-api:$CI_COMMIT_SHA .
+    - docker push blockstream/satellite-api:latest
+    - docker push blockstream/satellite-api:$CI_COMMIT_SHA
     - echo "Building Ionosphere SSE image"
-    - docker build -f Dockerfile.sse -t us.gcr.io/blockstream-store/ionosphere-sse:latest -t us.gcr.io/blockstream-store/ionosphere-sse:$CI_COMMIT_SHA sse/
-    - docker push us.gcr.io/blockstream-store/ionosphere-sse:$CI_COMMIT_SHA
-    - docker push us.gcr.io/blockstream-store/ionosphere-sse:latest
+    - docker build -f Dockerfile.sse -t blockstream/satellite-api-sse:latest -t blockstream/satellite-api-sse:$CI_COMMIT_SHA sse/
+    - docker push blockstream/satellite-api-sse:$CI_COMMIT_SHA
+    - docker push blockstream/satellite-api-sse:latest
 
+# Any newly-pushed, WIP branch will be ran through plan (keep in mind docker images are using the latest tag, which may be an older one since the current commit doesn't match an available image)
 plan_satapi:
   stage: plan
   only:
     - branches@satellite/ionosphere
   except:
-    - master@satellite/ionosphere
-    - production@satellite/ionosphere
     - cleanup_staging@satellite/ionosphere
+    - /^staging_.*/
+    - /^prod_.*/
     - /^misc_.*/
   script:
     - (cd terraform
        && terraform init -input=false
        && terraform workspace select staging
        && terraform plan
-         -var "ionosphere_docker=us.gcr.io/blockstream-store/ionosphere:$CI_COMMIT_SHA"
-         -var "ionosphere_sse_docker=us.gcr.io/blockstream-store/ionosphere-sse:$CI_COMMIT_SHA"
+         -var "ionosphere_docker=blockstream/satellite-api:latest"
+         -var "ionosphere_sse_docker=blockstream/satellite-api-sse:latest"
          -var "region=$REGION"
          -var "zone=$ZONE"
          -var "instance_type=$INSTANCE_TYPE"
@@ -57,7 +63,7 @@ plan_satapi:
          -var "rpcpass=$RPCPASS"
          -input=false)
 
-# this plan gets triggered only for miscellaneous branches/tags, so make sure the branch/tag name starts with misc_
+# This plan gets triggered only for miscellaneous branches/tags (i.e. tor and others), so make sure the branch/tag name starts with misc_
 plan_misc:
   stage: plan
   only:
@@ -77,17 +83,18 @@ plan_misc:
         -var "onion_host=$ONION_HOST"
         -input=false)
 
+# Tag with staging_v.* to deploy staging (e.g. staging_v0.1.1)
 deploy_staging:
   stage: deploy
   only:
-    - master@satellite/ionosphere
+    - /^staging_v.*/
   script:
     - (cd terraform
        && terraform init -input=false
        && terraform workspace select staging
        && terraform apply
-         -var "ionosphere_docker=us.gcr.io/blockstream-store/ionosphere:$CI_COMMIT_SHA"
-         -var "ionosphere_sse_docker=us.gcr.io/blockstream-store/ionosphere-sse:$CI_COMMIT_SHA"
+         -var "ionosphere_docker=blockstream/satellite-api:$CI_COMMIT_SHA"
+         -var "ionosphere_sse_docker=blockstream/satellite-api-sse:$CI_COMMIT_SHA"
          -var "region=$REGION"
          -var "zone=$ZONE"
          -var "instance_type=$INSTANCE_TYPE"
@@ -100,17 +107,18 @@ deploy_staging:
          -var "rpcpass=$RPCPASS"
          -input=false -auto-approve)
 
+# Tag with production_v.* to deploy production (e.g. production_v0.1.1)
 deploy_production:
   stage: deploy
   only:
-    - production@satellite/ionosphere
+    - /^prod_v.*/
   script:
     - (cd terraform
        && terraform init -input=false
        && terraform workspace select prod
        && terraform apply
-         -var "ionosphere_docker=us.gcr.io/blockstream-store/ionosphere:$CI_COMMIT_SHA"
-         -var "ionosphere_sse_docker=us.gcr.io/blockstream-store/ionosphere-sse:$CI_COMMIT_SHA"
+         -var "ionosphere_docker=blockstream/satellite-api:$CI_COMMIT_SHA"
+         -var "ionosphere_sse_docker=blockstream/satellite-api-sse:$CI_COMMIT_SHA"
          -var "region=$REGION"
          -var "zone=$ZONE"
          -var "instance_type=$INSTANCE_TYPE"
@@ -123,7 +131,7 @@ deploy_production:
          -var "rpcpass=$RPCPASS"
          -input=false -auto-approve)
 
-# This deploys only tags/branches starting with misc_v
+# This deploys only tags/branches starting with misc_v.* (i.e. tor and others)
 deploy_misc:
   stage: deploy
   only:
@@ -141,7 +149,7 @@ deploy_misc:
         -var "onion_host=$ONION_HOST"
          -input=false -auto-approve)
 
-
+# Pushing to this branch destroys the staging infrastructure
 cleanup_staging:
   stage: deploy
   image:

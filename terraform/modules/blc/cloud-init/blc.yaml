@@ -60,7 +60,7 @@ write_files:
             }
 
             # Proxy to main ionosphere API
-            location /api/ {
+            location /api {
                 add_header 'Access-Control-Allow-Origin' '*' always;
                 add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS, DELETE' always;
                 add_header 'Access-Control-Allow-Headers' 'X-Auth-Token,DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range' always;
@@ -69,6 +69,11 @@ write_files:
                 if ($request_method = 'OPTIONS')
                 {
                   return 200;
+                }
+
+                if ($request_uri ~* "^/api/?$")
+                {
+                  return 301 https://$host;
                 }
 
                 proxy_pass http://0.0.0.0:9292/;

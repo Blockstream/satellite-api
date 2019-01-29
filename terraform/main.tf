@@ -2,9 +2,9 @@ terraform {
   required_version = "> 0.11.0"
 
   backend "gcs" {
-    bucket  = "tf-state-ionosphere"
+    bucket  = "tf-state-satellite-api"
     prefix  = "terraform/state"
-    project = "blockstream-store"
+    project = "satellite-api"
   }
 }
 

@@ -1,6 +1,6 @@
 variable "project" {
   type    = "string"
-  default = "blockstream-store"
+  default = "satellite-api"
 }
 
 variable "boot_image" {

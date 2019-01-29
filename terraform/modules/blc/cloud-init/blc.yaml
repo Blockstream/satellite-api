@@ -179,7 +179,6 @@ write_files:
         Restart=always
         RestartSec=3
         Environment=HOME=/home/bs
-        ExecStartPre=/usr/bin/docker-credential-gcr configure-docker
         ExecStartPre=/sbin/iptables -A INPUT -m tcp -p tcp --dport 80 -j ACCEPT
         ExecStart=/usr/bin/docker run \
             --network=host \
@@ -205,7 +204,6 @@ write_files:
         Restart=always
         RestartSec=3
         Environment=HOME=/home/bs
-        ExecStartPre=/usr/bin/docker-credential-gcr configure-docker
         ExecStartPre=/usr/bin/docker pull ${node_exporter_docker}
         ExecStartPre=/sbin/iptables -A INPUT -m tcp -p tcp --dport 9100 -j ACCEPT
         ExecStart=/usr/bin/docker run \
@@ -235,7 +233,6 @@ write_files:
         Restart=always
         RestartSec=3
         Environment=HOME=/home/bs
-        ExecStartPre=/usr/bin/docker-credential-gcr configure-docker
         ExecStartPre=/usr/bin/docker pull ${bitcoin_docker}
         ExecStart=/usr/bin/docker run \
             --network=host \
@@ -262,7 +259,6 @@ write_files:
         Restart=always
         RestartSec=3
         Environment=HOME=/home/bs
-        ExecStartPre=/usr/bin/docker-credential-gcr configure-docker
         ExecStartPre=/usr/bin/docker pull ${lightning_docker}
         ExecStartPre=/sbin/iptables -A INPUT -p tcp --dport ${lightning_port} -j ACCEPT
         ExecStart=/usr/bin/docker run \
@@ -315,7 +311,6 @@ write_files:
         Restart=always
         RestartSec=3
         Environment=HOME=/home/bs
-        ExecStartPre=/usr/bin/docker-credential-gcr configure-docker
         ExecStartPre=/usr/bin/docker pull ${ionosphere_docker}
         ExecStartPre=/sbin/iptables -A INPUT -p tcp -s localhost --dport 9292 -j ACCEPT
         ExecStartPre=/usr/bin/docker run \
@@ -374,7 +369,6 @@ write_files:
         Restart=always
         RestartSec=3
         Environment=HOME=/home/bs
-        ExecStartPre=/usr/bin/docker-credential-gcr configure-docker
         ExecStartPre=/usr/bin/docker pull ${ionosphere_sse_docker}
         ExecStart=/usr/bin/docker run \
             --network=host \
@@ -399,17 +393,16 @@ write_files:
         Restart=always
         RestartSec=200
         Environment=HOME=/home/bs
-        ExecStartPre=/usr/bin/docker-credential-gcr configure-docker
         ExecStartPre=/usr/bin/docker pull ${charge_docker}
         ExecStartPre=/sbin/iptables -A INPUT -p tcp -s localhost --dport 9112 -j ACCEPT
         ExecStart=/usr/bin/docker run \
             --network=host \
             --pid=host \
             --name=charge \
-            -v /mnt/disks/data/lightning:/etc/lightning:ro \
+            -v /mnt/disks/data/lightning:/root/.lightning:ro \
             -v /mnt/disks/data/charge:/data:rw \
             -e "API_TOKEN=${rpcpass}" \
-            "${charge_docker}"
+            "${charge_docker}" ${charge_cmd}
         ExecStop=/usr/bin/docker stop charge
         ExecStopPost=/usr/bin/docker rm charge
         ExecStopPost=/sbin/iptables -D INPUT -p tcp -s localhost --dport 9112 -j ACCEPT

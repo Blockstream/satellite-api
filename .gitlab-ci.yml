@@ -10,7 +10,7 @@ stages:
 
 before_script:
   - TMPF=$(mktemp) || exit 1
-  - echo $GCLOUD_KEY > $TMPF
+  - echo $GCLOUD_KEY2 > $TMPF
   - export GOOGLE_APPLICATION_CREDENTIALS=$TMPF
   - gcloud auth activate-service-account --key-file=$TMPF
   - gcloud auth list
@@ -25,7 +25,7 @@ build:
   before_script:
     - ""
   script:
-    - echo $DOCKERHUB_PW | docker login -u $DOCKERHUB_USER --password-stdin 
+    - echo $DOCKERHUB_PW | docker login -u $DOCKERHUB_USER --password-stdin
     - docker build -f Dockerfile -t blockstream/satellite-api:latest -t blockstream/satellite-api:$CI_COMMIT_SHA .
     - docker push blockstream/satellite-api:latest
     - docker push blockstream/satellite-api:$CI_COMMIT_SHA

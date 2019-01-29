@@ -37,7 +37,7 @@ locals {
 
 variable "project" {
   type    = "string"
-  default = "blockstream-store"
+  default = "satellite-api"
 }
 
 variable "name" {
@@ -129,17 +129,17 @@ variable "node_exporter_docker" {
 
 variable "bitcoin_docker" {
   type    = "string"
-  default = "us.gcr.io/blockstream-store/bitcoind@sha256:d385d5455000b85b0e2103cdbc69e642c46872b698ff807892ba4c4a40e72ca7"
+  default = "blockstream/bitcoind@sha256:91ba0790a0080a99a529e73ef9b14e2d6cf0a30f81d54bfa3729bb47b105b36c"
 }
 
 variable "lightning_docker" {
   type    = "string"
-  default = "us.gcr.io/blockstream-store/lightningd@sha256:ca00792c25f4af420db94501d37bf8570d642ae21b7fd30792364aa9a617ec87"
+  default = "blockstream/lightningd@sha256:361aa1705304825b05625fc4f520458740e0630e55e7eb9c99d0eaef1a8b3c02"
 }
 
 variable "charge_docker" {
   type    = "string"
-  default = "us.gcr.io/blockstream-store/charged@sha256:669893e02a14863f469498a40626e46de3ec67ff2ee4d7443cd56bc6ba3a8f3a"
+  default = "blockstream/charged@sha256:0d49c1202b8b718b5a93f7e82509d3d724f9d18ff6c14376347f67866ac47ff8"
 }
 
 variable "tor_docker" {

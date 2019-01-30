@@ -17,7 +17,10 @@ CHARGE_API_TOKEN = ENV['CHARGE_API_TOKEN'] || 'mySecretToken'
 CHARGE_ROOT = ENV['CHARGE_ROOT'] || "http://api-token:#{CHARGE_API_TOKEN}@localhost:9112"
 
 MIN_PER_BYTE_BID = Integer(ENV['MIN_PER_BYTE_BID'] || 50) # minimum price per byte in millisatoshis
-MIN_MESSAGE_SIZE = Integer(ENV['MIN_MESSAGE_SIZE'] || KILO_BYTE)
+MIN_MESSAGE_SIZE = 1
+
+FRAGMENT_SIZE = 2 * KILO_BYTE
+FRAMING_OVERHEAD_PER_FRAGMENT = 16
 
 TRANSMIT_RATE = Integer(ENV['TRANSMIT_RATE'] || KILO_BYTE) # bytes per second
 MAX_HEAD_OF_LINE_BLOCKING_TIME = 10 # more than 10 seconds and it doesn't feel "instant"
@@ -34,3 +37,4 @@ PAGE_SIZE = 20
 MAX_QUEUED_ORDERS_REQUEST = 100
 
 REDIS_URI = ENV['REDIS_URI'] || "redis://127.0.0.1:6379"
+

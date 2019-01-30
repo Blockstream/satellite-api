@@ -124,13 +124,16 @@ post '/order' do
   message_file.close()
   if message_size < MIN_MESSAGE_SIZE
     FileUtils.rm(message_file)
-    halt 400, {:message => "Message upload problem", :errors => ["Message too small. Minimum message size is #{MIN_MESSAGE_SIZE}"]}.to_json
+    halt 400, {:message => "Message upload problem", :errors => ["Message too small. Minimum message size is #{MIN_MESSAGE_SIZE} byte"]}.to_json
   end
 
   order.message_size = message_size
   order.message_digest = sha256.to_s
-  if bid.to_f / message_size.to_f < MIN_PER_BYTE_BID
-    halt 413, {:message => "Bid too low", :errors => ["Per byte bid cannot be below #{MIN_PER_BYTE_BID} millisatoshis per byte. The minimum bid for this message is #{order.message_size * MIN_PER_BYTE_BID} millisatoshis." ]}.to_json
+
+  message_size_with_overhead = message_size + FRAMING_OVERHEAD_PER_FRAGMENT * (message_size / FRAGMENT_SIZE).floor
+  
+  if bid.to_f / message_size_with_overhead.to_f < MIN_PER_BYTE_BID
+    halt 413, {:message => "Bid too low", :errors => ["Per byte bid cannot be below #{MIN_PER_BYTE_BID} millisatoshis per byte. The minimum bid for this message is #{message_size_with_overhead * MIN_PER_BYTE_BID} millisatoshis." ]}.to_json
   end
 
   invoice = new_invoice(order, bid)

@@ -27,13 +27,6 @@ configure :test, :development do
   end
 end
 
-#
-# Return informational page
-#
-get '/' do
-  send_file File.join(settings.public_folder, 'index.html')
-end
-
 # GET /info
 #
 # returns:

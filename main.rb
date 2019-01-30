@@ -130,7 +130,7 @@ post '/order' do
   order.message_size = message_size
   order.message_digest = sha256.to_s
 
-  message_size_with_overhead = message_size + FRAMING_OVERHEAD_PER_FRAGMENT * (message_size / FRAGMENT_SIZE).floor
+  message_size_with_overhead = message_size + FRAMING_OVERHEAD_PER_FRAGMENT * (message_size / FRAGMENT_SIZE).ceil
   
   if bid.to_f / message_size_with_overhead.to_f < MIN_PER_BYTE_BID
     halt 413, {:message => "Bid too low", :errors => ["Per byte bid cannot be below #{MIN_PER_BYTE_BID} millisatoshis per byte. The minimum bid for this message is #{message_size_with_overhead * MIN_PER_BYTE_BID} millisatoshis." ]}.to_json

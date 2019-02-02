@@ -44,7 +44,7 @@ end
 # returns:
 #   array of JSON orders sorted by bid-per-byte descending
 get '/orders/queued' do
-  param :limit, Integer, default: PAGE_SIZE, max: MAX_QUEUED_ORDERS_REQUEST, message: "can't display more than top #{MAX_QUEUED_ORDERS_REQUEST} orders"
+  param :limit, Integer, default: PAGE_SIZE, max: MAX_PAGE_SIZE, message: "can't display more than top #{MAX_PAGE_SIZE} orders"
   Order.where(status: [:paid, :transmitting])
        .select(Order::PUBLIC_FIELDS)
        .order(bid_per_byte: :desc)

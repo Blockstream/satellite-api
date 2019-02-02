@@ -50,7 +50,7 @@ class MainAppTest < Minitest::Test
   end
   
   def order_is_queued(uuid)
-    get "/orders/queued?limit=#{MAX_QUEUED_ORDERS_REQUEST}"
+    get "/orders/queued?limit=#{MAX_PAGE_SIZE}"
     assert last_response.ok?
     r = JSON.parse(last_response.body)
     uuids = r.map {|o| o['uuid']}
@@ -58,14 +58,14 @@ class MainAppTest < Minitest::Test
   end
 
   def test_get_orders_queued
-    get "/orders/queued?limit=#{MAX_QUEUED_ORDERS_REQUEST}"
+    get "/orders/queued?limit=#{MAX_PAGE_SIZE}"
     assert last_response.ok?
     r = JSON.parse(last_response.body)
     queued_before = r.count
     @order = place_order
     pay_invoice(@order.invoices.last)
     assert order_is_queued(@order.uuid)
-    get "/orders/queued?limit=#{MAX_QUEUED_ORDERS_REQUEST}"
+    get "/orders/queued?limit=#{MAX_PAGE_SIZE}"
     assert last_response.ok?
     r = JSON.parse(last_response.body)
     queued_after = r.count

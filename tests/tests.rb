@@ -49,6 +49,11 @@ class MainAppTest < Minitest::Test
     File.open('response.html', 'w') { |file| file.write(last_response.body) }
   end
   
+  def last_response_error_code
+    r = JSON.parse(last_response.body)
+    Integer(r["errors"].first["code"])
+  end
+  
   def order_is_queued(uuid)
     get "/orders/queued?limit=#{MAX_PAGE_SIZE}"
     assert last_response.ok?
@@ -58,6 +63,11 @@ class MainAppTest < Minitest::Test
   end
 
   def test_get_orders_queued
+    get "/orders/queued?limit=#{MAX_PAGE_SIZE + 1}"
+    refute last_response.ok?
+    r = JSON.parse(last_response.body)
+    assert_equal ERROR::CODES[:LIMIT_TOO_LARGE], last_response_error_code
+
     get "/orders/queued?limit=#{MAX_PAGE_SIZE}"
     assert last_response.ok?
     r = JSON.parse(last_response.body)
@@ -94,6 +104,12 @@ class MainAppTest < Minitest::Test
     refute_nil r['uuid']
     refute_nil r['lightning_invoice']
   end
+
+  def test_negative_bid
+    post '/order', params={"bid" => -1, "file" => Rack::Test::UploadedFile.new(TEST_FILE, "image/png")}
+    refute last_response.ok?
+    assert_equal ERROR::CODES[:BID_TOO_SMALL], last_response_error_code
+  end
   
   def test_bid_too_low
     post '/order', params={"bid" => 1, "file" => Rack::Test::UploadedFile.new(TEST_FILE, "image/png")}
@@ -106,6 +122,7 @@ class MainAppTest < Minitest::Test
   def test_no_file_uploaded
     post '/order', params={"bid" => DEFAULT_BID}
     refute last_response.ok?
+    assert_equal ERROR::CODES[:FILE_MISSING], last_response_error_code
   end
 
   def test_uploaded_file_too_large
@@ -117,6 +134,19 @@ class MainAppTest < Minitest::Test
     refute last_response.ok?
     r = JSON.parse(last_response.body)
     assert_match "too small", r["errors"][0]
+  end
+  
+  def test_bid_increase_missing_error
+    header 'X-Auth-Token', @order.user_auth_token
+    post "/order/#{@order.uuid}/bump"
+    refute last_response.ok?
+    assert_equal ERROR::CODES[:BID_INCREASE_MISSING], last_response_error_code
+  end
+
+  def test_negative_bid_increase_error
+    bump_order(@order, -1)
+    refute last_response.ok?
+    assert_equal ERROR::CODES[:BID_INCREASE_TOO_SMALL], last_response_error_code
   end
   
   def test_bump

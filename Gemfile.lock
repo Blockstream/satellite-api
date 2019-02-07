@@ -1,3 +1,10 @@
+GIT
+  remote: https://github.com/bteitelb/sinatra-param.git
+  revision: 1ca69b393875149a50dc78086b400a713b3e7702
+  specs:
+    sinatra-param (1.5.0)
+      sinatra (>= 1.3)
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -40,8 +47,6 @@ GEM
     sinatra-activerecord (2.0.13)
       activerecord (>= 3.2)
       sinatra (>= 1.0)
-    sinatra-param (1.5.0)
-      sinatra (>= 1.3)
     sqlite3 (1.3.13)
     thread_safe (0.3.6)
     tilt (2.0.9)
@@ -62,7 +67,7 @@ DEPENDENCIES
   redis
   sinatra
   sinatra-activerecord
-  sinatra-param
+  sinatra-param!
   sqlite3
 
 BUNDLED WITH

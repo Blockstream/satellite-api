@@ -1,11 +1,13 @@
 require 'sinatra'
 require "sinatra/activerecord"
+require 'sinatra/param'
 require "faraday"
 require 'securerandom'
 require 'openssl'
 require 'time'
 
 require_relative 'constants'
+require_relative 'error_handlers'
 require_relative './models/init'
 require_relative 'helpers/init'
 

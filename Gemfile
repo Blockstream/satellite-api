@@ -1,7 +1,7 @@
 source 'https://rubygems.org'
 
 gem "sinatra" # lightweight web application framework
-gem "sinatra-param", require: "sinatra/param"
+gem "sinatra-param", require: "sinatra/param", git: 'https://github.com/bteitelb/sinatra-param.git'
 gem "sinatra-activerecord"
 gem "sqlite3"
 gem "faraday" # HTTP client library

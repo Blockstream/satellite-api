@@ -7,11 +7,11 @@ require 'json'
 require_relative '../main'
 
 TEST_FILE = "test.random"
-TINY_TEST_FILE = "tiny_test.txt"
+TINY_TEST_FILE = "zero_length_test_file.txt"
 
 unless File.exists?(TEST_FILE) and File.exists?(TINY_TEST_FILE)
   `dd if=/dev/random of=#{TEST_FILE} bs=1k count=#{MAX_MESSAGE_SIZE / KILO_BYTE}`
-  `echo "abcdefghijklmnopqrstuvwxyz" > #{TINY_TEST_FILE}`
+  `touch #{TINY_TEST_FILE}`
 end
 
 DEFAULT_BID = File.stat(TEST_FILE).size * (MIN_PER_BYTE_BID + 1)

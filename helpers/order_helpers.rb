@@ -26,11 +26,11 @@ module Sinatra
     end
     
     def uuid_not_found_error
-      halt 404, error_object("UUID not found", "UUID #{params[:uuid]} not found", ERROR::CODES[:UUID_MISSING])
+      halt 404, error_object("UUID not found", "UUID #{params[:uuid]} not found", ERROR::CODES[:ORDER_NOT_FOUND])
     end
     
     def message_file_missing_error
-      halt 400, error_object("Message upload problem", "No tempfile received", ERROR::CODES[:MESSAGE_FILE_MISSING])
+      halt 400, error_object("Message upload problem", "No tempfile received", ERROR::CODES[:FILE_MISSING])
     end
     
     def message_filename_missing_error

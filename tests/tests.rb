@@ -237,7 +237,7 @@ class MainAppTest < Minitest::Test
     @order = place_order
     get "/order/#{@order.uuid}/sent_message"
     refute last_response.ok?
-    assert_equal ERROR::CODES[:UUID_MISSING], last_response_error_code
+    assert_equal ERROR::CODES[:ORDER_NOT_FOUND], last_response_error_code
 
     pay_invoice(@order.invoices.last)
     @order.reload

@@ -215,5 +215,6 @@ end
 # available channels:
 #   transmissions - an event is pushed to this channel when each message transmission begins and ends
 get '/subscribe/:channels' do
+  param :channels, String, is: 'transmissions'
   redirect "http://#{request.host}:4500/stream?channels=#{params[:channels]}"
 end

@@ -250,5 +250,11 @@ class MainAppTest < Minitest::Test
     assert last_response.ok?
     
   end
+  
+  def test_channel_subscription
+    get "/subscribe/not_a_channel"
+    refute last_response.ok?
+    assert_equal ERROR::CODES[:CHANNELS_EQUALITY], last_response_error_code
+  end
 
 end

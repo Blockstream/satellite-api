@@ -19,7 +19,7 @@ COPY Gemfile.lock /app
 WORKDIR /app
 
 # install packages needed for building compiled gems; install gems; then delete build dependencies to keep Docker image small
-ENV BUILD_PACKAGES sudo build-base ruby-dev libc-dev linux-headers openssl-dev
+ENV BUILD_PACKAGES sudo build-base ruby-dev libc-dev linux-headers openssl-dev git
 RUN apk --update add --virtual build_deps $BUILD_PACKAGES && \
     bundle install && \
     apk del build_deps && \

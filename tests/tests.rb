@@ -114,9 +114,7 @@ class MainAppTest < Minitest::Test
   def test_bid_too_low
     post '/order', params={"bid" => 1, "file" => Rack::Test::UploadedFile.new(TEST_FILE, "image/png")}
     refute last_response.ok?
-    r = JSON.parse(last_response.body)
-    assert_equal r['message'], 'Bid too low'
-    refute_nil r['errors']
+    assert_equal ERROR::CODES[:BID_TOO_SMALL], last_response_error_code
   end
   
   def test_no_file_uploaded
@@ -132,8 +130,7 @@ class MainAppTest < Minitest::Test
   def test_uploaded_file_too_small
     post '/order', params={"bid" => DEFAULT_BID, "file" => Rack::Test::UploadedFile.new(TINY_TEST_FILE, "text/plain")}
     refute last_response.ok?
-    r = JSON.parse(last_response.body)
-    assert_match "too small", r["errors"][0]
+    assert_equal ERROR::CODES[:MESSAGE_FILE_TOO_SMALL], last_response_error_code
   end
   
   def test_bid_increase_missing_error
@@ -149,6 +146,13 @@ class MainAppTest < Minitest::Test
     assert_equal ERROR::CODES[:BID_INCREASE_TOO_SMALL], last_response_error_code
   end
   
+  def test_invalid_auth_token_error
+    header 'X-Auth-Token', "not an auth token"
+    post "/order/#{@order.uuid}/bump", params={"bid_increase" => DEFAULT_BID / 2}
+    refute last_response.ok?
+    assert_equal ERROR::CODES[:INVALID_AUTH_TOKEN], last_response_error_code
+  end
+
   def test_bump
     # place an order
     @order = place_order
@@ -212,6 +216,7 @@ class MainAppTest < Minitest::Test
   def test_that_bumping_down_fails
     bump_order(@order, -1)
     refute last_response.ok?
+    assert_equal ERROR::CODES[:BID_INCREASE_TOO_SMALL], last_response_error_code
   end
 
   def test_order_deletion
@@ -232,6 +237,7 @@ class MainAppTest < Minitest::Test
     @order = place_order
     get "/order/#{@order.uuid}/sent_message"
     refute last_response.ok?
+    assert_equal ERROR::CODES[:UUID_MISSING], last_response_error_code
 
     pay_invoice(@order.invoices.last)
     @order.reload

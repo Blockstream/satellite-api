@@ -4,12 +4,13 @@ module Sinatra
   module InvoiceHelpers
     
     def fetch_invoice_by_lid
-      Invoice.where(lid: params[:lid]).first || halt(404, {:message => "Not found", :errors => ["Invalid invoice id"]}.to_json)
+      Invoice.where(lid: params[:lid]).first || 
+      error_object("Not found", "Invoice id #{params[:lib]} not found", ERROR::CODES[:INVOICE_ID_NOT_FOUND_ERROR])        
     end
     
     def authorize_invoice!(invoice)
       if invoice.charged_auth_token != params[:charged_auth_token]
-        halt 401, {:message => "Unauthorized", :errors => ["Invalid authentication token"]}.to_json
+        halt 401, error_object("Unauthorized", "Invalid authentication token", ERROR::CODES[:INVALID_AUTH_TOKEN])
       else
         invoice
       end
@@ -29,7 +30,7 @@ module Sinatra
         metadata: {uuid: order.uuid, sha256_message_digest: order.message_digest}
       }  
       unless charged_response.status == 201
-        halt 400, {:message => "Lightning Charge invoice creation error", :errors => ["received #{response.status} from charged"]}.to_json
+        halt 400, error_object("Lightning Charge invoice creation error", "received #{response.status} from charged", ERROR::CODES[:LIGHTNING_CHARGE_INVOICE_ERROR])
       end
 
       lightning_invoice = JSON.parse(charged_response.body)
@@ -40,9 +41,21 @@ module Sinatra
         url: invoice.callback_url
       }  
       unless webhook_registration_response.status == 201
-        halt 400, {:message => "Lightning Charge webhook registration error", :errors => ["received #{response.status} from charged"]}.to_json
+        halt 400, error_object("Lightning Charge webhook registration error", "received #{response.status} from charged", ERROR::CODES[:LIGHTNING_CHARGE_WEBHOOK_REGISTRATION_ERROR])        
       end
       invoice
+    end
+    
+    def invoice_not_found_error
+      halt 404, error_object("Payment problem", "Invoice not found", ERROR::CODES[:INVOICE_NOT_FOUND])
+    end
+    
+    def orphaned_invoice_error
+      halt 404, error_object("Payment problem", "Orphaned invoice", ERROR::CODES[:ORPHANED_INVOICE])
+    end
+    
+    def order_already_paid_error
+      halt 400, error_object("Payment problem", "Order already paid", ERROR::CODES[:ORDER_ALREADY_PAID])
     end
 
   end

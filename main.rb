@@ -24,7 +24,7 @@ end
 
 configure :test, :development do
   get '/order/:uuid/sent_message' do
-    (order = Order.find_by(uuid: params[:uuid], status: [:sent, :transmitting])) || halt(404, {:message => "Not found", :errors => ["Sent order with that id not found"]}.to_json)
+    (order = Order.find_by(uuid: params[:uuid], status: [:sent, :transmitting])) || uuid_not_found_error
     send_file order.message_path, :disposition => 'attachment'
   end
 end
@@ -63,7 +63,7 @@ get '/orders/sent' do
   begin
     before = DateTime.iso8601(params[:before])
   rescue
-    halt 400, {:message => "Invalid date", :errors => ["Couldn't parse date given by before param"]}.to_json
+    invalid_date_error
   end
   Order.where(status: :sent).where("created_at < ?", before)
        .select(Order::PUBLIC_FIELDS)
@@ -81,7 +81,7 @@ get '/orders/pending' do
   begin
     before = DateTime.iso8601(params[:before])
   rescue
-    halt 400, {:message => "Invalid date", :errors => ["Couldn't parse date given by before param"]}.to_json
+    invalid_date_error
   end
   Order.where(status: :pending).where("created_at < ?", before)
        .select(Order::PUBLIC_FIELDS)
@@ -90,7 +90,7 @@ get '/orders/pending' do
 end
 
 get '/message/:tx_seq_num' do
-  (order = Order.find_by(tx_seq_num: params[:tx_seq_num], status: [:sent, :transmitting])) || halt(404, {:message => "Not found", :errors => ["Sent order with that tx sequence number not found"]}.to_json)
+  (order = Order.find_by(tx_seq_num: params[:tx_seq_num], status: [:sent, :transmitting])) || sequence_number_not_found_error
   send_file order.message_path, :disposition => 'attachment'
 end
 
@@ -105,10 +105,10 @@ post '/order' do
 
   # process the upload
   unless tmpfile = params[:file][:tempfile]
-    halt 400, {:message => "Message upload problem", :errors => ["No tempfile received"]}.to_json
+    message_file_missing_error
   end
   unless name = params[:file][:filename]
-    halt 400, {:message => "Message upload problem", :errors => ["Filename missing"]}.to_json
+    message_filename_missing_error
   end
 
   order = Order.new(uuid: SecureRandom.uuid)
@@ -118,7 +118,7 @@ post '/order' do
   while block = tmpfile.read(65536)
     message_size += block.size
     if message_size > MAX_MESSAGE_SIZE
-      halt 413, {:message => "Message upload problem", :errors => ["Message size exceeds max size #{MAX_MESSAGE_SIZE}"]}.to_json
+      message_file_too_large_error
     end
     sha256 << block
     message_file.write(block)
@@ -126,7 +126,7 @@ post '/order' do
   message_file.close()
   if message_size < MIN_MESSAGE_SIZE
     FileUtils.rm(message_file)
-    halt 400, {:message => "Message upload problem", :errors => ["Message too small. Minimum message size is #{MIN_MESSAGE_SIZE} byte"]}.to_json
+    message_file_too_small_error
   end
 
   order.message_size = message_size
@@ -135,7 +135,7 @@ post '/order' do
   message_size_with_overhead = message_size + FRAMING_OVERHEAD_PER_FRAGMENT * (message_size / FRAGMENT_SIZE).ceil
   
   if bid.to_f / message_size_with_overhead.to_f < MIN_PER_BYTE_BID
-    halt 413, {:message => "Bid too low", :errors => ["Per byte bid cannot be below #{MIN_PER_BYTE_BID} millisatoshis per byte. The minimum bid for this message is #{message_size_with_overhead * MIN_PER_BYTE_BID} millisatoshis." ]}.to_json
+    bid_too_small_error(message_size_with_overhead * MIN_PER_BYTE_BID)
   end
 
   invoice = new_invoice(order, bid)
@@ -154,7 +154,7 @@ post '/order/:uuid/bump' do
   
   order = get_and_authenticate_order
   unless order.bump
-    halt 400, {:message => "Cannot bump order", :errors => ["Order already #{order.status}"]}.to_json
+    order_bump_error
   end
   
   invoice = new_invoice(order, bid_increase)
@@ -178,7 +178,7 @@ delete '/order/:uuid' do
 
   order = get_and_authenticate_order
   unless order.cancel!
-    halt 400, {:message => "Cannot cancel order", :errors => ["Order already #{order.status}"]}.to_json
+    order_cancellation_error
   end
 
   {:message => "order cancelled"}.to_json
@@ -191,15 +191,15 @@ post '/callback/:lid/:charged_auth_token' do
 
   invoice = get_and_authenticate_invoice
   if invoice.nil?
-    halt 404, {:message => "Payment problem", :errors => ["Invoice not found"]}.to_json
+    invoice_not_found_error
   end
 
   unless invoice.order
-    halt 404, {:message => "Payment problem", :errors => ["Orphaned invoice"]}.to_json
+    orphaned_invoice_error
   end
 
   if invoice.paid?
-    halt 400, {:message => "Payment problem", :errors => ["Order already paid"]}.to_json
+    order_already_paid_error
   end
   
   invoice.pay!

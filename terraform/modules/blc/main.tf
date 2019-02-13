@@ -1,15 +1,19 @@
 # Instance group
 resource "google_compute_instance_group_manager" "blc" {
-  name  = "${var.name}-ig-${var.env}"
-  count = "${var.create_resources}"
+  name     = "${var.name}-ig-${var.env}"
+  count    = "${var.create_resources}"
+  provider = "google-beta"
 
   base_instance_name = "${var.name}-ig-${var.env}-${count.index}"
-  instance_template  = "${google_compute_instance_template.blc.self_link}"
   zone               = "${var.zone}"
   target_size        = 1
-  update_strategy    = "ROLLING_UPDATE"
 
-  rolling_update_policy {
+  version {
+    name              = "original"
+    instance_template = "${google_compute_instance_template.blc.self_link}"
+  }
+
+  update_policy {
     type                  = "PROACTIVE"
     minimal_action        = "REPLACE"
     max_surge_fixed       = 0

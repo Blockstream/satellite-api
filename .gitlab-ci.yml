@@ -10,7 +10,7 @@ stages:
 
 before_script:
   - TMPF=$(mktemp) || exit 1
-  - echo $GCLOUD_KEY2 > $TMPF
+  - echo $GCLOUD_KEY > $TMPF
   - export GOOGLE_APPLICATION_CREDENTIALS=$TMPF
   - gcloud auth activate-service-account --key-file=$TMPF
   - gcloud auth list

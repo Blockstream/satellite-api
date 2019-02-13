@@ -12,6 +12,10 @@ provider "google" {
   project = "${var.project}"
 }
 
+provider "google-beta" {
+  project = "${var.project}"
+}
+
 module "blc" {
   source = "modules/blc"
 

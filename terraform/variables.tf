@@ -122,11 +122,6 @@ variable "ionosphere_sse_docker" {
 }
 
 # Less frequently updated images
-variable "node_exporter_docker" {
-  type    = "string"
-  default = "prom/node-exporter@sha256:55302581333c43d540db0e144cf9e7735423117a733cdec27716d87254221086"
-}
-
 variable "bitcoin_docker" {
   type    = "string"
   default = "blockstream/bitcoind@sha256:91ba0790a0080a99a529e73ef9b14e2d6cf0a30f81d54bfa3729bb47b105b36c"
@@ -144,7 +139,12 @@ variable "charge_docker" {
 
 variable "tor_docker" {
   type    = "string"
-  default = "blockstream/gcloud-tor@sha256:be56a33b3010ac4c85037899714979bb4eb6c15fe85114bd009501750320617f"
+  default = "blockstream/tor@sha256:381c57864470b9fc8813c910c220e45b007f8c2e8623815cd5c36bccfe0b762a"
+}
+
+variable "node_exporter_docker" {
+  type    = "string"
+  default = "prom/node-exporter@sha256:55302581333c43d540db0e144cf9e7735423117a733cdec27716d87254221086"
 }
 
 variable "gcloud_docker" {

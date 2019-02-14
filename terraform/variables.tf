@@ -139,7 +139,7 @@ variable "charge_docker" {
 
 variable "tor_docker" {
   type    = "string"
-  default = "blockstream/tor@sha256:381c57864470b9fc8813c910c220e45b007f8c2e8623815cd5c36bccfe0b762a"
+  default = "blockstream/tor@sha256:f4d1373cde79fd79b467d2d6da88e37b0da137924bc10ae2d51a83c686c2c125"
 }
 
 variable "node_exporter_docker" {

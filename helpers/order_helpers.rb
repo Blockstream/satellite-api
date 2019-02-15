@@ -29,14 +29,14 @@ module Sinatra
       halt 404, error_object("UUID not found", "UUID #{params[:uuid]} not found", ERROR::CODES[:ORDER_NOT_FOUND])
     end
     
+    def message_missing_error
+      halt 400, error_object("Message upload problem", "Either a message file or a message parameter is required", ERROR::CODES[:MESSAGE_MISSING])
+    end
+    
     def message_file_missing_error
       halt 400, error_object("Message upload problem", "No tempfile received", ERROR::CODES[:FILE_MISSING])
     end
-    
-    def message_filename_missing_error
-      halt 400, error_object("Message upload problem", "Filename missing", ERROR::CODES[:MESSAGE_FILENAME_MISSING])
-    end
-    
+
     def message_file_too_large_error
       halt 413, error_object("Message upload problem", "Message size exceeds max size #{MAX_MESSAGE_SIZE}", ERROR::CODES[:MESSAGE_FILE_TOO_LARGE])
     end

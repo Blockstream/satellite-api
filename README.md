@@ -59,9 +59,15 @@ The code samples below assume that you've set `SATELLITE_API` in your shell to t
 
 ### POST /order ###
 
-Place an order for a message transmission. The body of the POST must provide a `file` containing the message and a `bid` in millisatoshis. If the bid is below an allowed minimum millisatoshis per byte, an error is returned.
+Place an order for a message transmission. The body of the POST must provide a `bid` in millisatoshis and a message, provided either as a `message` parameter string or as an HTTP form-based `file` upload. If the bid is below an allowed minimum millisatoshis per byte, a `BID_TOO_SMALL` (102) error is returned.
 
-For example, to place an order to transmit the file `hello_world.png` with an initial bid of 10,000 millisatoshi, issue an HTTP POST request like this:
+For example, to place an order to transmit the message "Hello world" with an initial bid of 10,000 millisatoshi, issue an HTTP POST request like this:
+
+```bash
+curl -F "bid=10000" -F "message=Hello World" $SATELLITE_API/order
+```
+
+Or, to place an order to transmit the file `hello_world.png` with an initial bid of 10,000 millisatoshi, issue an HTTP POST request like this:
 
 ```bash
 curl -F "bid=10000" -F "file=@/path/to/upload/file/hello_world.png" $SATELLITE_API/order
@@ -73,7 +79,7 @@ If successful, the response includes the JSON Lightning invoice as returned by L
 {"auth_token":"d784e322dad7ec2671086ce3ad94e05108f2501180d8228577fbec4115774750","uuid":"409348bc-6af0-4999-b715-4136753979df","lightning_invoice":{"id":"N0LOTYc9j0gWtQVjVW7pK","msatoshi":"514200","description":"BSS Test","rhash":"5e5c9d111bc76ce4bf9b211f12ca2d9b66b81ae9839b4e530b16cedbef653a3a","payreq":"lntb5142n1pd78922pp5tewf6ygmcakwf0umyy039j3dndntsxhfswd5u5ctzm8dhmm98gaqdqdgff4xgz5v4ehgxqzjccqp286gfgrcpvzl04sdg2f9sany7ptc5aracnd6kvr2nr0e0x5ajpmfhsjkqzw679ytqgnt6w4490jjrgcvuemz790salqyz9far68cpqtgq3q23el","expires_at":1541642146,"created_at":1541641546,"metadata":{"sha256_message_digest":"0e2bddf3bba1893b5eef660295ef12d6fc72870da539c328cf24e9e6dbb00f00","uuid":"409348bc-6af0-4999-b715-4136753979df"},"status":"unpaid"}}
 ```
 
-Error codes that can be returned by this endpoint include: `BID_TOO_SMALL` (102), `FILE_MISSING` (103), `MESSAGE_FILENAME_MISSING` (116), `MESSAGE_FILE_TOO_SMALL` (117), `MESSAGE_FILE_TOO_LARGE` (118), `BID_TOO_SMALL` (102).
+Error codes that can be returned by this endpoint include: `BID_TOO_SMALL` (102), `FILE_MISSING` (103), `MESSAGE_FILENAME_MISSING` (116), `MESSAGE_FILE_TOO_SMALL` (117), `MESSAGE_FILE_TOO_LARGE` (118), `BID_TOO_SMALL` (102), `MESSAGE_TOO_LONG` (125), `MESSAGE_MISSING` (126).
 
 ### POST /order/:uuid/bump ###
 

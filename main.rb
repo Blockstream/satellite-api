@@ -5,6 +5,7 @@ require "faraday"
 require 'securerandom'
 require 'openssl'
 require 'time'
+require 'tempfile'
 
 require_relative 'constants'
 require_relative 'error_handlers'
@@ -100,21 +101,28 @@ end
 # return JSON object with status, uuid, and lightning payment invoice
 post '/order' do
   param :bid, Integer, required: true, min: 0, message: "must be a positive integer number of msatoshis"
-  param :file, Hash, required: true
+  param :file, Hash, required: false
+  param :message, String, required: false, max_length: 1024
+
   bid = Integer(params[:bid])
 
-  # process the upload
-  unless tmpfile = params[:file][:tempfile]
-    message_file_missing_error
-  end
-  unless name = params[:file][:filename]
-    message_filename_missing_error
+  if params[:message]
+    tmpfile = Tempfile.new('message_param')
+    tmpfile.write(params[:message])
+    tmpfile.close
+  elsif params[:file]
+    unless tmpfile = params[:file][:tempfile]
+      message_file_missing_error
+    end
+  else
+    message_missing_error
   end
 
   order = Order.new(uuid: SecureRandom.uuid)
   message_file = File.new(order.message_path, "wb")
   message_size = 0
   sha256 = OpenSSL::Digest::SHA256.new
+  tmpfile.open
   while block = tmpfile.read(65536)
     message_size += block.size
     if message_size > MAX_MESSAGE_SIZE

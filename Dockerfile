@@ -1,4 +1,4 @@
-FROM alpine:latest
+FROM alpine@sha256:b3dbf31b77fd99d9c08f780ce6f5282aba076d70a513a8be859d8d3a4d0c92b8
 
 ENV RUBY_PACKAGES ruby ruby-io-console ruby-irb ruby-rake ruby-bundler ruby-bigdecimal ruby-json
 ENV RUBY_DEPS libstdc++ tzdata bash ca-certificates openssl sqlite sqlite-dev

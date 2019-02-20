@@ -2,7 +2,7 @@ variables:
   GIT_SUBMODULE_STRATEGY: none
   CI_DISPOSABLE_ENVIRONMENT: "true"
 
-image: blockstream/gcloud-docker@sha256:31c1a01d143558f0ba5677d121891a958fa600195679fe325980ec72e5264f2a
+image: blockstream/gcloud-docker@sha256:78e68a98c5d6aa36eca45099bae38a1544a1688fd16b506fb914a29fdf6e4afa
 stages:
   - build
   - plan
@@ -19,22 +19,25 @@ before_script:
 # Run tests and build docker images
 build:
   stage: build
-  image: blockstream/satapi-builder@sha256:4f96415f1216c5b6bdb266b1db48558328a497f02da38ce2991ab65b25b7590f
+  image: blockstream/satapi-builder@sha256:a3a137b80a08325bdd50a7c59ae0429b933e7a36db0d74f6ae34af067dfdee2d
   only:
     - master@satellite/ionosphere
   before_script:
-    - ""
+    - export CHARGE_ROOT=$CHARGE_ROOT_CI
   script:
+    - bundle exec ruby tests/tests.rb || echo "Tests failed.." && exit 1
     - echo $DOCKERHUB_PW | docker login -u $DOCKERHUB_USER --password-stdin
-    - docker build -f Dockerfile -t blockstream/satellite-api:latest -t blockstream/satellite-api:$CI_COMMIT_SHA .
+    - docker pull blockstream/satellite-api:latest
+    - docker pull blockstream/satellite-api-sse:latest
+    - docker build --cache-from blockstream/satellite-api:latest -f Dockerfile -t blockstream/satellite-api:latest -t blockstream/satellite-api:$CI_COMMIT_SHA .
     - docker push blockstream/satellite-api:latest
     - docker push blockstream/satellite-api:$CI_COMMIT_SHA
-    - echo "Building Ionosphere SSE image"
-    - docker build -f Dockerfile.sse -t blockstream/satellite-api-sse:latest -t blockstream/satellite-api-sse:$CI_COMMIT_SHA sse/
+    - echo "Building Satellite API SSE image"
+    - docker build --cache-from blockstream/satellite-api-sse:latest  -f Dockerfile.sse -t blockstream/satellite-api-sse:latest -t blockstream/satellite-api-sse:$CI_COMMIT_SHA sse/
     - docker push blockstream/satellite-api-sse:$CI_COMMIT_SHA
     - docker push blockstream/satellite-api-sse:latest
 
-# Any newly-pushed, WIP branch will be ran through plan (keep in mind docker images are using the latest tag, which may be an older one since the current commit doesn't match an available image)
+# Any newly-pushed, WIP branch will be ran through plan (keep in mind docker images are using the latest tag, which may be an older one since the current commit may not match an available image)
 plan_satapi:
   stage: plan
   only:

@@ -1,4 +1,4 @@
-FROM docker@sha256:f7211e1779c82e3a50d0d6f165e83f3e2be217a234b0181d5e8bee411d8fcc5f AS docker
+FROM docker@sha256:453c52a7a7200677f9effa3acc8498a2f71af77c2951ac5e1ac1391053573374 AS docker
 FROM alpine:latest
 
 COPY --from=docker /usr/local/bin/docker /usr/local/bin/docker

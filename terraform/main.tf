@@ -37,10 +37,10 @@ module "blc" {
   region            = "${var.region}"
   zone              = "${var.zone}"
   instance_type     = "${var.instance_type[0]}"
-  host              = "${var.host}"
+  host              = ["${var.host}"]
   ssl_cert          = ["${var.ssl_cert}"]
   timeout           = "${var.timeout}"
-  prom_service_acct = "${data.terraform_remote_state.blc-prod.prometheus_service_account}"
+  prom_service_acct = "${var.prom_service_acct}"
   opsgenie_key      = "${var.opsgenie_key}"
   rpcuser           = "${var.rpcuser}"
   rpcpass           = "${var.rpcpass}"
@@ -67,7 +67,7 @@ module "tor" {
   zone              = "${var.zone}"
   instance_type     = "${var.instance_type[1]}"
   onion_host        = "${var.onion_host}"
-  prom_service_acct = "${data.terraform_remote_state.blc-prod.prometheus_service_account}"
+  prom_service_acct = "${var.prom_service_acct}"
 }
 
 module "prometheus" {
@@ -87,5 +87,5 @@ module "prometheus" {
   instance_type          = "${var.instance_type[2]}"
   prom_allowed_source_ip = "${var.prom_allowed_source_ip}"
   opsgenie_key           = "${var.opsgenie_key}"
-  prom_service_acct      = "${terraform.workspace != "misc" ? data.terraform_remote_state.blc-prod.prometheus_service_account : ""}"
+  prom_service_acct      = "${var.prom_service_acct}"
 }

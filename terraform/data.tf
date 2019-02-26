@@ -8,8 +8,4 @@ data "terraform_remote_state" "blc-prod" {
   }
 
   workspace = "prod"
-
-  defaults {
-    prometheus_service_account = "${var.prom_service_acct}"
-  }
 }

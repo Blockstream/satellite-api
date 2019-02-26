@@ -29,7 +29,7 @@ data "template_file" "blc" {
     ionosphere_sse_docker = "${var.ionosphere_sse_docker}"
     node_exporter_docker  = "${var.node_exporter_docker}"
     opsgenie_key          = "${var.opsgenie_key}"
-    host                  = "${var.host}"
+    host                  = ["${var.host}"]
   }
 }
 

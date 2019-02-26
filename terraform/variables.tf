@@ -110,6 +110,21 @@ variable "opsgenie_key" {
   default = ""
 }
 
+variable "satellite_lb" {
+  type = "string"
+  default = ""
+}
+
+variable "satellite_api_lb" {
+  type = "string"
+  default = ""
+}
+
+variable "satellite_api_lb_staging" {
+  type = "string"
+  default = ""
+}
+
 # Overwritten by CI
 variable "ionosphere_docker" {
   type    = "string"

@@ -38,6 +38,7 @@ module "blc" {
   zone              = "${var.zone}"
   instance_type     = "${var.instance_type[0]}"
   host              = ["${var.host}"]
+  space_host        = "${var.space_host}"
   ssl_cert          = ["${var.ssl_cert}"]
   timeout           = "${var.timeout}"
   prom_service_acct = "${var.prom_service_acct}"
@@ -62,7 +63,7 @@ module "tor" {
 
   create_resources = "${local.create_misc}"
 
-  #CI vars
+  # CI vars
   region            = "${var.region}"
   zone              = "${var.zone}"
   instance_type     = "${var.instance_type[1]}"
@@ -81,11 +82,24 @@ module "prometheus" {
 
   create_resources = "${local.create_misc}"
 
-  #CI vars
+  # CI vars
   region                 = "${var.region}"
   zone                   = "${var.zone}"
   instance_type          = "${var.instance_type[2]}"
   prom_allowed_source_ip = "${var.prom_allowed_source_ip}"
   opsgenie_key           = "${var.opsgenie_key}"
   prom_service_acct      = "${var.prom_service_acct}"
+}
+
+module "dns" {
+  source = "modules/dns"
+
+  project = "${var.project}"
+
+  create_resources = "${local.create_misc}"
+
+  # CI vars
+  satellite_lb             = "${var.satellite_lb}"
+  satellite_api_lb         = "${var.satellite_api_lb}"
+  satellite_api_lb_staging = "${var.satellite_api_lb_staging}"
 }

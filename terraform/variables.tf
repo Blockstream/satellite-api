@@ -70,6 +70,11 @@ variable "host" {
   default = ["", ""]
 }
 
+variable "space_host" {
+  type    = "string"
+  default = ""
+}
+
 variable "onion_host" {
   type    = "string"
   default = ""
@@ -111,17 +116,17 @@ variable "opsgenie_key" {
 }
 
 variable "satellite_lb" {
-  type = "string"
+  type    = "string"
   default = ""
 }
 
 variable "satellite_api_lb" {
-  type = "string"
+  type    = "string"
   default = ""
 }
 
 variable "satellite_api_lb_staging" {
-  type = "string"
+  type    = "string"
   default = ""
 }
 

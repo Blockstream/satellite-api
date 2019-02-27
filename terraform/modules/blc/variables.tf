@@ -56,6 +56,10 @@ variable "host" {
   type = "list"
 }
 
+variable "space_host" {
+  type = "string"
+}
+
 variable "timeout" {
   type = "string"
 }

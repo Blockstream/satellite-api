@@ -23,7 +23,7 @@ resource "google_compute_region_instance_group_manager" "tor" {
 resource "google_compute_instance_template" "tor" {
   name_prefix  = "${var.name}-template-"
   description  = "This template is used to create ${var.name} instances."
-  machine_type = "${var.tor_instance_type}"
+  machine_type = "${var.instance_type}"
   count        = "${var.create_resources}"
 
   labels {

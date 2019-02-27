@@ -2,14 +2,14 @@ bootcmd:
   - blkid /dev/disk/by-id/google-data || mkfs.ext4 -L data -E lazy_itable_init=0,lazy_journal_init=0,discard /dev/disk/by-id/google-data
 
 mounts:
-  - [ /dev/disk/by-label/data, /mnt/disks/data, auto, defaults ]
+  - [ /dev/disk/by-label/google-data, /mnt/disks/data, auto, defaults ]
 
 users:
-  - name: exec
+  - name: bs
     uid: 2000
 
 write_files:
-  - path: /home/exec/prometheus/alertmanager.yml
+  - path: /home/bs/prometheus/alertmanager.yml
     permissions: 0644
     owner: root
     content: |
@@ -26,20 +26,13 @@ write_files:
             receiver: noc-pager
 
         receivers:
-          - name: noc-email
-            email_configs:
-            - to: noc@blockstream.io
-              from: noreply@blockstream.io
-              smarthost: smtp.gmail.com:587
-              auth_username: ${email_username}
-              auth_password: ${email_password}
           - name: noc-pager
             opsgenie_configs:
-            - api_key: ${opsgenie_api_key}
+            - api_key: ${opsgenie_key}
               teams: SecOps
-              tags: lightning-store
+              tags: satellite-api
 
-  - path: /home/exec/prometheus/rules/alerts.yml
+  - path: /home/bs/prometheus/rules/alerts.yml
     permissions: 0644
     owner: root
     content: |
@@ -55,7 +48,7 @@ write_files:
             #    summary: No hosts in network {{ $labels.name }}, production traffic impacted!
             #    description: There are currently no hosts up in the network {{ $labels.name }}, verify the instance groups. https://wiki.blockstream.io/OpsPlaybooks/Esplora-Runbooks#NoHostsInNetwork
 
-  - path: /home/exec/prometheus/prometheus.yml
+  - path: /home/bs/prometheus/prometheus.yml
     permissions: 0644
     owner: root
     content: |
@@ -63,7 +56,7 @@ write_files:
           evaluation_interval: 15s
           scrape_interval: 15s
           external_labels:
-            project: blockstream-store
+            project: satellite-api
 
         rule_files:
           - /config/rules/alerts.yml
@@ -88,122 +81,19 @@ write_files:
               - '__meta_gce_instance_name'
               target_label: 'instance_name'
           gce_sd_configs:
-            - project: blockstream-store
-              zone: asia-northeast1-a
+            - project: satellite-api
               filter: (labels.type = "prometheus")
+              zone: us-west1-a
               port: 9100
-            - project: blockstream-store
-              zone: asia-northeast1-b
+            - project: satellite-api
               filter: (labels.type = "prometheus")
+              zone: us-west1-b
               port: 9100
-            - project: blockstream-store
-              zone: asia-northeast1-c
+            - project: satellite-api
               filter: (labels.type = "prometheus")
+              zone: us-west1-c
               port: 9100
-            - project: blockstream-store
-              zone: europe-west4-a
-              filter: (labels.type = "prometheus")
-              port: 9100
-            - project: blockstream-store
-              zone: europe-west4-b
-              filter: (labels.type = "prometheus")
-              port: 9100
-            - project: blockstream-store
-              zone: europe-west4-c
-              filter: (labels.type = "prometheus")
-              port: 9100
-            - project: blockstream-store
-              zone: us-central1-a
-              filter: (labels.type = "prometheus")
-              port: 9100
-            - project: blockstream-store
-              zone: us-central1-b
-              filter: (labels.type = "prometheus")
-              port: 9100
-            - project: blockstream-store
-              zone: us-central1-c
-              filter: (labels.type = "prometheus")
-              port: 9100
-            - project: blockstream-store
-              zone: us-central1-f
-              filter: (labels.type = "prometheus")
-              port: 9100
-            - project: blockstream-store
-              zone: us-east1-d
-              filter: (labels.type = "prometheus")
-              port: 9100
-            - project: blockstream-store
-              zone: us-east1-b
-              filter: (labels.type = "prometheus")
-              port: 9100
-            - project: blockstream-store
-              zone: us-east1-c
-              filter: (labels.type = "prometheus")
-              port: 9100
-        - job_name: wordpress
-          relabel_configs:
-            - source_labels:
-              - '__meta_gce_label_network'
-              target_label: 'network'
-            - source_labels:
-              - '__meta_gce_label_name'
-              target_label: 'name'
-            - source_labels:
-              - '__meta_gce_instance_name'
-              target_label: 'instance_name'
-          gce_sd_configs:
-            - project: blockstream-store
-              filter: (labels.type = "wordpress")
-              zone: asia-northeast1-a
-              port: 9100
-            - project: blockstream-store
-              filter: (labels.type = "wordpress")
-              zone: asia-northeast1-b
-              port: 9100
-            - project: blockstream-store
-              filter: (labels.type = "wordpress")
-              zone: asia-northeast1-c
-              port: 9100
-            - project: blockstream-store
-              filter: (labels.type = "wordpress")
-              zone: europe-west4-a
-              port: 9100
-            - project: blockstream-store
-              filter: (labels.type = "wordpress")
-              zone: europe-west4-b
-              port: 9100
-            - project: blockstream-store
-              filter: (labels.type = "wordpress")
-              zone: europe-west4-c
-              port: 9100
-            - project: blockstream-store
-              filter: (labels.type = "wordpress")
-              zone: us-central1-a
-              port: 9100
-            - project: blockstream-store
-              filter: (labels.type = "wordpress")
-              zone: us-central1-b
-              port: 9100
-            - project: blockstream-store
-              filter: (labels.type = "wordpress")
-              zone: us-central1-c
-              port: 9100
-            - project: blockstream-store
-              filter: (labels.type = "wordpress")
-              zone: us-central1-f
-              port: 9100
-            - project: blockstream-store
-              filter: (labels.type = "wordpress")
-              zone: us-east1-d
-              port: 9100
-            - project: blockstream-store
-              filter: (labels.type = "wordpress")
-              zone: us-east1-b
-              port: 9100
-            - project: blockstream-store
-              filter: (labels.type = "wordpress")
-              zone: us-east1-c
-              port: 9100
+
         - job_name: satellite-api
           relabel_configs:
             - source_labels:
@@ -216,71 +106,20 @@ write_files:
               - '__meta_gce_instance_name'
               target_label: 'instance_name'
           gce_sd_configs:
-            - project: blockstream-store
-              filter: (labels.type = "lightning-app")
-              zone: asia-northeast1-a
-              port: 9100
-            - project: blockstream-store
-              filter: (labels.type = "lightning-app")
-              zone: asia-northeast1-b
-              port: 9100
-            - project: blockstream-store
-              filter: (labels.type = "lightning-app")
-              zone: asia-northeast1-c
-              port: 9100
-            - project: blockstream-store
-              filter: (labels.type = "lightning-app")
-              zone: europe-west4-a
-              port: 9100
-            - project: blockstream-store
-              filter: (labels.type = "lightning-app")
-              zone: europe-west4-b
-              port: 9100
-            - project: blockstream-store
-              filter: (labels.type = "lightning-app")
-              zone: europe-west4-c
-              port: 9100
-            - project: blockstream-store
-              filter: (labels.type = "lightning-app")
-              zone: us-central1-a
-              port: 9100
-            - project: blockstream-store
-              filter: (labels.type = "lightning-app")
-              zone: us-central1-b
-              port: 9100
-            - project: blockstream-store
-              filter: (labels.type = "lightning-app")
-              zone: us-central1-c
-              port: 9100
-            - project: blockstream-store
-              filter: (labels.type = "lightning-app")
-              zone: us-central1-f
-              port: 9100
-            - project: blockstream-store
-              filter: (labels.type = "lightning-app")
-              zone: us-east1-d
-              port: 9100
-            - project: blockstream-store
-              filter: (labels.type = "lightning-app")
-              zone: us-east1-b
-              port: 9100
-            - project: blockstream-store
-              filter: (labels.type = "lightning-app")
-              zone: us-east1-c
-              port: 9100
-            - project: blockstream-store
+            - project: satellite-api
               filter: (labels.type = "lightning-app")
               zone: us-west1-a
               port: 9100
-            - project: blockstream-store
+            - project: satellite-api
               filter: (labels.type = "lightning-app")
               zone: us-west1-b
               port: 9100
-            - project: blockstream-store
+            - project: satellite-api
               filter: (labels.type = "lightning-app")
               zone: us-west1-c
               port: 9100
-        - job_name: btcpayserver
+
+        - job_name: satellite-api-tor
           relabel_configs:
             - source_labels:
               - '__meta_gce_label_network'
@@ -292,18 +131,19 @@ write_files:
               - '__meta_gce_instance_name'
               target_label: 'instance_name'
           gce_sd_configs:
-            - project: blockstream-store
-              filter: (labels.type = "btcpayserver")
+            - project: satellite-api
+              filter: (labels.type = "tor")
               zone: us-west1-a
               port: 9100
-            - project: blockstream-store
-              filter: (labels.type = "btcpayserver")
+            - project: satellite-api
+              filter: (labels.type = "tor")
               zone: us-west1-b
               port: 9100
-            - project: blockstream-store
-              filter: (labels.type = "btcpayserver")
+            - project: satellite-api
+              filter: (labels.type = "tor")
               zone: us-west1-c
               port: 9100
+
 
   - path: /etc/systemd/system/prometheus.service
     permissions: 0644
@@ -317,19 +157,19 @@ write_files:
         [Service]
         Restart=always
         RestartSec=1
-        Environment=HOME=/home/exec
+        Environment=HOME=/home/bs
         ExecStartPre=/usr/bin/docker-credential-gcr configure-docker
-        ExecStartPre=/usr/bin/docker pull ${docker_tag}
+        ExecStartPre=/usr/bin/docker pull ${prom_docker}
         ExecStartPre=/sbin/iptables -A INPUT -m tcp -p tcp --dport 9090 -j ACCEPT
         ExecStartPre=/sbin/iptables -A INPUT -m tcp -p tcp --dport 80 -j ACCEPT
         ExecStartPre=/sbin/iptables -A PREROUTING -t nat -p tcp --dport 80 -j REDIRECT --to-port 9090
         ExecStart=/usr/bin/docker run \
             --network=host \
             -v /mnt/disks/data:/data:rw \
-            -v /home/exec/prometheus:/config:ro \
+            -v /home/bs/prometheus:/config:ro \
             --read-only \
             --name prometheus \
-            "${docker_tag}" --config.file=/config/prometheus.yml --web.enable-lifecycle --web.enable-admin-api --storage.tsdb.path=/data/metrics --storage.tsdb.retention=${retention}
+            "${prom_docker}" --config.file=/config/prometheus.yml --web.enable-lifecycle --web.enable-admin-api --storage.tsdb.path=/data/metrics --storage.tsdb.retention=${retention}
         ExecStop=/usr/bin/docker stop prometheus
         ExecStopPost=/usr/bin/docker rm prometheus
         ExecStopPost=/sbin/iptables -D INPUT -m tcp -p tcp --dport 9090 -j ACCEPT
@@ -338,6 +178,7 @@ write_files:
 
         [Install]
         WantedBy=multi-user.target
+
   - path: /etc/systemd/system/alertmanager.service
     permissions: 0644
     owner: root
@@ -350,24 +191,25 @@ write_files:
         [Service]
         Restart=always
         RestartSec=1
-        Environment=HOME=/home/exec
+        Environment=HOME=/home/bs
         ExecStartPre=/usr/bin/docker-credential-gcr configure-docker
-        ExecStartPre=/usr/bin/docker pull ${docker_tag}
+        ExecStartPre=/usr/bin/docker pull ${prom_docker}
         ExecStartPre=/sbin/iptables -A INPUT -m tcp -p tcp --dport 9093 -j ACCEPT
         ExecStart=/usr/bin/docker run \
             --network=host \
             -v /mnt/disks/data:/data:rw \
-            -v /home/exec/prometheus:/config:ro \
+            -v /home/bs/prometheus:/config:ro \
             --read-only \
             --name alertmanager \
             --entrypoint=/bin/alertmanager \
-            "${docker_tag}" --config.file=/config/alertmanager.yml
+            "${prom_docker}" --config.file=/config/alertmanager.yml
         ExecStop=/usr/bin/docker stop alertmanager
         ExecStopPost=/usr/bin/docker rm alertmanager
         ExecStopPost=/sbin/iptables -D INPUT -m tcp -p tcp --dport 9093 -j ACCEPT
 
         [Install]
         WantedBy=multi-user.target
+
   - path: /etc/systemd/system/node-exporter.service
     permissions: 0644
     owner: root
@@ -380,9 +222,9 @@ write_files:
         [Service]
         Restart=always
         RestartSec=1
-        Environment=HOME=/home/exec
+        Environment=HOME=/home/bs
         ExecStartPre=/usr/bin/docker-credential-gcr configure-docker
-        ExecStartPre=/usr/bin/docker pull ${docker_tag_node_exporter}
+        ExecStartPre=/usr/bin/docker pull ${node_exporter_docker}
         ExecStartPre=/sbin/iptables -A INPUT -m tcp -p tcp --dport 9100 -j ACCEPT
         ExecStart=/usr/bin/docker run \
             --name=node-exporter \
@@ -392,7 +234,7 @@ write_files:
             -v /sys:/host/sys:ro \
             -v /:/rootfs:ro \
             -v metrics:/metrics:ro \
-            "${docker_tag_node_exporter}" --path.procfs /host/proc --path.sysfs /host/sys --collector.textfile.directory /metrics --collector.filesystem.ignored-mount-points "^/(sys|proc|dev|host|etc($|/))"
+            "${node_exporter_docker}" --path.procfs /host/proc --path.sysfs /host/sys --collector.textfile.directory /metrics --collector.filesystem.ignored-mount-points "^/(sys|proc|dev|host|etc($|/))"
         ExecStop=/usr/bin/docker stop node-exporter
         ExecStopPost=/usr/bin/docker rm node-exporter
         ExecStopPost=/sbin/iptables -D INPUT -m tcp -p tcp --dport 9100 -j ACCEPT

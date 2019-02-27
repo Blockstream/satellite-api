@@ -49,11 +49,11 @@ variable "net" {
 }
 
 variable "ssl_cert" {
-  type = "string"
+  type = "list"
 }
 
 variable "host" {
-  type = "string"
+  type = "list"
 }
 
 variable "timeout" {

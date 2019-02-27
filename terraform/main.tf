@@ -36,11 +36,11 @@ module "blc" {
   # CI vars
   region            = "${var.region}"
   zone              = "${var.zone}"
-  instance_type     = "${var.instance_type}"
+  instance_type     = "${var.instance_type[0]}"
   host              = "${var.host}"
-  ssl_cert          = "${var.ssl_cert}"
+  ssl_cert          = ["${var.ssl_cert}"]
   timeout           = "${var.timeout}"
-  prom_service_acct = "${data.terraform_remote_state.lightning-store-prod.prometheus_service_account}"
+  prom_service_acct = "${data.terraform_remote_state.blc-prod.prometheus_service_account}"
   opsgenie_key      = "${var.opsgenie_key}"
   rpcuser           = "${var.rpcuser}"
   rpcpass           = "${var.rpcpass}"
@@ -65,7 +65,27 @@ module "tor" {
   #CI vars
   region            = "${var.region}"
   zone              = "${var.zone}"
-  tor_instance_type = "${var.tor_instance_type}"
+  instance_type     = "${var.instance_type[1]}"
   onion_host        = "${var.onion_host}"
-  prom_service_acct = "${data.terraform_remote_state.lightning-store-prod.prometheus_service_account}"
+  prom_service_acct = "${data.terraform_remote_state.blc-prod.prometheus_service_account}"
+}
+
+module "prometheus" {
+  source = "modules/prometheus"
+
+  project              = "${var.project}"
+  network              = "default"
+  name                 = "satapi-prometheus"
+  prom_docker          = "${var.prom_docker}"
+  node_exporter_docker = "${var.node_exporter_docker}"
+
+  create_resources = "${local.create_misc}"
+
+  #CI vars
+  region                 = "${var.region}"
+  zone                   = "${var.zone}"
+  instance_type          = "${var.instance_type[2]}"
+  prom_allowed_source_ip = "${var.prom_allowed_source_ip}"
+  opsgenie_key           = "${var.opsgenie_key}"
+  prom_service_acct      = "${terraform.workspace != "misc" ? data.terraform_remote_state.blc-prod.prometheus_service_account : ""}"
 }

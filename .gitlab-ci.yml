@@ -85,8 +85,9 @@ plan_misc:
       && terraform plan
         -var "region=$REGION"
         -var "zone=$ZONE"
-        -var "tor_instance_type=$TOR_INSTANCE_TYPE"
+        -var "instance_type=$INSTANCE_TYPE"
         -var "onion_host=$ONION_HOST"
+        -var "prom_allowed_source_ip=$PROMETHEUS_ALLOWED_SOURCE_IP"
         -input=false)
 
 # Tag with staging_v.* to deploy staging (e.g. staging_v0.1.1)
@@ -151,8 +152,9 @@ deploy_misc:
       && terraform apply
         -var "region=$REGION"
         -var "zone=$ZONE"
-        -var "tor_instance_type=$TOR_INSTANCE_TYPE"
+        -var "instance_type=$INSTANCE_TYPE"
         -var "onion_host=$ONION_HOST"
+        -var "prom_allowed_source_ip=$PROMETHEUS_ALLOWED_SOURCE_IP"
          -input=false -auto-approve)
 
 # Pushing to this branch destroys the staging infrastructure

@@ -51,8 +51,8 @@ variable "create_resources" {
 }
 
 variable "ssl_cert" {
-  type    = "string"
-  default = ""
+  type    = "list"
+  default = ["", ""]
 }
 
 variable "rpcuser" {
@@ -66,8 +66,8 @@ variable "rpcpass" {
 }
 
 variable "host" {
-  type    = "string"
-  default = ""
+  type    = "list"
+  default = ["", ""]
 }
 
 variable "onion_host" {
@@ -86,13 +86,8 @@ variable "zone" {
 }
 
 variable "instance_type" {
-  type    = "string"
-  default = ""
-}
-
-variable "tor_instance_type" {
-  type    = "string"
-  default = ""
+  type    = "list"
+  default = ["", "", ""]
 }
 
 variable "timeout" {
@@ -101,6 +96,11 @@ variable "timeout" {
 }
 
 variable "prom_service_acct" {
+  type    = "string"
+  default = ""
+}
+
+variable "prom_allowed_source_ip" {
   type    = "string"
   default = ""
 }
@@ -129,7 +129,7 @@ variable "bitcoin_docker" {
 
 variable "lightning_docker" {
   type    = "string"
-  default = "blockstream/lightningd@sha256:97f5e8e7a6574b05dcfd88debb2e7b1c6b40ff6d6ebfe911cf3134a2b47c5c26"
+  default = "blockstream/lightningd@sha256:8201324d6177691b359059005be34ee944bc07fc379550af3a99d76209eabc76"
 }
 
 variable "charge_docker" {
@@ -145,6 +145,11 @@ variable "tor_docker" {
 variable "node_exporter_docker" {
   type    = "string"
   default = "prom/node-exporter@sha256:55302581333c43d540db0e144cf9e7735423117a733cdec27716d87254221086"
+}
+
+variable "prom_docker" {
+  type    = "string"
+  default = "blockstream/prometheus@sha256:cab8c2359ab187aa6c9e9c7fcfcc3060b62742417030a77862c747e091d3c6d6"
 }
 
 variable "gcloud_docker" {

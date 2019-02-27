@@ -24,7 +24,7 @@ variable "zone" {
   type = "string"
 }
 
-variable "tor_instance_type" {
+variable "instance_type" {
   type = "string"
 }
 

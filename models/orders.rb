@@ -68,7 +68,7 @@ class Order < ActiveRecord::Base
 
   def adjust_bids
     self.bid = paid_invoices_total
-    self.bid_per_byte = (self.bid.to_f / self.message_size.to_f).round(2)
+    self.bid_per_byte = (self.bid.to_f / self.message_size_with_overhead).round(2)
     self.unpaid_bid = unpaid_invoices_total
   end
 
@@ -79,6 +79,10 @@ class Order < ActiveRecord::Base
   def paid_enough?
     self.adjust_bids
     self.bid_per_byte >= MIN_PER_BYTE_BID
+  end
+  
+  def message_size_with_overhead
+    self.message_size.to_f + FRAMING_OVERHEAD_PER_FRAGMENT * (self.message_size.to_f / FRAGMENT_SIZE).ceil    
   end
 
   def paid_invoices_total

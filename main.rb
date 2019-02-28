@@ -139,11 +139,9 @@ post '/order' do
 
   order.message_size = message_size
   order.message_digest = sha256.to_s
-
-  message_size_with_overhead = message_size + FRAMING_OVERHEAD_PER_FRAGMENT * (message_size / FRAGMENT_SIZE).ceil
   
-  if bid.to_f / message_size_with_overhead.to_f < MIN_PER_BYTE_BID
-    bid_too_small_error(message_size_with_overhead * MIN_PER_BYTE_BID)
+  if bid.to_f / order.message_size_with_overhead < MIN_PER_BYTE_BID
+    bid_too_small_error(order.message_size_with_overhead * MIN_PER_BYTE_BID)
   end
 
   invoice = new_invoice(order, bid)

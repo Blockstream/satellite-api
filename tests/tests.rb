@@ -10,50 +10,50 @@ TEST_FILE = "test.random"
 TINY_TEST_FILE = "zero_length_test_file.txt"
 
 unless File.exists?(TEST_FILE) and File.exists?(TINY_TEST_FILE)
-  `dd if=/dev/random of=#{TEST_FILE} bs=1k count=#{MAX_MESSAGE_SIZE / KILO_BYTE}`
+  `dd if=/dev/urandom of=#{TEST_FILE} bs=1k count=#{MAX_MESSAGE_SIZE / KILO_BYTE}`
   `touch #{TINY_TEST_FILE}`
 end
 
 DEFAULT_BID = File.stat(TEST_FILE).size * (MIN_PER_BYTE_BID + 1)
 
 class MainAppTest < Minitest::Test
-  include Rack::Test::Methods 
+  include Rack::Test::Methods
 
   def app
     Sinatra::Application
   end
- 
+
   def place_order(bid = DEFAULT_BID)
     post '/order', params={"bid" => bid, "file" => Rack::Test::UploadedFile.new(TEST_FILE, "image/png")}
     r = JSON.parse(last_response.body)
     Order.find_by_uuid(r['uuid'])
   end
- 
+
   def bump_order(order, amount)
     header 'X-Auth-Token', order.user_auth_token
     post "/order/#{order.uuid}/bump", params={"bid_increase" => amount}
     r = JSON.parse(last_response.body)
     r['lightning_invoice']
   end
- 
+
   def setup
     @order = place_order
   end
-  
+
   def pay_invoice(invoice)
     post "/callback/#{invoice.lid}/#{invoice.charged_auth_token}"
     assert last_response.ok?
   end
-  
+
   def write_response
     File.open('response.html', 'w') { |file| file.write(last_response.body) }
   end
-  
+
   def last_response_error_code
     r = JSON.parse(last_response.body)
     Integer(r["errors"].first["code"])
   end
-  
+
   def order_is_queued(uuid)
     get "/orders/queued?limit=#{MAX_PAGE_SIZE}"
     assert last_response.ok?
@@ -95,7 +95,7 @@ class MainAppTest < Minitest::Test
     get %Q(/order/#{r['uuid']})
     assert last_response.ok?
   end
-  
+
   def test_order_creation
     place_order
     assert last_response.ok?
@@ -126,13 +126,13 @@ class MainAppTest < Minitest::Test
     refute last_response.ok?
     assert_equal ERROR::CODES[:BID_TOO_SMALL], last_response_error_code
   end
-  
+
   def test_bid_too_low
     post '/order', params={"bid" => 1, "file" => Rack::Test::UploadedFile.new(TEST_FILE, "image/png")}
     refute last_response.ok?
     assert_equal ERROR::CODES[:BID_TOO_SMALL], last_response_error_code
   end
-  
+
   def test_order_without_message
     post '/order', params={"bid" => DEFAULT_BID}
     refute last_response.ok?
@@ -148,7 +148,7 @@ class MainAppTest < Minitest::Test
     refute last_response.ok?
     assert_equal ERROR::CODES[:MESSAGE_FILE_TOO_SMALL], last_response_error_code
   end
-  
+
   def test_bid_increase_missing_error
     header 'X-Auth-Token', @order.user_auth_token
     post "/order/#{@order.uuid}/bump"
@@ -161,7 +161,7 @@ class MainAppTest < Minitest::Test
     refute last_response.ok?
     assert_equal ERROR::CODES[:BID_INCREASE_TOO_SMALL], last_response_error_code
   end
-  
+
   def test_invalid_auth_token_error
     header 'X-Auth-Token', "not an auth token"
     post "/order/#{@order.uuid}/bump", params={"bid_increase" => DEFAULT_BID / 2}
@@ -248,7 +248,7 @@ class MainAppTest < Minitest::Test
     delete "/order/#{@order.uuid}"
     refute last_response.ok?
   end
-  
+
   def test_get_sent_message
     @order = place_order
     get "/order/#{@order.uuid}/sent_message"
@@ -260,17 +260,17 @@ class MainAppTest < Minitest::Test
     @order.transmit!
     get "/order/#{@order.uuid}/sent_message"
     assert last_response.ok?
-    
+
     @order.end_transmission!
     get "/order/#{@order.uuid}/sent_message"
     assert last_response.ok?
-    
+
   end
-  
+
   def test_channel_subscription
     get "/subscribe/not_a_channel"
     refute last_response.ok?
     assert_equal ERROR::CODES[:CHANNELS_EQUALITY], last_response_error_code
   end
-  
+
 end

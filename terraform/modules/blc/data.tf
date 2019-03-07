@@ -3,7 +3,7 @@ data "google_compute_network" "blc" {
 }
 
 data "google_compute_image" "blc" {
-  family  = "satapi-data-${var.env}"
+  family  = "satapi-data-${var.net}-${var.env}"
   project = "${var.project}"
   count   = "${var.create_resources}"
 }
@@ -15,7 +15,8 @@ data "template_file" "blc" {
   vars {
     rpcuser               = "${var.rpcuser}"
     rpcpass               = "${var.rpcpass}"
-    rpcport               = "${var.net == "testnet" ? "18332" : "8332"}"
+    net                   = "${var.net}"
+    url_path              = "${var.net == "testnet" ? "/testnet" : ""}"
     bitcoin_cmd           = "bitcoind ${var.net == "testnet" ? "-testnet" : ""} -printtoconsole"
     lightning_cmd         = "lightningd ${var.net == "testnet" ? "--testnet" : "--mainnet"} --conf=/root/.lightning/lightning.conf --plugin-dir=/usr/local/bin/plugins"
     charge_cmd            = "charged -d /data/charge.db -l /root/.lightning"

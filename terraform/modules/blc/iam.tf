@@ -1,6 +1,6 @@
 resource "google_service_account" "blc" {
-  account_id   = "${var.name}-${var.env}"
-  display_name = "${var.name}-${var.env}"
+  account_id   = "${var.name}-${var.net}-${var.env}"
+  display_name = "${var.name}-${var.net}-${var.env}"
   count        = "${var.create_resources}"
 }
 

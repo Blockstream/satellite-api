@@ -24,14 +24,13 @@ write_files:
 
         ControlSocket /var/run/tor/control GroupWritable RelaxDirModeCheck
         ControlSocketsGroupWritable 1
-        SocksPort unix:/var/run/tor/socks WorldWritable
-        SocksPort 9050
+        SocksPort 0
 
         CookieAuthentication 1
         CookieAuthFileGroupReadable 1
         CookieAuthFile /var/run/tor/control.authcookie
 
-        Log [handshake]debug [*]notice stderr
+        Log [*]notice stderr
 
         HiddenServiceDir /home/tor/tor/hidden_service_v3/
         HiddenServiceVersion 3

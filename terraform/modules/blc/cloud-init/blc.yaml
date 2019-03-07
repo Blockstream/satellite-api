@@ -15,7 +15,6 @@ write_files:
     content: |
         rpcuser=${rpcuser}
         rpcpassword=${rpcpass}
-        rpcport=${rpcport}
         txindex=1
         dbcache=4000
 
@@ -23,44 +22,43 @@ write_files:
     permissions: 0644
     owner: root
     content: |
-        alias=ionosphere
+        alias=ionosphere-${net}
         bitcoin-rpcuser=${rpcuser}
         bitcoin-rpcpassword=${rpcpass}
-        bitcoin-rpcport=${rpcport}
         announce-addr=${announce_addr}
         bind-addr=0.0.0.0
 
-  - path: /home/bs/default.conf
+  - path: /home/bs/bscom.conf
     permissions: 0644
     owner: root
     content: |
-        log_format withtime '$http_x_forwarded_for - $remote_addr - $remote_user [$time_local] '
+        log_format withtimebs '$http_x_forwarded_for - $remote_addr - $remote_user [$time_local] '
                             '"$request" $status $body_bytes_sent '
                             '"$http_referer" "$http_user_agent" '
                             'rt="$request_time" uct="$upstream_connect_time" uht="$upstream_header_time" urt="$upstream_response_time"';
 
         server {
+            access_log /var/log/nginx/access-bs.log withtimebs;
+            error_log /var/log/nginx/error-bs.log;
+            root /usr/share/nginx/html/;
 
-            access_log /var/log/nginx/access.log withtime;
-            error_log /var/log/nginx/error.log;
-
-            server_name ${host} ${space_host};
-            listen 80 default_server;
+            server_name ${host};
+            listen 80;
             server_tokens off;
 
             set_real_ip_from 130.211.0.0/22;
             set_real_ip_from 35.191.0.0/16;
+            set_real_ip_from 10.0.0.0/8;
             real_ip_recursive on;
             proxy_set_header Host $host;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
 
             location / {
-                root /usr/share/nginx/html/;
-                index index.html;
+                rewrite ^ /index.html break;
             }
 
-            # Proxy to main ionosphere API
-            location /api {
+            # Proxy to Satellite API
+            location ${url_path}/api {
                 add_header 'Access-Control-Allow-Origin' '*' always;
                 add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS, DELETE' always;
                 add_header 'Access-Control-Allow-Headers' 'X-Auth-Token,DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range' always;
@@ -71,7 +69,7 @@ write_files:
                   return 200;
                 }
 
-                if ($request_uri ~* "^/api/?$")
+                if ($request_uri ~* "^${url_path}(/api)?/?$")
                 {
                   return 301 https://$host;
                 }
@@ -79,8 +77,8 @@ write_files:
                 proxy_pass http://0.0.0.0:9292/;
             }
 
-            # Proxy SSE container
-            location /api/subscribe/ {
+            # Proxy to SSE container
+            location ${url_path}/api/subscribe/ {
                 chunked_transfer_encoding off;
                 proxy_buffering off;
                 proxy_request_buffering off;
@@ -90,6 +88,68 @@ write_files:
                 proxy_pass http://0.0.0.0:4500/stream?channels=;
             }
         }
+
+  - path: /home/bs/space.conf
+    permissions: 0644
+    owner: root
+    content: |
+        log_format withtime '$http_x_forwarded_for - $remote_addr - $remote_user [$time_local] '
+                            '"$request" $status $body_bytes_sent '
+                            '"$http_referer" "$http_user_agent" '
+                            'rt="$request_time" uct="$upstream_connect_time" uht="$upstream_header_time" urt="$upstream_response_time"';
+
+        server {
+            access_log /var/log/nginx/access.log withtime;
+            error_log /var/log/nginx/error.log;
+            root /usr/share/nginx/html/;
+
+            server_name ${space_host};
+            listen 80 default_server;
+            server_tokens off;
+
+            set_real_ip_from 130.211.0.0/22;
+            set_real_ip_from 35.191.0.0/16;
+            set_real_ip_from 10.0.0.0/8;
+            real_ip_recursive on;
+            proxy_set_header Host $host;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+
+            # Proxy to Satellite API
+            location / {
+                rewrite ^ /index.html break;
+            }
+
+            location ${url_path}/ {
+                add_header 'Access-Control-Allow-Origin' '*' always;
+                add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS, DELETE' always;
+                add_header 'Access-Control-Allow-Headers' 'X-Auth-Token,DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range' always;
+                add_header 'X-XSS-Protection' '1; mode=block' always;
+
+                if ($request_uri ~* "^${url_path}/?$")
+                {
+                  return 301 https://$host;
+                }
+
+                if ($request_method = 'OPTIONS')
+                {
+                  return 200;
+                }
+
+                proxy_pass http://0.0.0.0:9292/;
+            }
+
+            # Proxy to SSE container
+            location ${url_path}/subscribe/ {
+                chunked_transfer_encoding off;
+                proxy_buffering off;
+                proxy_request_buffering off;
+                proxy_cache off;
+                proxy_http_version 1.1;
+
+                proxy_pass http://0.0.0.0:4500/stream?channels=;
+            }
+        }
+
 
   - path: /home/bs/index.html
     permissions: 0644
@@ -184,7 +244,8 @@ write_files:
             --network=host \
             --pid=host \
             --name=nginx \
-            -v /home/bs/default.conf:/etc/nginx/conf.d/default.conf:ro \
+            -v /home/bs/bscom.conf:/etc/nginx/conf.d/bscom.conf:ro \
+            -v /home/bs/space.conf:/etc/nginx/conf.d/space.conf:ro \
             -v /home/bs/index.html:/usr/share/nginx/html/index.html:ro \
             "nginx:latest"
         ExecStop=/usr/bin/docker stop nginx
@@ -239,12 +300,11 @@ write_files:
             --pid=host \
             --name=bitcoin \
             -v /home/bs/bitcoin.conf:/root/.bitcoin/bitcoin.conf:ro \
-            -v /mnt/disks/data/testnet:/root/.bitcoin:rw \
+            -v /mnt/disks/data/${net}:/root/.bitcoin:rw \
             "${bitcoin_docker}" ${bitcoin_cmd}
         ExecStop=/usr/bin/docker exec bitcoin bitcoin-cli stop
-        ExecStop=/usr/bin/sleep 10
-        ExecStop=/usr/bin/docker stop bitcoin
-        ExecStopPost=/usr/bin/docker rm bitcoin
+        ExecStopPost=/usr/bin/sleep 5
+        ExecStopPost=/usr/bin/docker rm -f bitcoin
 
   - path: /etc/systemd/system/lightning.service
     permissions: 0644
@@ -269,9 +329,8 @@ write_files:
             -v /mnt/disks/data/lightning:/root/.lightning:rw \
             "${lightning_docker}" ${lightning_cmd}
         ExecStop=/usr/bin/docker exec lightning lightning-cli stop
-        ExecStop=/usr/bin/sleep 10
-        ExecStop=/usr/bin/docker stop lightning
-        ExecStopPost=/usr/bin/docker rm lightning
+        ExecStopPost=/usr/bin/sleep 5
+        ExecStopPost=/usr/bin/docker rm -f bitcoin
         ExecStopPost=/sbin/iptables -D INPUT -p tcp --dport ${lightning_port} -j ACCEPT
 
   - path: /etc/systemd/system/redis.service

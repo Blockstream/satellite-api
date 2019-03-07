@@ -1,10 +1,10 @@
 # Instance group
 resource "google_compute_instance_group_manager" "blc" {
-  name     = "${var.name}-ig-${var.env}"
+  name     = "${var.name}-ig-${var.net}-${var.env}"
   count    = "${var.create_resources}"
   provider = "google-beta"
 
-  base_instance_name = "${var.name}-ig-${var.env}-${count.index}"
+  base_instance_name = "${var.name}-ig-${var.net}-${var.env}"
   zone               = "${var.zone}"
   target_size        = 1
 
@@ -23,7 +23,7 @@ resource "google_compute_instance_group_manager" "blc" {
 }
 
 resource "google_compute_disk" "blc" {
-  name  = "${var.name}-data-${var.env}"
+  name  = "${var.name}-data-${var.net}-${var.env}"
   type  = "pd-standard"
   image = "${data.google_compute_image.blc.self_link}"
   zone  = "${var.zone}"
@@ -37,8 +37,8 @@ resource "google_compute_disk" "blc" {
 
 # Instance template
 resource "google_compute_instance_template" "blc" {
-  name_prefix  = "${var.name}-${var.env}-template-"
-  description  = "This template is used to create ${var.name} ${var.env} instances."
+  name_prefix  = "${var.name}-${var.net}-${var.env}-tmpl-"
+  description  = "This template is used to create ${var.name} ${var.net} ${var.env} instances."
   machine_type = "${var.instance_type}"
   region       = "${var.region}"
   count        = "${var.create_resources}"
@@ -46,6 +46,7 @@ resource "google_compute_instance_template" "blc" {
   labels {
     type = "lightning-app"
     name = "${var.name}"
+    net  = "${var.net}"
   }
 
   scheduling {

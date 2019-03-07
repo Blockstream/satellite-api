@@ -1,5 +1,10 @@
-output "blc_backend_service" {
-  value = "${module.blc.backend_service}"
+# Production only (tor)
+output "blc_backend_service_testnet" {
+  value = "${module.blc-testnet.backend_service}"
+}
+
+output "blc_backend_service_mainnet" {
+  value = "${module.blc-mainnet.backend_service}"
 }
 
 output "prom_svc_acct" {

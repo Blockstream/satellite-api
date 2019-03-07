@@ -1,38 +1,45 @@
 locals {
   context_variables = {
     "staging" = {
-      env             = "staging"
-      create_satapi   = 1
-      create_misc     = 0
-      create_builders = 0
+      env            = "staging"
+      create_mainnet = 1
+      create_testnet = 0
+      create_misc    = 0
     }
 
     "prod" = {
-      env             = "prod"
-      create_satapi   = 1
-      create_misc     = 0
-      create_builders = 0
+      env            = "prod"
+      create_mainnet = 1
+      create_testnet = 0
+      create_misc    = 0
+    }
+
+    "testnet-staging" = {
+      env            = "staging"
+      create_mainnet = 0
+      create_testnet = 1
+      create_misc    = 0
+    }
+
+    "testnet-prod" = {
+      env            = "prod"
+      create_mainnet = 0
+      create_testnet = 1
+      create_misc    = 0
     }
 
     "misc" = {
-      env             = ""
-      create_satapi   = 0
-      create_misc     = 1
-      create_builders = 0
-    }
-
-    "builders" = {
-      env             = ""
-      create_satapi   = 0
-      create_misc     = 0
-      create_builders = 1
+      env            = ""
+      create_mainnet = 0
+      create_testnet = 0
+      create_misc    = 1
     }
   }
 
-  env             = "${lookup(local.context_variables[terraform.workspace], "env")}"
-  create_satapi   = "${lookup(local.context_variables[terraform.workspace], "create_satapi")}"
-  create_misc     = "${lookup(local.context_variables[terraform.workspace], "create_misc")}"
-  create_builders = "${lookup(local.context_variables[terraform.workspace], "create_builders")}"
+  env            = "${lookup(local.context_variables[terraform.workspace], "env")}"
+  create_mainnet = "${lookup(local.context_variables[terraform.workspace], "create_mainnet")}"
+  create_testnet = "${lookup(local.context_variables[terraform.workspace], "create_testnet")}"
+  create_misc    = "${lookup(local.context_variables[terraform.workspace], "create_misc")}"
 }
 
 variable "project" {

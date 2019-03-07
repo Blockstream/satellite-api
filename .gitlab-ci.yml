@@ -68,7 +68,7 @@ plan_satapi:
          -var "rpcpass=$RPCPASS"
          -input=false)
 
-# This plan gets triggered only for miscellaneous branches/tags (i.e. tor and others), so make sure the branch/tag name starts with misc_
+# This plan gets triggered only for miscellaneous branches/tags (i.e. tor, prometheus, etc), so make sure the branch/tag name starts with misc_
 plan_misc:
   stage: plan
   only:
@@ -94,55 +94,7 @@ plan_misc:
         -var "satellite_api_lb_staging=$SATELLITE_API_LB_STAGING"
         -input=false)
 
-# Tag with staging_v.* to deploy staging (e.g. staging_v0.1.1)
-deploy_staging:
-  stage: deploy
-  only:
-    - /^staging_v.*/
-  script:
-    - (cd terraform
-       && terraform init -input=false
-       && terraform workspace select staging
-       && terraform apply
-         -var "ionosphere_docker=blockstream/satellite-api:$CI_COMMIT_SHA"
-         -var "ionosphere_sse_docker=blockstream/satellite-api-sse:$CI_COMMIT_SHA"
-         -var "region=$REGION"
-         -var "zone=$ZONE"
-         -var "instance_type=$INSTANCE_TYPE"
-         -var "host=$HOST_STAGING"
-         -var "ssl_cert=$SSL_CERT_STAGING"
-         -var "timeout=$TIMEOUT"
-         -var "prom_service_acct=$PROM_SA"
-         -var "opsgenie_key=$OPSGENIE_KEY"
-         -var "rpcuser=$RPCUSER"
-         -var "rpcpass=$RPCPASS"
-         -input=false -auto-approve)
-
-# Tag with production_v.* to deploy production (e.g. production_v0.1.1)
-deploy_production:
-  stage: deploy
-  only:
-    - /^prod_v.*/
-  script:
-    - (cd terraform
-       && terraform init -input=false
-       && terraform workspace select prod
-       && terraform apply
-         -var "ionosphere_docker=blockstream/satellite-api:$CI_COMMIT_SHA"
-         -var "ionosphere_sse_docker=blockstream/satellite-api-sse:$CI_COMMIT_SHA"
-         -var "region=$REGION"
-         -var "zone=$ZONE"
-         -var "instance_type=$INSTANCE_TYPE"
-         -var "host=$HOST"
-         -var "ssl_cert=$SSL_CERT"
-         -var "timeout=$TIMEOUT"
-         -var "prom_service_acct=$PROM_SA"
-         -var "opsgenie_key=$OPSGENIE_KEY"
-         -var "rpcuser=$RPCUSER"
-         -var "rpcpass=$RPCPASS"
-         -input=false -auto-approve)
-
-# This deploys only tags/branches starting with misc_v.* (i.e. tor and others)
+# This deploys only tags/branches starting with misc_v.* (i.e. tor, prometheus, etc)
 deploy_misc:
   stage: deploy
   only:
@@ -166,6 +118,103 @@ deploy_misc:
         -var "satellite_api_lb_staging=$SATELLITE_API_LB_STAGING"
          -input=false -auto-approve)
 
+
+# Tag with staging_v.* to deploy mainnet staging (e.g. staging_v0.1.1)
+deploy_staging:
+  stage: deploy
+  only:
+    - /^staging_v.*/
+  script:
+    - (cd terraform
+       && terraform init -input=false
+       && terraform workspace select staging
+       && terraform apply
+         -var "ionosphere_docker=blockstream/satellite-api:$CI_COMMIT_SHA"
+         -var "ionosphere_sse_docker=blockstream/satellite-api-sse:$CI_COMMIT_SHA"
+         -var "region=$REGION"
+         -var "zone=$ZONE"
+         -var "instance_type=$INSTANCE_TYPE"
+         -var "host=$HOST_STAGING"
+         -var "ssl_cert=$SSL_CERT_STAGING"
+         -var "timeout=$TIMEOUT"
+         -var "prom_service_acct=$PROM_SA"
+         -var "opsgenie_key=$OPSGENIE_KEY"
+         -var "rpcuser=$RPCUSER"
+         -var "rpcpass=$RPCPASS"
+         -input=false -auto-approve)
+
+# Tag with production_v.* to deploy mainnet production (e.g. prod_v0.1.1)
+deploy_production:
+  stage: deploy
+  only:
+    - /^prod_v.*/
+  script:
+    - (cd terraform
+       && terraform init -input=false
+       && terraform workspace select prod
+       && terraform apply
+         -var "ionosphere_docker=blockstream/satellite-api:$CI_COMMIT_SHA"
+         -var "ionosphere_sse_docker=blockstream/satellite-api-sse:$CI_COMMIT_SHA"
+         -var "region=$REGION"
+         -var "zone=$ZONE"
+         -var "instance_type=$INSTANCE_TYPE"
+         -var "host=$HOST"
+         -var "ssl_cert=$SSL_CERT"
+         -var "timeout=$TIMEOUT"
+         -var "prom_service_acct=$PROM_SA"
+         -var "opsgenie_key=$OPSGENIE_KEY"
+         -var "rpcuser=$RPCUSER"
+         -var "rpcpass=$RPCPASS"
+         -input=false -auto-approve)
+
+# Tag with staging_v.* to deploy testnet staging (e.g. testnet_staging_v0.1.1)
+deploy_staging_testnet:
+  stage: deploy
+  only:
+    - /^testnet_staging_v.*/
+  script:
+    - (cd terraform
+       && terraform init -input=false
+       && terraform workspace select testnet-staging
+       && terraform apply
+         -var "ionosphere_docker=blockstream/satellite-api:$CI_COMMIT_SHA"
+         -var "ionosphere_sse_docker=blockstream/satellite-api-sse:$CI_COMMIT_SHA"
+         -var "region=$REGION"
+         -var "zone=$ZONE"
+         -var "instance_type=$INSTANCE_TYPE"
+         -var "host=$HOST_STAGING"
+         -var "ssl_cert=$SSL_CERT_STAGING"
+         -var "timeout=$TIMEOUT"
+         -var "prom_service_acct=$PROM_SA"
+         -var "opsgenie_key=$OPSGENIE_KEY"
+         -var "rpcuser=$RPCUSER"
+         -var "rpcpass=$RPCPASS"
+         -input=false -auto-approve)
+
+# Tag with production_v.* to deploy testnet production (e.g. testnet_prod_v0.1.1)
+deploy_production_testnet:
+  stage: deploy
+  only:
+    - /^testnet_prod_v.*/
+  script:
+    - (cd terraform
+       && terraform init -input=false
+       && terraform workspace select testnet-prod
+       && terraform apply
+         -var "ionosphere_docker=blockstream/satellite-api:$CI_COMMIT_SHA"
+         -var "ionosphere_sse_docker=blockstream/satellite-api-sse:$CI_COMMIT_SHA"
+         -var "region=$REGION"
+         -var "zone=$ZONE"
+         -var "instance_type=$INSTANCE_TYPE"
+         -var "host=$HOST"
+         -var "ssl_cert=$SSL_CERT"
+         -var "timeout=$TIMEOUT"
+         -var "prom_service_acct=$PROM_SA"
+         -var "opsgenie_key=$OPSGENIE_KEY"
+         -var "rpcuser=$RPCUSER"
+         -var "rpcpass=$RPCPASS"
+         -input=false -auto-approve)
+
 # Pushing to this branch destroys the staging infrastructure
 cleanup_staging:
   stage: deploy
@@ -180,4 +229,8 @@ cleanup_staging:
        terraform destroy
           -target module.blc.google_compute_instance_group_manager.blc
           -auto-approve)
-
+    - (cd terraform && terraform init -input=false &&
+      terraform workspace select testnet-staging &&
+       terraform destroy
+          -target module.blc.google_compute_instance_group_manager.blc
+          -auto-approve)

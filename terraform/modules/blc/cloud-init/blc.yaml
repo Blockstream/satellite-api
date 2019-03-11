@@ -53,25 +53,25 @@ write_files:
             proxy_set_header Host $host;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
 
-            location / {
+            # Proxy to Satellite API
+            location = / {
                 rewrite ^ /index.html break;
             }
 
-            # Proxy to Satellite API
             location ${url_path}/api {
                 add_header 'Access-Control-Allow-Origin' '*' always;
                 add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS, DELETE' always;
                 add_header 'Access-Control-Allow-Headers' 'X-Auth-Token,DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range' always;
                 add_header 'X-XSS-Protection' '1; mode=block' always;
 
-                if ($request_method = 'OPTIONS')
-                {
-                  return 200;
-                }
-
                 if ($request_uri ~* "^${url_path}(/api)?/?$")
                 {
                   return 301 https://$host;
+                }
+                
+                if ($request_method = 'OPTIONS')
+                {
+                  return 200;
                 }
 
                 proxy_pass http://0.0.0.0:9292/;
@@ -115,7 +115,7 @@ write_files:
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
 
             # Proxy to Satellite API
-            location / {
+            location = / {
                 rewrite ^ /index.html break;
             }
 
@@ -165,7 +165,7 @@ write_files:
         <p>Contribute: <a href="https://github.com/blockstream/satellite-api" target="_blank">Satellite API Code</a></p>
         </b>
         <h4>If you're trying to use Tor, make sure you're using the right path. For example:</h4>
-        <p>http://sq65ekkwppmgka5pygi5vbp3l6jkpmxqnue5doiqhdobs55g7cyqsiyd.onion/api/orders/pending</p>
+        <p>http://btcspaceda7iejsrb7ihmi5si3hhssxxxdnqvvtyz6prv2m73j7lcoqd.onion/orders/pending</p>
 
         </body>
         </html>

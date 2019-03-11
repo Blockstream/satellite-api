@@ -156,7 +156,7 @@ variable "bitcoin_docker" {
 
 variable "lightning_docker" {
   type    = "string"
-  default = "blockstream/lightningd@sha256:c49a46961b2c1b9804ec7e8d07bf3a0739912e0f046ba022334539ad78648d7b"
+  default = "blockstream/lightningd@sha256:b577dcb8d00ec4bc340884a26f5dfffb7be25dcc4ece48b7e465b3238944ec2c"
 }
 
 variable "charge_docker" {

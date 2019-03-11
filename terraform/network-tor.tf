@@ -52,12 +52,12 @@ resource "google_compute_url_map" "tor-proxy" {
     default_service = "${data.terraform_remote_state.blc-mainnet.blc_backend_service_mainnet}"
 
     path_rule {
-      paths   = ["/"]
+      paths   = ["/*"]
       service = "${data.terraform_remote_state.blc-mainnet.blc_backend_service_mainnet}"
     }
 
     path_rule {
-      paths   = ["/testnet"]
+      paths   = ["/testnet", "/testnet/*"]
       service = "${data.terraform_remote_state.blc-testnet.blc_backend_service_testnet}"
     }
   }

@@ -13,11 +13,24 @@ resource "google_compute_health_check" "tor" {
 resource "google_compute_region_instance_group_manager" "tor" {
   name   = "${var.name}-ig"
   count  = "${var.create_resources}"
-  region = "${var.region}"
+  provider = "google-beta"
 
+  region = "${var.region}"
   base_instance_name = "${var.name}"
-  instance_template  = "${google_compute_instance_template.tor.self_link}"
   target_size        = 1
+  
+  version {
+    name              = "original"
+    instance_template = "${google_compute_instance_template.tor.self_link}"
+  }
+  
+  update_policy {
+    type                  = "PROACTIVE"
+    minimal_action        = "REPLACE"
+    max_surge_fixed       = 0
+    max_unavailable_fixed = 1
+    min_ready_sec         = 60
+  }
 }
 
 resource "google_compute_instance_template" "tor" {

@@ -90,7 +90,7 @@
                 <tr>
                     <th class="created_at">Created</th>
                     <th class="bid_per_byte">Bid per Byte (millisatoshis)</th>
-                    <th class="message">Message</th>
+                    <% if settings.development? %><th class="message">Message</th><% end %>
                     <th class="message_size">Message Size</th>
                     <th class="unpaid_bid">Unpaid Bid</th>
                     <th class="uuid">Order ID</th>
@@ -144,7 +144,9 @@
           $("#sent_table").append($('<tr>').append(
                 $('<td>').text(moment(val.created_at).fromNow()),
                 $('<td>').text(val.bid_per_byte),
+                <% if settings.development? %>
                 $('<td>').html('<a href="order/' + val.uuid + '/sent_message">download</a>'),
+                <% end %>
                 $('<td>').text(val.message_size),
                 $('<td>').text(val.unpaid_bid),
                 $('<td>').text(val.uuid),

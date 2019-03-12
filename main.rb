@@ -41,6 +41,11 @@ get '/info' do
   response.body
 end
 
+get '/queue.html' do
+  content_type "text/html;charset=utf-8"
+  erb :queue
+end
+
 # GET /orders/queued
 # params: 
 #   limit - return top limit orders (optional)

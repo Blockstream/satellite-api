@@ -11,19 +11,19 @@ resource "google_compute_health_check" "tor" {
 }
 
 resource "google_compute_region_instance_group_manager" "tor" {
-  name   = "${var.name}-ig"
-  count  = "${var.create_resources}"
+  name     = "${var.name}-ig"
+  count    = "${var.create_resources}"
   provider = "google-beta"
 
-  region = "${var.region}"
+  region             = "${var.region}"
   base_instance_name = "${var.name}"
   target_size        = 1
-  
+
   version {
     name              = "original"
     instance_template = "${google_compute_instance_template.tor.self_link}"
   }
-  
+
   update_policy {
     type                  = "PROACTIVE"
     minimal_action        = "REPLACE"

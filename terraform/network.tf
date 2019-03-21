@@ -74,6 +74,7 @@ resource "google_compute_url_map" "https" {
     hosts        = ["${var.host}"]
     path_matcher = "allpaths"
   }
+
   path_matcher {
     name            = "allpaths"
     default_service = "${data.terraform_remote_state.blc-mainnet.blc_backend_service_mainnet}"

@@ -49,11 +49,11 @@ module Sinatra
       halt 413, error_object("Bid too low", "Per byte bid cannot be below #{MIN_PER_BYTE_BID} millisatoshis per byte. The minimum bid for this message is #{min_bid} millisatoshis.", ERROR::CODES[:BID_TOO_SMALL])
     end
     
-    def order_bump_error
+    def order_bump_error(order)
       halt 400, error_object("Cannot bump order", "Order already #{order.status}", ERROR::CODES[:ORDER_BUMP_ERROR])
     end
     
-    def order_cancellation_error
+    def order_cancellation_error(order)
       halt 400, error_object("Cannot cancel order", "Order already #{order.status}", ERROR::CODES[:ORDER_CANCELLATION_ERROR])
     end
 

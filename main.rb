@@ -165,7 +165,7 @@ post '/order/:uuid/bump' do
   
   order = get_and_authenticate_order
   unless order.bump
-    order_bump_error
+    order_bump_error(order)
   end
   
   invoice = new_invoice(order, bid_increase)
@@ -189,7 +189,7 @@ delete '/order/:uuid' do
 
   order = get_and_authenticate_order
   unless order.cancel!
-    order_cancellation_error
+    order_cancellation_error(order)
   end
 
   {:message => "order cancelled"}.to_json

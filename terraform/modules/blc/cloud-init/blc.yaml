@@ -32,7 +32,7 @@ write_files:
     permissions: 0644
     owner: root
     content: |
-        log_format withtimebs '$http_x_forwarded_for - $remote_addr - $remote_user [$time_local] '
+        log_format withtimebs '$remote_addr - $remote_user [$time_local] '
                             '"$request" $status $body_bytes_sent '
                             '"$http_referer" "$http_user_agent" '
                             'rt="$request_time" uct="$upstream_connect_time" uht="$upstream_header_time" urt="$upstream_response_time"';
@@ -45,13 +45,7 @@ write_files:
             server_name ${host};
             listen 80;
             server_tokens off;
-
-            set_real_ip_from 130.211.0.0/22;
-            set_real_ip_from 35.191.0.0/16;
-            set_real_ip_from 10.0.0.0/8;
-            real_ip_recursive on;
-            proxy_set_header Host $host;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-For 0.0.0.0;
 
             # Proxy to Satellite API
             location = / {
@@ -93,7 +87,7 @@ write_files:
     permissions: 0644
     owner: root
     content: |
-        log_format withtime '$http_x_forwarded_for - $remote_addr - $remote_user [$time_local] '
+        log_format withtime '$remote_addr - $remote_user [$time_local] '
                             '"$request" $status $body_bytes_sent '
                             '"$http_referer" "$http_user_agent" '
                             'rt="$request_time" uct="$upstream_connect_time" uht="$upstream_header_time" urt="$upstream_response_time"';
@@ -106,14 +100,8 @@ write_files:
             server_name ${space_host};
             listen 80 default_server;
             server_tokens off;
-
-            set_real_ip_from 130.211.0.0/22;
-            set_real_ip_from 35.191.0.0/16;
-            set_real_ip_from 10.0.0.0/8;
-            real_ip_recursive on;
-            proxy_set_header Host $host;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-
+            proxy_set_header X-Forwarded-For 0.0.0.0;
+            
             # Proxy to Satellite API
             location = / {
                 rewrite ^ /index.html break;
@@ -244,6 +232,8 @@ write_files:
             --network=host \
             --pid=host \
             --name=nginx \
+            --log-opt max-size=200m \
+            --log-opt max-file=3 \
             -v /home/bs/bscom.conf:/etc/nginx/conf.d/bscom.conf:ro \
             -v /home/bs/space.conf:/etc/nginx/conf.d/space.conf:ro \
             -v /home/bs/index.html:/usr/share/nginx/html/index.html:ro \
@@ -303,7 +293,7 @@ write_files:
             -v /mnt/disks/data/${net}:/root/.bitcoin:rw \
             "${bitcoin_docker}" ${bitcoin_cmd}
         ExecStop=/usr/bin/docker exec bitcoin bitcoin-cli stop
-        ExecStopPost=/usr/bin/sleep 5
+        ExecStopPost=/usr/bin/sleep 3
         ExecStopPost=/usr/bin/docker rm -f bitcoin
 
   - path: /etc/systemd/system/lightning.service
@@ -329,8 +319,8 @@ write_files:
             -v /mnt/disks/data/lightning:/root/.lightning:rw \
             "${lightning_docker}" ${lightning_cmd}
         ExecStop=/usr/bin/docker exec lightning lightning-cli stop
-        ExecStopPost=/usr/bin/sleep 5
-        ExecStopPost=/usr/bin/docker rm -f bitcoin
+        ExecStopPost=/usr/bin/sleep 3
+        ExecStopPost=/usr/bin/docker rm -f lightning
         ExecStopPost=/sbin/iptables -D INPUT -p tcp --dport ${lightning_port} -j ACCEPT
 
   - path: /etc/systemd/system/redis.service
@@ -383,6 +373,8 @@ write_files:
             --network=host \
             --pid=host \
             --name=ionosphere \
+            --log-opt max-size=200m \
+            --log-opt max-file=3 \
             -v /mnt/disks/data/ionosphere:/data \
             -e "RACK_ENV=production" \
             -e "CHARGE_ROOT=http://api-token:${rpcpass}@localhost:9112" \

@@ -181,5 +181,5 @@ variable "prom_docker" {
 
 variable "gcloud_docker" {
   type    = "string"
-  default = "google/cloud-sdk@sha256:b0d0555efef6a566f42fc4f0d89be9e1d74aff4565e27bbd206405f759d3f2b0"
+  default = "google/cloud-sdk@sha256:78e68a98c5d6aa36eca45099bae38a1544a1688fd16b506fb914a29fdf6e4afa"
 }

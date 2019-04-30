@@ -12,7 +12,7 @@ class Order < ActiveRecord::Base
 
   @@redis = Redis.new(url: REDIS_URI)
 
-  enum status: [:pending, :paid, :transmitting, :sent, :cancelled]
+  enum status: [:pending, :paid, :transmitting, :sent, :cancelled, :expired]
 
   before_validation :adjust_bids
 
@@ -125,6 +125,11 @@ class Order < ActiveRecord::Base
 
   def delete_message_file
     File.delete(self.message_path) if File.file?(self.message_path)
+  end
+
+  # TODO return queue length, top bid, time to front, and other stats.
+  def self.stats
+    
   end
 
 end

@@ -289,6 +289,7 @@ write_files:
             --network=host \
             --pid=host \
             --name=bitcoin \
+            --log-opt max-size=1g \
             -v /home/bs/bitcoin.conf:/root/.bitcoin/bitcoin.conf:ro \
             -v /mnt/disks/data/${net}:/root/.bitcoin:rw \
             "${bitcoin_docker}" ${bitcoin_cmd}
@@ -315,6 +316,7 @@ write_files:
             --network=host \
             --pid=host \
             --name=lightning \
+            --log-opt max-size=1g \
             -v /home/bs/lightning.conf:/root/.lightning/lightning.conf:ro \
             -v /mnt/disks/data/lightning:/root/.lightning:rw \
             "${lightning_docker}" ${lightning_cmd}

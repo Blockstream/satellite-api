@@ -3,6 +3,8 @@ require 'redis'
 require 'json'
 require_relative '../constants'
 require_relative './invoices'
+require_relative './tx_confirmations'
+require_relative './rx_confirmations'
 require_relative '../helpers/digest_helpers'
 
 class Order < ActiveRecord::Base
@@ -25,6 +27,8 @@ class Order < ActiveRecord::Base
   validates :uuid, presence: true
 
   has_many :invoices, after_add: :adjust_bids_and_save, after_remove: :adjust_bids_and_save
+  has_many :tx_confirmations
+  has_many :rx_confirmations
 
   aasm :column => :status, :enum => true, :whiny_transitions => false, :no_direct_assignment => true do
     state :pending, initial: true

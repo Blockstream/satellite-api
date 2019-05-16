@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2019_01_06_221008) do
+ActiveRecord::Schema.define(version: 2019_05_14_181433) do
 
   create_table "invoices", force: :cascade do |t|
     t.string "lid"
@@ -43,6 +43,30 @@ ActiveRecord::Schema.define(version: 2019_01_06_221008) do
     t.index ["bid_per_byte"], name: "index_orders_on_bid_per_byte"
     t.index ["tx_seq_num"], name: "index_orders_on_tx_seq_num", unique: true
     t.index ["uuid"], name: "index_orders_on_uuid", unique: true
+  end
+
+  create_table "regions", force: :cascade do |t|
+    t.datetime "created_at"
+    t.integer "number"
+    t.string "satellite_name"
+    t.string "coverage"
+    t.index ["number"], name: "index_region_on_number", unique: true
+  end
+
+  create_table "rx_confirmations", force: :cascade do |t|
+    t.datetime "created_at"
+    t.integer "order_id"
+    t.integer "region_id"
+    t.boolean "presumed", default: false
+    t.index ["order_id"], name: "index_rx_confirmations_on_order_id"
+  end
+
+  create_table "tx_confirmations", force: :cascade do |t|
+    t.datetime "created_at"
+    t.integer "order_id"
+    t.integer "region_id"
+    t.boolean "presumed", default: false
+    t.index ["order_id"], name: "index_tx_confirmations_on_order_id"
   end
 
 end

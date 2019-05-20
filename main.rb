@@ -106,8 +106,8 @@ end
 # params:
 #   regions - JSON array of coverage region numbers for which transmission has begun
 #
-# NB: this endopint must be protected from access from all hosts other than the uplink transmitters
-post '/order/tx/:tx_seq_num'
+# NB: this endpoint must be protected from access from all hosts other than the uplink transmitters
+post '/order/tx/:tx_seq_num' do
   param :tx_seq_num, Integer, required: true
   param :regions, String, required: true
   order = fetch_order_by_tx_seq_num
@@ -124,13 +124,13 @@ end
 # params:
 #   region - coverage region number
 # 
-# NB: this endopint must be protected from access from all hosts other than the uplink transmitters
-post '/order/rx/:tx_seq_num'
+# NB: this endpoint must be protected from access from all hosts other than the uplink transmitters
+post '/order/rx/:tx_seq_num' do
   param :tx_seq_num, Integer, required: true
   param :region, Integer, required: true
   order = fetch_order_by_tx_seq_num
 
-  (region = Region.find_by_number(region_number)) || region_not_found_error(region_number)
+  (region = Region.find_by_number(params[:region])) || region_not_found_error(params[:region])
   RxConfirmation.create order: order, region: region
 end
 

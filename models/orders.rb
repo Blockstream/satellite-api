@@ -14,7 +14,7 @@ class Order < ActiveRecord::Base
 
   @@redis = Redis.new(url: REDIS_URI)
 
-  enum status: [:pending, :paid, :transmitting, :sent, :cancelled, :expired]
+  enum status: [:pending, :paid, :transmitting, :sent, :received, :cancelled, :expired]
 
   before_validation :adjust_bids
 
@@ -27,8 +27,10 @@ class Order < ActiveRecord::Base
   validates :uuid, presence: true
 
   has_many :invoices, after_add: :adjust_bids_and_save, after_remove: :adjust_bids_and_save
-  has_many :tx_confirmations
-  has_many :rx_confirmations
+  has_many :tx_confirmations, after_add: :maybe_mark_as_received
+  has_many :tx_regions, through: :tx_confirmations
+  has_many :rx_confirmations, after_add: :maybe_mark_as_received
+  has_many :rx_regions, through: :rx_confirmations
 
   aasm :column => :status, :enum => true, :whiny_transitions => false, :no_direct_assignment => true do
     state :pending, initial: true
@@ -36,6 +38,7 @@ class Order < ActiveRecord::Base
     state :expired
     state :transmitting, before_enter: Proc.new { self.started_transmission_at = Time.now }
     state :sent, before_enter: Proc.new { self.ended_transmission_at = Time.now }
+    state :received
     state :cancelled, before_enter: Proc.new { self.cancelled_at = Time.now }
 
     event :pay do
@@ -49,6 +52,10 @@ class Order < ActiveRecord::Base
 
     event :end_transmission, :after => :notify_transmissions_channel do
       transitions :from => :transmitting, :to => :sent
+    end
+    
+    event :receive, :after => :synthesize_presumed_rx_confirmations do
+      transitions :from => :sent, :to => :received
     end
 
     event :cancel, :after => :delete_message_file do
@@ -78,6 +85,22 @@ class Order < ActiveRecord::Base
 
   def maybe_mark_as_paid
     self.pay! if self.paid_enough?
+  end
+  
+  def maybe_mark_as_received
+    self.receive! if self.received_criteria_met?
+  end
+  
+  def received_criteria_met?
+    (self.tx_confirmations.count == Region.count) && 
+    self.rx_regions.exists?(Region::REGIONS[:north_america]) &&
+    self.rx_regions.exists?(Region::REGIONS[:asia])
+  end
+  
+  def synthesize_presumed_rx_confirmations
+    [:south_america, :africa, :europe].each do |r|
+      RxConfirmation.create(order: self, region: Region::REGIONS[r], presumed: true)
+    end
   end
 
   def paid_enough?

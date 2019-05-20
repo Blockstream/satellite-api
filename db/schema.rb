@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2019_05_14_181433) do
+ActiveRecord::Schema.define(version: 2019_05_17_065237) do
 
   create_table "invoices", force: :cascade do |t|
     t.string "lid"
@@ -50,6 +50,7 @@ ActiveRecord::Schema.define(version: 2019_05_14_181433) do
     t.integer "number"
     t.string "satellite_name"
     t.string "coverage"
+    t.boolean "has_receiver", default: false
     t.index ["number"], name: "index_region_on_number", unique: true
   end
 

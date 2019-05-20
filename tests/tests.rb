@@ -44,6 +44,17 @@ class MainAppTest < Minitest::Test
     post "/callback/#{invoice.lid}/#{invoice.charged_auth_token}"
     assert last_response.ok?
   end
+  
+  def create_pay_and_transmit_order
+    @order = place_order
+    pay_invoice(@order.invoices.last)
+    @order.reload
+    @order.transmit!
+    @order.end_transmission!
+    @order.reload
+    assert @order.sent?
+    @order
+  end
 
   def write_response
     File.open('response.html', 'w') { |file| file.write(last_response.body) }
@@ -264,13 +275,61 @@ class MainAppTest < Minitest::Test
     @order.end_transmission!
     get "/order/#{@order.uuid}/sent_message"
     assert last_response.ok?
-
   end
 
   def test_channel_subscription
     get "/subscribe/not_a_channel"
     refute last_response.ok?
     assert_equal ERROR::CODES[:CHANNELS_EQUALITY], last_response_error_code
+  end
+  
+  def test_tx_confirmations
+    @order = create_pay_and_transmit_order
+    assert_equal 0, @order.tx_confirmations.count
+
+    post "/order/tx/#{@order.tx_seq_num}", params={"regions" => [0].to_json}
+    @order.reload
+    assert_equal 1, @order.tx_confirmations.count
+    assert_equal 1, @order.tx_regions.count
+    assert @order.sent?
+
+    # try an invalid region number
+    post "/order/tx/#{@order.tx_seq_num}", params={"regions" => [9999999].to_json}
+    refute last_response.ok?
+    @order.reload
+    assert_equal 1, @order.tx_confirmations.count
+    assert_equal 1, @order.tx_regions.count
+    assert @order.sent?
+    
+    post "/order/tx/#{@order.tx_seq_num}", params={"regions" => [1, 2, 3, 4].to_json}
+    @order.reload
+    assert_equal 5, @order.tx_confirmations.count
+    assert_equal 5, @order.tx_regions.count
+    assert @order.sent?
+  end
+
+  def test_rx_confirmations
+    @order = create_pay_and_transmit_order
+    assert_equal 0, @order.tx_confirmations.count
+    assert_equal 0, @order.rx_confirmations.count
+    
+    post "/order/rx/#{@order.tx_seq_num}", params={"region" => 0}
+    @order.reload
+    assert_equal 1, @order.rx_confirmations.count
+    assert_equal 1, @order.rx_regions.count
+    assert @order.sent?
+    
+    post "/order/tx/#{@order.tx_seq_num}", params={"regions" => [0, 1, 2, 3, 4].to_json}
+    @order.reload
+    assert_equal 5, @order.tx_confirmations.count
+    assert_equal 5, @order.tx_regions.count
+    assert @order.sent?
+    
+    post "/order/rx/#{@order.tx_seq_num}", params={"region" => 4}
+    @order.reload
+    assert_equal 5, @order.rx_confirmations.count
+    assert_equal 5, @order.rx_regions.count
+    assert @order.received?
   end
 
 end

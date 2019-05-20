@@ -100,6 +100,41 @@ get '/message/:tx_seq_num' do
   send_file order.message_path, :disposition => 'attachment'
 end
 
+# POST /order/tx/:tx_seq_num
+# 
+# acknowledge that uplink transmission has begun for the given sequence number
+# params:
+#   regions - JSON array of coverage region numbers for which transmission has begun
+#
+# NB: this endopint must be protected from access from all hosts other than the uplink transmitters
+post '/order/tx/:tx_seq_num'
+  param :tx_seq_num, Integer, required: true
+  param :regions, String, required: true
+  order = fetch_order_by_tx_seq_num
+
+  JSON.parse(params[:regions]).each do |region_number|
+    (region = Region.find_by_number(region_number)) || region_not_found_error(region_number)
+    TxConfirmation.create order: order, region: region
+  end
+end
+
+# POST /order/rx/:tx_seq_num
+# 
+# acknowledge receipt for the given sequence number
+# params:
+#   region - coverage region number
+# 
+# NB: this endopint must be protected from access from all hosts other than the uplink transmitters
+post '/order/rx/:tx_seq_num'
+  param :tx_seq_num, Integer, required: true
+  param :region, Integer, required: true
+  order = fetch_order_by_tx_seq_num
+
+  (region = Region.find_by_number(region_number)) || region_not_found_error(region_number)
+  RxConfirmation.create order: order, region: region
+end
+
+
 # POST /order
 #  
 # upload a message, along with a bid (in millisatoshis)

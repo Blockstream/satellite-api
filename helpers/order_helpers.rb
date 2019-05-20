@@ -13,6 +13,10 @@ module Sinatra
       end
     end
     
+    def fetch_order_by_tx_seq_num
+      Order.find_by(tx_seq_num: params[:tx_seq_num]) || tx_seq_num_not_found_error
+    end
+    
     def get_and_authenticate_order
       authorize_order!(fetch_order_by_uuid)
     end
@@ -27,6 +31,10 @@ module Sinatra
     
     def uuid_not_found_error
       halt 404, error_object("UUID not found", "UUID #{params[:uuid]} not found", ERROR::CODES[:ORDER_NOT_FOUND])
+    end
+
+    def tx_seq_num_not_found_error
+      halt 404, error_object("tx sequence number not found", "tx sequence number #{params[:tx_seq_num]} not found", ERROR::CODES[:ORDER_NOT_FOUND])
     end
     
     def message_missing_error

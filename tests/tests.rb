@@ -288,6 +288,7 @@ class MainAppTest < Minitest::Test
     assert_equal 0, @order.tx_confirmations.count
 
     post "/order/tx/#{@order.tx_seq_num}", params={"regions" => [0].to_json}
+    assert last_response.ok?
     @order.reload
     assert_equal 1, @order.tx_confirmations.count
     assert_equal 1, @order.tx_regions.count
@@ -302,6 +303,7 @@ class MainAppTest < Minitest::Test
     assert @order.sent?
     
     post "/order/tx/#{@order.tx_seq_num}", params={"regions" => [1, 2, 3, 4].to_json}
+    assert last_response.ok?
     @order.reload
     assert_equal 5, @order.tx_confirmations.count
     assert_equal 5, @order.tx_regions.count
@@ -314,18 +316,21 @@ class MainAppTest < Minitest::Test
     assert_equal 0, @order.rx_confirmations.count
     
     post "/order/rx/#{@order.tx_seq_num}", params={"region" => 0}
+    assert last_response.ok?
     @order.reload
     assert_equal 1, @order.rx_confirmations.count
     assert_equal 1, @order.rx_regions.count
     assert @order.sent?
     
     post "/order/tx/#{@order.tx_seq_num}", params={"regions" => [0, 1, 2, 3, 4].to_json}
+    assert last_response.ok?
     @order.reload
     assert_equal 5, @order.tx_confirmations.count
     assert_equal 5, @order.tx_regions.count
     assert @order.sent?
     
     post "/order/rx/#{@order.tx_seq_num}", params={"region" => 4}
+    assert last_response.ok?
     @order.reload
     assert_equal 5, @order.rx_confirmations.count
     assert_equal 5, @order.rx_regions.count

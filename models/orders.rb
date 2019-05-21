@@ -28,9 +28,9 @@ class Order < ActiveRecord::Base
 
   has_many :invoices, after_add: :adjust_bids_and_save, after_remove: :adjust_bids_and_save
   has_many :tx_confirmations, after_add: :maybe_mark_as_received
-  has_many :tx_regions, through: :tx_confirmations
+  has_many :tx_regions, through: :tx_confirmations, source: :region
   has_many :rx_confirmations, after_add: :maybe_mark_as_received
-  has_many :rx_regions, through: :rx_confirmations
+  has_many :rx_regions, through: :rx_confirmations, source: :region
 
   aasm :column => :status, :enum => true, :whiny_transitions => false, :no_direct_assignment => true do
     state :pending, initial: true
@@ -87,14 +87,14 @@ class Order < ActiveRecord::Base
     self.pay! if self.paid_enough?
   end
   
-  def maybe_mark_as_received
+  def maybe_mark_as_received(confirmation)
     self.receive! if self.received_criteria_met?
   end
   
   def received_criteria_met?
     (self.tx_confirmations.count == Region.count) && 
-    self.rx_regions.exists?(Region::REGIONS[:north_america]) &&
-    self.rx_regions.exists?(Region::REGIONS[:asia])
+    self.rx_regions.exists?(Region::REGIONS[:north_america].id) &&
+    self.rx_regions.exists?(Region::REGIONS[:asia].id)
   end
   
   def synthesize_presumed_rx_confirmations

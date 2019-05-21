@@ -29,9 +29,8 @@ test_build:
     - export REDIS_URI=$REDIS_URI_CI
   script:
     - bundle exec rake db:create && bundle exec rake db:schema:load && bundle exec rake db:migrate
-    - bundle exec ruby tests/tests.rb || { echo "Tests failed.."; exit 1; }
+    - bundle exec ruby tests/tests.rb || { echo -e "Tests failed..\n Sleeping for an hour to debug."; sleep 3600; exit 1; }
     - echo "Tests passed!"
-    - sleep 5000
 
 # Run tests and build docker images
 build:

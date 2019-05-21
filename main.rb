@@ -114,8 +114,9 @@ post '/order/tx/:tx_seq_num' do
 
   JSON.parse(params[:regions]).each do |region_number|
     (region = Region.find_by_number(region_number)) || region_not_found_error(region_number)
-    TxConfirmation.create order: order, region: region
+    order.tx_confirmations.create(region: region)
   end
+  {:message => "transmission confirmed for regions #{params[:regions]}"}.to_json
 end
 
 # POST /order/rx/:tx_seq_num
@@ -131,7 +132,8 @@ post '/order/rx/:tx_seq_num' do
   order = fetch_order_by_tx_seq_num
 
   (region = Region.find_by_number(params[:region])) || region_not_found_error(params[:region])
-  RxConfirmation.create order: order, region: region
+  order.rx_confirmations.create(region: region)
+  {:message => "reception confirmed for region #{params[:region]}"}.to_json
 end
 
 

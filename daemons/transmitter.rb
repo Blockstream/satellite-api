@@ -13,9 +13,6 @@ Order.transmitting.each do |order|
   order.end_transmission!
 end
 
-# NB: no mutex is needed around max_tx_seq_num because it is assumed that there is only one transmitter
-max_tx_seq_num = Order.maximum(:tx_seq_num) || 0
-
 CLEANUP_DUTY_CYCLE = 5 * 60 # five minutes
 last_cleanup_at = Time.now - CLEANUP_DUTY_CYCLE
 
@@ -43,8 +40,6 @@ loop do
       sendable_order = Order.where(status: :paid).order(bid_per_byte: :desc).first
       if sendable_order
         logger.info "transmission start #{sendable_order.uuid}"
-        max_tx_seq_num += 1
-        sendable_order.update(tx_seq_num: max_tx_seq_num)
         sendable_order.transmit!
       end
     end

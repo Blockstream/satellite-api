@@ -46,7 +46,7 @@ class Order < ActiveRecord::Base
       transitions :from => :paid, :to => :paid
     end
 
-    event :transmit, :after => :notify_transmissions_channel do
+    event :transmit, :before => :assign_tx_seq_num, :after => :notify_transmissions_channel do
       transitions :from => :paid, :to => :transmitting
     end
 
@@ -153,10 +153,18 @@ class Order < ActiveRecord::Base
   def delete_message_file
     File.delete(self.message_path) if File.file?(self.message_path)
   end
+  
+  # NB: no mutex is needed around max_tx_seq_num because it is assumed that there is only one transmitter
+  def assign_tx_seq_num
+    self.update(tx_seq_num: Order.max_tx_seq_num + 1)  
+  end
+
+  def Order.max_tx_seq_num
+    Order.maximum(:tx_seq_num) || 0
+  end
 
   # TODO return queue length, top bid, time to front, and other stats.
   def self.stats
     
   end
-
 end

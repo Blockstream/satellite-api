@@ -4,7 +4,6 @@ require_relative './orders'
 require_relative './regions'
 
 class Region < ActiveRecord::Base
-  validates :created_at, presence: true
   validates :number, presence: true
   has_many :tx_confirmations
   has_many :rx_confirmations
@@ -23,7 +22,6 @@ class Region < ActiveRecord::Base
   seed_regions.each do |region_hash|
     region = Region.find_or_initialize_by(number: region_hash[:number])
     region.update(region_hash)
-    REGIONS[region_hash[:coverage].delete(' ').underscore.to_sym] = region
   end
 
   Region.numbers.each do |sym, num|

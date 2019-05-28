@@ -179,7 +179,7 @@ Returns information about the c-lightning node where satellite API payments are 
 
 ### GET /subscribe/:channels
 
-Subscribe to one or more [server-side events](https://en.wikipedia.org/wiki/Server-sent_events) channels. The `channels` parameter is a comma-separated list of event channels. Currently, only one channel is available: `transmissions`, to which an event is pushed each time a message transmission begins and ends. Event data includes a JSON representation of the order, including its current status.
+Subscribe to one or more [server-sent events](https://en.wikipedia.org/wiki/Server-sent_events) channels. The `channels` parameter is a comma-separated list of event channels. Currently, only one channel is available: `transmissions`, to which an event is pushed each time a message transmission begins and ends. Event data includes a JSON representation of the order, including its current status.
 
 ```bash
 curl $SATELLITE_API/subscribe/:channels

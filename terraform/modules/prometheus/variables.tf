@@ -1,58 +1,59 @@
 variable "boot_image" {
-  type    = "string"
+  type    = string
   default = "cos-cloud/cos-stable"
 }
 
 variable "network" {
-  type    = "string"
+  type    = string
   default = "default"
 }
 
 variable "retention" {
-  type    = "string"
+  type    = string
   default = "31d"
 }
 
 variable "project" {
-  type = "string"
+  type = string
 }
 
 variable "name" {
-  type = "string"
+  type = string
 }
 
 variable "region" {
-  type = "string"
+  type = string
 }
 
 variable "zone" {
-  type = "string"
+  type = string
 }
 
 variable "instance_type" {
-  type = "string"
+  type = string
 }
 
 variable "create_resources" {
-  type = "string"
+  type = string
 }
 
 variable "prom_service_acct" {
-  type = "string"
+  type = string
 }
 
 variable "prom_allowed_source_ip" {
-  type = "string"
+  type = string
 }
 
 variable "opsgenie_key" {
-  type = "string"
+  type = string
 }
 
 variable "prom_docker" {
-  type = "string"
+  type = string
 }
 
 variable "node_exporter_docker" {
-  type = "string"
+  type = string
 }
+

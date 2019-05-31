@@ -1,70 +1,71 @@
 variable "boot_image" {
-  type    = "string"
+  type    = string
   default = "cos-cloud/cos-stable"
 }
 
 variable "region" {
-  type = "string"
+  type = string
 }
 
 variable "project" {
-  type = "string"
+  type = string
 }
 
 variable "name" {
-  type = "string"
+  type = string
 }
 
 variable "network" {
-  type    = "string"
+  type    = string
   default = "default"
 }
 
 variable "zone" {
-  type = "string"
+  type = string
 }
 
 variable "instance_type" {
-  type = "string"
+  type = string
 }
 
 variable "tor_lb" {
-  type = "string"
+  type = string
 }
 
 variable "onion_host" {
-  type = "string"
+  type = string
 }
 
 variable "create_resources" {
-  type = "string"
+  type = string
 }
 
 variable "prom_service_acct" {
-  type = "string"
+  type = string
 }
 
 variable "kms_key_link" {
-  type = "string"
+  type = string
 }
 
 variable "kms_key" {
-  type = "string"
+  type = string
 }
 
 variable "kms_key_ring" {
-  type    = "string"
+  type    = string
   default = ""
 }
 
 variable "tor_docker" {
-  type = "string"
+  type = string
 }
 
 variable "node_exporter_docker" {
-  type = "string"
+  type = string
 }
 
 variable "gcloud_docker" {
-  type = "string"
+  type = string
 }
+

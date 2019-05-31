@@ -1,19 +1,20 @@
 variable "project" {
-  type = "string"
+  type = string
 }
 
 variable "satellite_lb" {
-  type = "string"
+  type = string
 }
 
 variable "satellite_api_lb" {
-  type = "string"
+  type = string
 }
 
 variable "satellite_api_lb_staging" {
-  type = "string"
+  type = string
 }
 
 variable "create_resources" {
-  type = "string"
+  type = string
 }
+

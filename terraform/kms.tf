@@ -1,14 +1,15 @@
 resource "google_kms_key_ring" "tor-key-ring" {
-  project  = "${var.project}"
+  project  = var.project
   name     = "${var.name}-keyring"
-  location = "${var.region}"
+  location = var.region
 
-  count = "${local.create_misc}"
+  count = local.create_misc
 }
 
 resource "google_kms_crypto_key" "tor-crypto-key" {
   name     = "${var.name}-crypto-key"
-  key_ring = "${google_kms_key_ring.tor-key-ring.id}"
+  key_ring = google_kms_key_ring.tor-key-ring[0].id
 
-  count = "${local.create_misc}"
+  count = local.create_misc
 }
+

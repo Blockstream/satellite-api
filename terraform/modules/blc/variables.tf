@@ -1,97 +1,98 @@
 variable "project" {
-  type    = "string"
+  type    = string
   default = "satellite-api"
 }
 
 variable "boot_image" {
-  type    = "string"
+  type    = string
   default = "cos-cloud/cos-stable"
 }
 
 variable "create_resources" {
-  type = "string"
+  type = string
 }
 
 variable "rpcuser" {
-  type = "string"
+  type = string
 }
 
 variable "rpcpass" {
-  type = "string"
+  type = string
 }
 
 variable "env" {
-  type = "string"
+  type = string
 }
 
 variable "name" {
-  type = "string"
+  type = string
 }
 
 variable "network" {
-  type = "string"
+  type = string
 }
 
 variable "region" {
-  type = "string"
+  type = string
 }
 
 variable "zone" {
-  type = "string"
+  type = string
 }
 
 variable "instance_type" {
-  type = "string"
+  type = string
 }
 
 variable "net" {
-  type = "string"
+  type = string
 }
 
 variable "ssl_cert" {
-  type = "list"
+  type = list
 }
 
 variable "host" {
-  type = "list"
+  type = list
 }
 
 variable "space_host" {
-  type = "string"
+  type = string
 }
 
 variable "timeout" {
-  type = "string"
+  type = string
 }
 
 variable "opsgenie_key" {
-  type = "string"
+  type = string
 }
 
 variable "prom_service_acct" {
-  type = "string"
+  type = string
 }
 
 variable "bitcoin_docker" {
-  type = "string"
+  type = string
 }
 
 variable "charge_docker" {
-  type = "string"
+  type = string
 }
 
 variable "lightning_docker" {
-  type = "string"
+  type = string
 }
 
 variable "ionosphere_docker" {
-  type = "string"
+  type = string
 }
 
 variable "ionosphere_sse_docker" {
-  type = "string"
+  type = string
 }
 
 variable "node_exporter_docker" {
-  type = "string"
+  type = string
 }
+

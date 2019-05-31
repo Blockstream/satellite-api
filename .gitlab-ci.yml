@@ -2,7 +2,7 @@ variables:
   GIT_SUBMODULE_STRATEGY: none
   CI_DISPOSABLE_ENVIRONMENT: "true"
 
-image: blockstream/gcloud-docker@sha256:d5db1ec7faedfd46230fb53c859679e6abdd9173599209035e307c1a386a2189
+image: blockstream/gcloud-docker@sha256:2ab8222c44502282a614cdda4a9f1434d6f91e93888a39c56b82ebc52f6bd3b1
 stages:
   - build
   - plan
@@ -83,7 +83,7 @@ plan_satapi:
          -var "rpcuser=$RPCUSER"
          -var "rpcpass=$RPCPASS"
          -input=false)
-
+         
 # This plan gets triggered only for miscellaneous branches/tags (i.e. tor, prometheus, etc), so make sure the branch/tag name starts with misc_
 plan_misc:
   stage: plan

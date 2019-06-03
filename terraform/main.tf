@@ -27,6 +27,7 @@ module "blc-mainnet" {
   ionosphere_docker     = var.ionosphere_docker
   ionosphere_sse_docker = var.ionosphere_sse_docker
   node_exporter_docker  = var.node_exporter_docker
+  certbot_docker        = var.certbot_docker
   net                   = "mainnet"
   env                   = local.env
 
@@ -44,6 +45,8 @@ module "blc-mainnet" {
   opsgenie_key      = var.opsgenie_key
   rpcuser           = var.rpcuser
   rpcpass           = var.rpcpass
+  letsencrypt_email = var.letsencrypt_email
+  public_bucket_url = var.public_bucket_url
 }
 
 module "blc-testnet" {
@@ -58,6 +61,7 @@ module "blc-testnet" {
   ionosphere_docker     = var.ionosphere_docker
   ionosphere_sse_docker = var.ionosphere_sse_docker
   node_exporter_docker  = var.node_exporter_docker
+  certbot_docker        = var.certbot_docker
   net                   = "testnet"
   env                   = local.env
 
@@ -75,6 +79,8 @@ module "blc-testnet" {
   opsgenie_key      = var.opsgenie_key
   rpcuser           = var.rpcuser
   rpcpass           = var.rpcpass
+  letsencrypt_email = var.letsencrypt_email
+  public_bucket_url = var.public_bucket_url
 }
 
 module "tor" {

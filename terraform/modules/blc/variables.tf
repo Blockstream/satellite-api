@@ -72,6 +72,14 @@ variable "prom_service_acct" {
   type = string
 }
 
+variable "public_bucket_url" {
+  type = string
+}
+
+variable "letsencrypt_email" {
+  type = string
+}
+
 variable "bitcoin_docker" {
   type = string
 }
@@ -96,3 +104,6 @@ variable "node_exporter_docker" {
   type = string
 }
 
+variable "certbot_docker" {
+  type = string
+}

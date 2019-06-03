@@ -1,4 +1,4 @@
-bootcmd:
+certbot_dockerbootcmd:
   - blkid /dev/disk/by-id/google-data || mkfs.ext4 -L data /dev/disk/by-id/google-data
   - mkdir -p /mnt/disks/data
 mounts:
@@ -28,6 +28,37 @@ write_files:
         announce-addr=${announce_addr}
         bind-addr=0.0.0.0
 
+  - path: /home/bs/default.conf
+    permissions: 0644
+    owner: root
+    content: |
+        log_format withtimebs '$remote_addr - $remote_user [$time_local] '
+                            '"$request" $status $body_bytes_sent '
+                            '"$http_referer" "$http_user_agent" '
+                            'rt="$request_time" uct="$upstream_connect_time" uht="$upstream_header_time" urt="$upstream_response_time"';
+              
+        server {
+            index index.php index.html index.htm index.nginx-debian.html;
+
+            access_log /var/log/nginx/access-def.log withtime;
+            error_log /var/log/nginx/error-def.log;
+
+            server_name _;
+            listen 80;
+            server_tokens off;
+            proxy_set_header X-Forwarded-For 0.0.0.0;
+
+            location /.well-known {
+                auth_basic off;
+                allow all; # Allow all to see content
+                proxy_pass ${public_bucket_url}certs/.well-known;
+            }
+
+            location / {
+                return 301 https://$host$request_uri;
+            }
+        }
+
   - path: /home/bs/bscom.conf
     permissions: 0644
     owner: root
@@ -40,10 +71,15 @@ write_files:
         server {
             access_log /var/log/nginx/access-bs.log withtimebs;
             error_log /var/log/nginx/error-bs.log;
-            root /usr/share/nginx/html/;
 
             server_name ${host};
-            listen 80;
+            listen 443 ssl;
+            ssl_certificate /etc/nginx/certs/live/${host}/fullchain.pem;
+            ssl_certificate_key /etc/nginx/certs/live/${host}/privkey.pem;
+            ssl_prefer_server_ciphers on;
+            ssl_dhparam /etc/nginx/certs/certs/dhparam.pem;
+
+            root /usr/share/nginx/html/;
             server_tokens off;
             proxy_set_header X-Forwarded-For 0.0.0.0;
 
@@ -60,7 +96,7 @@ write_files:
 
                 if ($request_uri ~* "^${url_path}(/api)?/?$")
                 {
-                  return 301 https://$host;
+                  return 301 https://$host$request_uri;
                 }
                 
                 if ($request_method = 'OPTIONS')
@@ -95,10 +131,15 @@ write_files:
         server {
             access_log /var/log/nginx/access.log withtime;
             error_log /var/log/nginx/error.log;
-            root /usr/share/nginx/html/;
 
             server_name ${space_host};
-            listen 80 default_server;
+            listen 443 ssl default_server;
+            ssl_certificate /etc/nginx/certs/live/${space_host}/fullchain.pem;
+            ssl_certificate_key /etc/nginx/certs/live/${space_host}/privkey.pem;
+            ssl_prefer_server_ciphers on;
+            ssl_dhparam /etc/nginx/certs/certs/dhparam.pem;
+
+            root /usr/share/nginx/html/;
             server_tokens off;
             proxy_set_header X-Forwarded-For 0.0.0.0;
             
@@ -115,7 +156,7 @@ write_files:
 
                 if ($request_uri ~* "^${url_path}/?$")
                 {
-                  return 301 https://$host;
+                  return 301 https://$host$request_uri;
                 }
 
                 if ($request_method = 'OPTIONS')
@@ -138,7 +179,6 @@ write_files:
             }
         }
 
-
   - path: /home/bs/index.html
     permissions: 0644
     owner: root
@@ -157,6 +197,127 @@ write_files:
 
         </body>
         </html>
+
+  - path: /etc/systemd/system/nginx.service
+    permissions: 0644
+    owner: root
+    content: |
+        [Unit]
+        Description=Nginx redirect
+        Wants=gcr-online.target
+        After=ionosphere.service
+
+        [Service]
+        Restart=always
+        RestartSec=3
+        Environment=HOME=/home/bs
+        ExecStartPre=/sbin/iptables -A INPUT -m tcp -p tcp --dport 80 -j ACCEPT
+        ExecStart=/usr/bin/docker run \
+            --network=host \
+            --pid=host \
+            --name=nginx \
+            --log-opt max-size=200m \
+            --log-opt max-file=3 \
+            -v /home/bs/default.conf:/etc/nginx/conf.d/default.conf:ro \
+            "nginx:latest"
+        ExecStop=/usr/bin/docker stop nginx
+        ExecStopPost=/usr/bin/docker rm nginx
+        ExecStopPost=/sbin/iptables -D INPUT -m tcp -p tcp --dport 80 -j ACCEPT
+        
+  - path: /etc/systemd/system/nginx-tls.service
+    permissions: 0644
+    owner: root
+    content: |
+        [Unit]
+        Description=Nginx TLS proxy
+        Wants=gcr-online.target
+        After=nginx.service
+
+        [Service]
+        Restart=always
+        RestartSec=3
+        Environment=HOME=/home/bs
+        ExecStartPre=/sbin/iptables -A INPUT -m tcp -p tcp --dport 443 -j ACCEPT
+        ExecStart=/usr/bin/docker run \
+            --network=host \
+            --pid=host \
+            --name=nginx-tls \
+            --log-opt max-size=200m \
+            --log-opt max-file=3 \
+            -v /home/bs/bscom.conf:/etc/nginx/conf.d/bscom.conf:ro \
+            -v /home/bs/space.conf:/etc/nginx/conf.d/space.conf:ro \
+            -v /home/bs/index.html:/usr/share/nginx/html/index.html:ro \
+            -v /home/bs/certs:/etc/nginx/certs:ro \
+            "nginx:latest"
+        ExecStop=/usr/bin/docker stop nginx-tls
+        ExecStopPost=/usr/bin/docker rm nginx-tls
+        ExecStopPost=/sbin/iptables -D INPUT -m tcp -p tcp --dport 443 -j ACCEPT
+
+
+  - path: /etc/systemd/system/cert-downloader.service
+    permissions: 0644
+    owner: root
+    content: |
+        [Unit]
+        Description=Run cert-downloader
+        Wants=gcr-online.target
+        After=nginx-tls.service
+
+        [Service]
+        Type=oneshot
+        RemainAfterExit=true
+        Environment=HOME=/home/bs
+        ExecStartPre=/usr/bin/docker-credential-gcr configure-docker
+        ExecStart=/usr/bin/docker run \
+            --name=cert-downloader \
+            --tmpfs /root \
+            --tmpfs /tmp \
+            --rm \
+            -v /home/bs/certs:/etc/letsencrypt:rw \
+            -e GCS_PUBLIC_BUCKET=${public_bucket} \
+            -e GCS_PRIVATE_BUCKET=${private_bucket} \
+            -e DOMAIN=${space_host} \
+            "${certbot_docker}" download
+
+  - path: /etc/systemd/system/cert-renewer.timer
+    permissions: 0644
+    owner: root
+    content: |
+        [Unit]
+        Description=Run full cert-renewer every 24 hours
+
+        [Timer]
+        OnUnitActiveSec=1d
+        Persistent=true
+
+        [Install]
+        WantedBy=timers.target
+
+  - path: /etc/systemd/system/cert-renewer.service
+    permissions: 0644
+    owner: root
+    content: |
+        [Unit]
+        Description=Run cert-renewer
+        Wants=gcr-online.target
+        After=gcr-online.target
+
+        [Service]
+        Type=oneshot
+        Environment=HOME=/home/bs
+        ExecStartPre=/usr/bin/docker-credential-gcr configure-docker
+        ExecStart=/usr/bin/docker run \
+            --name=cert-renewer \
+            --tmpfs /root \
+            --tmpfs /tmp \
+            --rm \
+            -v /home/bs/certs:/etc/letsencrypt:rw \
+            -e GCS_PUBLIC_BUCKET=${public_bucket} \
+            -e GCS_PRIVATE_BUCKET=${private_bucket} \
+            -e DOMAIN=${space_host} \
+            -e EMAIL=${letsencrypt_email} \
+            "${certbot_docker}" renew
+        ExecStartPost=-/usr/bin/systemctl restart nginx-tls
 
   - path: /home/bs/check_containers.sh
     permissions: 0744
@@ -213,34 +374,6 @@ write_files:
 
         [Install]
         WantedBy=timers.target
-
-  - path: /etc/systemd/system/nginx.service
-    permissions: 0644
-    owner: root
-    content: |
-        [Unit]
-        Description=Nginx proxy
-        Wants=gcr-online.target
-        After=ionosphere.service
-
-        [Service]
-        Restart=always
-        RestartSec=3
-        Environment=HOME=/home/bs
-        ExecStartPre=/sbin/iptables -A INPUT -m tcp -p tcp --dport 80 -j ACCEPT
-        ExecStart=/usr/bin/docker run \
-            --network=host \
-            --pid=host \
-            --name=nginx \
-            --log-opt max-size=200m \
-            --log-opt max-file=3 \
-            -v /home/bs/bscom.conf:/etc/nginx/conf.d/bscom.conf:ro \
-            -v /home/bs/space.conf:/etc/nginx/conf.d/space.conf:ro \
-            -v /home/bs/index.html:/usr/share/nginx/html/index.html:ro \
-            "nginx:latest"
-        ExecStop=/usr/bin/docker stop nginx
-        ExecStopPost=/usr/bin/docker rm nginx
-        ExecStopPost=/sbin/iptables -D INPUT -m tcp -p tcp --dport 80 -j ACCEPT
 
   - path: /etc/systemd/system/node-exporter.service
     permissions: 0644

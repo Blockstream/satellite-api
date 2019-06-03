@@ -1,5 +1,5 @@
 data "google_compute_network" "blc" {
-  name = "default"
+  name    = "default"
   project = var.project
 }
 
@@ -33,6 +33,9 @@ data "template_file" "blc" {
     opsgenie_key          = var.opsgenie_key
     host                  = var.host[0]
     space_host            = var.host[1]
+    public_bucket_url     = "${var.public_bucket_url}-${var.env}"
+    public_bucket         = replace(google_storage_bucket.blc-public[count.index].url, "gs://", "")
+    private_bucket        = replace(google_storage_bucket.blc-private[count.index].url, "gs://", "")
   }
 }
 

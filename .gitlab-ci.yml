@@ -24,6 +24,7 @@ test_build:
     - branches@satellite/ionosphere
   except:
     - master@satellite/ionosphere
+    - cleanup_staging@satellite/ionosphere
   before_script:
     - export CHARGE_ROOT=$CHARGE_ROOT_CI
     - export REDIS_URI=$REDIS_URI_CI
@@ -77,6 +78,8 @@ plan_satapi:
          -var "instance_type=$INSTANCE_TYPE"
          -var "host=$HOST_STAGING"
          -var "ssl_cert=$SSL_CERT_STAGING"
+         -var "public_bucket_url=$PUBLIC_BUCKET_URL"
+         -var "letsencrypt_email"=$LE_EMAIL
          -var "timeout=$TIMEOUT"
          -var "prom_service_acct=$PROM_SA"
          -var "opsgenie_key=$OPSGENIE_KEY"
@@ -134,7 +137,6 @@ deploy_misc:
         -var "satellite_api_lb_staging=$SATELLITE_API_LB_STAGING"
          -input=false -auto-approve)
 
-
 # Tag with staging_v.* to deploy mainnet staging (e.g. staging_v0.1.1)
 deploy_staging:
   stage: deploy
@@ -152,6 +154,8 @@ deploy_staging:
          -var "instance_type=$INSTANCE_TYPE"
          -var "host=$HOST_STAGING"
          -var "ssl_cert=$SSL_CERT_STAGING"
+         -var "public_bucket_url=$PUBLIC_BUCKET_URL"
+         -var "letsencrypt_email"=$LE_EMAIL
          -var "timeout=$TIMEOUT"
          -var "prom_service_acct=$PROM_SA"
          -var "opsgenie_key=$OPSGENIE_KEY"
@@ -176,6 +180,8 @@ deploy_production:
          -var "instance_type=$INSTANCE_TYPE"
          -var "host=$HOST"
          -var "ssl_cert=$SSL_CERT"
+         -var "public_bucket_url=$PUBLIC_BUCKET_URL"
+         -var "letsencrypt_email"=$LE_EMAIL
          -var "timeout=$TIMEOUT"
          -var "prom_service_acct=$PROM_SA"
          -var "opsgenie_key=$OPSGENIE_KEY"
@@ -183,7 +189,7 @@ deploy_production:
          -var "rpcpass=$RPCPASS"
          -input=false -auto-approve)
 
-# Tag with staging_v.* to deploy testnet staging (e.g. testnet_staging_v0.1.1)
+# Tag with testnet_staging_v.* to deploy testnet staging (e.g. testnet_staging_v0.1.1)
 deploy_staging_testnet:
   stage: deploy
   only:
@@ -200,6 +206,8 @@ deploy_staging_testnet:
          -var "instance_type=$INSTANCE_TYPE"
          -var "host=$HOST_STAGING"
          -var "ssl_cert=$SSL_CERT_STAGING"
+         -var "public_bucket_url=$PUBLIC_BUCKET_URL"
+         -var "letsencrypt_email"=$LE_EMAIL
          -var "timeout=$TIMEOUT"
          -var "prom_service_acct=$PROM_SA"
          -var "opsgenie_key=$OPSGENIE_KEY"
@@ -224,6 +232,8 @@ deploy_production_testnet:
          -var "instance_type=$INSTANCE_TYPE"
          -var "host=$HOST"
          -var "ssl_cert=$SSL_CERT"
+         -var "public_bucket_url=$PUBLIC_BUCKET_URL"
+         -var "letsencrypt_email"=$LE_EMAIL
          -var "timeout=$TIMEOUT"
          -var "prom_service_acct=$PROM_SA"
          -var "opsgenie_key=$OPSGENIE_KEY"

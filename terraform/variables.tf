@@ -144,6 +144,16 @@ variable "ionosphere_sse_docker" {
   default = ""
 }
 
+variable "public_bucket_url" {
+  type    = string
+  default = ""
+}
+
+variable "letsencrypt_email" {
+  type    = string
+  default = ""
+}
+
 # Less frequently updated images
 variable "bitcoin_docker" {
   type    = string
@@ -180,3 +190,7 @@ variable "gcloud_docker" {
   default = "google/cloud-sdk@sha256:78e68a98c5d6aa36eca45099bae38a1544a1688fd16b506fb914a29fdf6e4afa"
 }
 
+variable "certbot_docker" {
+  type    = string
+  default = "blockstream/certbot-gcs@sha256:"
+}

@@ -42,6 +42,7 @@ resource "google_compute_instance_template" "blc" {
   machine_type = var.instance_type
   region       = var.region
   count        = var.create_resources
+  project      = var.project
 
   labels = {
     type = "lightning-app"
@@ -90,4 +91,3 @@ resource "google_compute_instance_template" "blc" {
     create_before_destroy = true
   }
 }
-

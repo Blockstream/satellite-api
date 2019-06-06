@@ -54,8 +54,8 @@ variable "create_resources" {
 }
 
 variable "ssl_cert" {
-  type    = list(string)
-  default = ["", ""]
+  type    = string
+  default = ""
 }
 
 variable "rpcuser" {
@@ -69,11 +69,6 @@ variable "rpcpass" {
 }
 
 variable "host" {
-  type    = list(string)
-  default = ["", ""]
-}
-
-variable "space_host" {
   type    = string
   default = ""
 }
@@ -192,5 +187,5 @@ variable "gcloud_docker" {
 
 variable "certbot_docker" {
   type    = string
-  default = "blockstream/certbot-gcs@sha256:"
+  default = "blockstream/certbot-gcs@sha256:516ba43a03f558c73cd3807dc2b31a3ad123205dd53682a5da70396b75b53881"
 }

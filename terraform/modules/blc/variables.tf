@@ -49,14 +49,10 @@ variable "net" {
 }
 
 variable "ssl_cert" {
-  type = list
+  type = string
 }
 
 variable "host" {
-  type = list
-}
-
-variable "space_host" {
   type = string
 }
 

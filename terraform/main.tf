@@ -38,8 +38,7 @@ module "blc-mainnet" {
   zone              = var.zone
   instance_type     = var.instance_type[0]
   host              = var.host
-  space_host        = var.space_host
-  ssl_cert          = [var.ssl_cert]
+  ssl_cert          = var.ssl_cert
   timeout           = var.timeout
   prom_service_acct = var.prom_service_acct
   opsgenie_key      = var.opsgenie_key
@@ -72,8 +71,7 @@ module "blc-testnet" {
   zone              = var.zone
   instance_type     = var.instance_type[0]
   host              = var.host
-  space_host        = var.space_host
-  ssl_cert          = [var.ssl_cert]
+  ssl_cert          = var.ssl_cert
   timeout           = var.timeout
   prom_service_acct = var.prom_service_acct
   opsgenie_key      = var.opsgenie_key

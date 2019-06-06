@@ -26,16 +26,17 @@ data "template_file" "blc" {
     bitcoin_docker        = var.bitcoin_docker
     lightning_docker      = var.lightning_docker
     charge_docker         = var.charge_docker
+    certbot_docker        = var.certbot_docker
     redis_port            = 6379
     ionosphere_docker     = var.ionosphere_docker
     ionosphere_sse_docker = var.ionosphere_sse_docker
     node_exporter_docker  = var.node_exporter_docker
     opsgenie_key          = var.opsgenie_key
-    host                  = var.host[0]
-    space_host            = var.host[1]
+    host                  = var.host
     public_bucket_url     = "${var.public_bucket_url}-${var.env}"
     public_bucket         = replace(google_storage_bucket.blc-public[count.index].url, "gs://", "")
     private_bucket        = replace(google_storage_bucket.blc-private[count.index].url, "gs://", "")
+    letsencrypt_email     = var.letsencrypt_email
   }
 }
 

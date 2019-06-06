@@ -3,6 +3,7 @@ resource "google_storage_bucket" "blc-public" {
   name          = "${var.name}-certbot-${var.env}"
   location      = "US"
   storage_class = "MULTI_REGIONAL"
+  project       = var.project
   count         = var.create_resources
 
   lifecycle {
@@ -31,6 +32,7 @@ resource "google_storage_bucket" "blc-private" {
   name          = "${var.name}-certs-${var.env}"
   location      = "US"
   storage_class = "MULTI_REGIONAL"
+  project       = var.project
   count         = var.create_resources
 
   lifecycle {

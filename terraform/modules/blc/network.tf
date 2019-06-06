@@ -1,8 +1,17 @@
+# External and internal static IPs
 resource "google_compute_address" "blc" {
   name    = "${var.name}-${var.net}-external-ip-${var.env}-${count.index}"
   project = var.project
   region  = var.region
   count   = var.create_resources
+}
+
+resource "google_compute_address" "blc-internal" {
+  name         = "${var.name}-${var.net}-internal-ip-${var.env}-${count.index}"
+  address_type = "INTERNAL"
+  project      = var.project
+  region       = var.region
+  count        = var.create_resources
 }
 
 # Backend service
@@ -12,6 +21,7 @@ resource "google_compute_backend_service" "blc" {
   protocol    = "HTTP"
   port_name   = "http"
   timeout_sec = var.timeout
+  project      = var.project
   count       = var.create_resources
 
   backend {

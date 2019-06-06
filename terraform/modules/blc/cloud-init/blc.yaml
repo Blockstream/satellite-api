@@ -32,7 +32,7 @@ write_files:
     permissions: 0644
     owner: root
     content: |
-        log_format withtimebs '$remote_addr - $remote_user [$time_local] '
+        log_format withtime '$remote_addr - $remote_user [$time_local] '
                             '"$request" $status $body_bytes_sent '
                             '"$http_referer" "$http_user_agent" '
                             'rt="$request_time" uct="$upstream_connect_time" uht="$upstream_header_time" urt="$upstream_response_time"';
@@ -59,66 +59,6 @@ write_files:
             }
         }
 
-  - path: /home/bs/bscom.conf
-    permissions: 0644
-    owner: root
-    content: |
-        log_format withtimebs '$remote_addr - $remote_user [$time_local] '
-                            '"$request" $status $body_bytes_sent '
-                            '"$http_referer" "$http_user_agent" '
-                            'rt="$request_time" uct="$upstream_connect_time" uht="$upstream_header_time" urt="$upstream_response_time"';
-
-        server {
-            access_log /var/log/nginx/access-bs.log withtimebs;
-            error_log /var/log/nginx/error-bs.log;
-
-            server_name ${host};
-            listen 443 ssl;
-            ssl_certificate /etc/nginx/certs/live/${host}/fullchain.pem;
-            ssl_certificate_key /etc/nginx/certs/live/${host}/privkey.pem;
-            ssl_prefer_server_ciphers on;
-            ssl_dhparam /etc/nginx/certs/certs/dhparam.pem;
-
-            root /usr/share/nginx/html/;
-            server_tokens off;
-            proxy_set_header X-Forwarded-For 0.0.0.0;
-
-            # Proxy to Satellite API
-            location = / {
-                rewrite ^ /index.html break;
-            }
-
-            location ${url_path}/api {
-                add_header 'Access-Control-Allow-Origin' '*' always;
-                add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS, DELETE' always;
-                add_header 'Access-Control-Allow-Headers' 'X-Auth-Token,DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range' always;
-                add_header 'X-XSS-Protection' '1; mode=block' always;
-
-                if ($request_uri ~* "^${url_path}(/api)?/?$")
-                {
-                  return 301 https://$host$request_uri;
-                }
-                
-                if ($request_method = 'OPTIONS')
-                {
-                  return 200;
-                }
-
-                proxy_pass http://0.0.0.0:9292/;
-            }
-
-            # Proxy to SSE container
-            location ${url_path}/api/subscribe/ {
-                chunked_transfer_encoding off;
-                proxy_buffering off;
-                proxy_request_buffering off;
-                proxy_cache off;
-                proxy_http_version 1.1;
-
-                proxy_pass http://0.0.0.0:4500/stream?channels=;
-            }
-        }
-
   - path: /home/bs/space.conf
     permissions: 0644
     owner: root
@@ -132,10 +72,10 @@ write_files:
             access_log /var/log/nginx/access.log withtime;
             error_log /var/log/nginx/error.log;
 
-            server_name ${space_host};
+            server_name ${host};
             listen 443 ssl default_server;
-            ssl_certificate /etc/nginx/certs/live/${space_host}/fullchain.pem;
-            ssl_certificate_key /etc/nginx/certs/live/${space_host}/privkey.pem;
+            ssl_certificate /etc/nginx/certs/live/${host}/fullchain.pem;
+            ssl_certificate_key /etc/nginx/certs/live/${host}/privkey.pem;
             ssl_prefer_server_ciphers on;
             ssl_dhparam /etc/nginx/certs/certs/dhparam.pem;
 
@@ -244,7 +184,6 @@ write_files:
             --name=nginx-tls \
             --log-opt max-size=200m \
             --log-opt max-file=3 \
-            -v /home/bs/bscom.conf:/etc/nginx/conf.d/bscom.conf:ro \
             -v /home/bs/space.conf:/etc/nginx/conf.d/space.conf:ro \
             -v /home/bs/index.html:/usr/share/nginx/html/index.html:ro \
             -v /home/bs/certs:/etc/nginx/certs:ro \
@@ -276,7 +215,7 @@ write_files:
             -v /home/bs/certs:/etc/letsencrypt:rw \
             -e GCS_PUBLIC_BUCKET=${public_bucket} \
             -e GCS_PRIVATE_BUCKET=${private_bucket} \
-            -e DOMAIN=${space_host} \
+            -e DOMAIN=${host} \
             "${certbot_docker}" download
 
   - path: /etc/systemd/system/cert-renewer.timer
@@ -314,7 +253,7 @@ write_files:
             -v /home/bs/certs:/etc/letsencrypt:rw \
             -e GCS_PUBLIC_BUCKET=${public_bucket} \
             -e GCS_PRIVATE_BUCKET=${private_bucket} \
-            -e DOMAIN=${space_host} \
+            -e DOMAIN=${host} \
             -e EMAIL=${letsencrypt_email} \
             "${certbot_docker}" renew
         ExecStartPost=-/usr/bin/systemctl restart nginx-tls
@@ -611,7 +550,13 @@ runcmd:
   - systemctl enable charge.service
   - systemctl start nginx.service
   - systemctl enable nginx.service
-  - systemctl enable node-exporter.service
+  - systemctl start cert-renewer.timer
+  - systemctl enable cert-renewer.timer
+  - systemctl start cert-downloader.service
+  - systemctl enable cert-downloader.service
+  - systemctl start nginx-tls.service
+  - systemctl enable nginx-tls.service
   - systemctl start node-exporter.service
+  - systemctl enable node-exporter.service
   - systemctl start check-containers.timer
   - systemctl enable check-containers.timer

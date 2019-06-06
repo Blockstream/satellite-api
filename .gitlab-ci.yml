@@ -79,7 +79,7 @@ plan_satapi:
          -var "host=$HOST_STAGING"
          -var "ssl_cert=$SSL_CERT_STAGING"
          -var "public_bucket_url=$PUBLIC_BUCKET_URL"
-         -var "letsencrypt_email"=$LE_EMAIL
+         -var "letsencrypt_email=$LE_EMAIL"
          -var "timeout=$TIMEOUT"
          -var "prom_service_acct=$PROM_SA"
          -var "opsgenie_key=$OPSGENIE_KEY"
@@ -155,7 +155,7 @@ deploy_staging:
          -var "host=$HOST_STAGING"
          -var "ssl_cert=$SSL_CERT_STAGING"
          -var "public_bucket_url=$PUBLIC_BUCKET_URL"
-         -var "letsencrypt_email"=$LE_EMAIL
+         -var "letsencrypt_email=$LE_EMAIL"
          -var "timeout=$TIMEOUT"
          -var "prom_service_acct=$PROM_SA"
          -var "opsgenie_key=$OPSGENIE_KEY"
@@ -181,7 +181,7 @@ deploy_production:
          -var "host=$HOST"
          -var "ssl_cert=$SSL_CERT"
          -var "public_bucket_url=$PUBLIC_BUCKET_URL"
-         -var "letsencrypt_email"=$LE_EMAIL
+         -var "letsencrypt_email=$LE_EMAIL"
          -var "timeout=$TIMEOUT"
          -var "prom_service_acct=$PROM_SA"
          -var "opsgenie_key=$OPSGENIE_KEY"
@@ -207,7 +207,7 @@ deploy_staging_testnet:
          -var "host=$HOST_STAGING"
          -var "ssl_cert=$SSL_CERT_STAGING"
          -var "public_bucket_url=$PUBLIC_BUCKET_URL"
-         -var "letsencrypt_email"=$LE_EMAIL
+         -var "letsencrypt_email=$LE_EMAIL"
          -var "timeout=$TIMEOUT"
          -var "prom_service_acct=$PROM_SA"
          -var "opsgenie_key=$OPSGENIE_KEY"
@@ -233,7 +233,7 @@ deploy_production_testnet:
          -var "host=$HOST"
          -var "ssl_cert=$SSL_CERT"
          -var "public_bucket_url=$PUBLIC_BUCKET_URL"
-         -var "letsencrypt_email"=$LE_EMAIL
+         -var "letsencrypt_email=$LE_EMAIL"
          -var "timeout=$TIMEOUT"
          -var "prom_service_acct=$PROM_SA"
          -var "opsgenie_key=$OPSGENIE_KEY"

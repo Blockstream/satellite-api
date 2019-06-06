@@ -2,6 +2,7 @@
 resource "google_compute_instance_group_manager" "blc" {
   name     = "${var.name}-ig-${var.net}-${var.env}"
   count    = var.create_resources
+  project  = var.project
   provider = google-beta
 
   base_instance_name = "${var.name}-ig-${var.net}-${var.env}"
@@ -70,7 +71,8 @@ resource "google_compute_instance_template" "blc" {
   }
 
   network_interface {
-    network = data.google_compute_network.blc.self_link
+    network    = data.google_compute_network.blc.self_link
+    network_ip = google_compute_address.blc-internal[0].address
 
     access_config {
       nat_ip = google_compute_address.blc[0].address
@@ -84,7 +86,7 @@ resource "google_compute_instance_template" "blc" {
 
   service_account {
     email  = google_service_account.blc[0].email
-    scopes = ["compute-ro", "storage-ro"]
+    scopes = ["compute-ro", "storage-rw"]
   }
 
   lifecycle {

@@ -5,7 +5,7 @@ resource "google_compute_firewall" "blc" {
 
   allow {
     protocol = "tcp"
-    ports    = ["18333", "8333", "9735", "80"]
+    ports    = ["18333", "8333", "9735", "80", "443"]
   }
 
   target_service_accounts = [

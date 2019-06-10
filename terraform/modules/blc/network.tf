@@ -21,7 +21,7 @@ resource "google_compute_backend_service" "blc" {
   protocol    = "HTTP"
   port_name   = "http"
   timeout_sec = var.timeout
-  project      = var.project
+  project     = var.project
   count       = var.create_resources
 
   backend {

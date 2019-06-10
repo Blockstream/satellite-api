@@ -12,19 +12,9 @@ resource "google_storage_bucket" "blc-public" {
 }
 
 resource "google_storage_bucket_acl" "blc-public-acl" {
-  bucket         = replace(google_storage_bucket.blc-public[count.index].url, "gs://", "")
+  bucket         = google_storage_bucket.blc-public[count.index].name
   predefined_acl = "publicread"
   count          = var.create_resources
-}
-
-resource "google_storage_bucket_iam_binding" "blc-public-binding" {
-  bucket = replace(google_storage_bucket.blc-public[count.index].url, "gs://", "")
-  role   = "roles/storage.admin"
-  count  = var.create_resources
-
-  members = [
-    "serviceAccount:${google_service_account.blc[count.index].email}",
-  ]
 }
 
 # Private bucket (server certs)
@@ -40,12 +30,8 @@ resource "google_storage_bucket" "blc-private" {
   }
 }
 
-resource "google_storage_bucket_iam_binding" "blc-private-binding" {
-  bucket = replace(google_storage_bucket.blc-private[count.index].url, "gs://", "")
-  role   = "roles/storage.admin"
-  count  = var.create_resources
-
-  members = [
-    "serviceAccount:${google_service_account.blc[count.index].email}",
-  ]
+resource "google_storage_bucket_acl" "blc-private-acl" {
+  bucket         = google_storage_bucket.blc-private[count.index].name
+  predefined_acl = "projectprivate"
+  count          = var.create_resources
 }

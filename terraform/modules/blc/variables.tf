@@ -48,7 +48,7 @@ variable "net" {
   type = string
 }
 
-variable "ssl_cert" {
+variable "target_pool" {
   type = string
 }
 

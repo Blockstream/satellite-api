@@ -1,9 +1,10 @@
 # Instance group
 resource "google_compute_instance_group_manager" "blc" {
-  name     = "${var.name}-ig-${var.net}-${var.env}"
-  count    = var.create_resources
-  project  = var.project
-  provider = google-beta
+  name         = "${var.name}-ig-${var.net}-${var.env}"
+  target_pools = [var.target_pool]
+  project      = var.project
+  provider     = google-beta
+  count        = var.create_resources
 
   base_instance_name = "${var.name}-ig-${var.net}-${var.env}"
   zone               = var.zone

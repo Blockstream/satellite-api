@@ -30,6 +30,7 @@ module "blc-mainnet" {
   certbot_docker        = var.certbot_docker
   net                   = "mainnet"
   env                   = local.env
+  target_pool           = google_compute_target_pool.blc-pool[0].self_link
 
   create_resources = local.create_mainnet
 
@@ -38,7 +39,6 @@ module "blc-mainnet" {
   zone              = var.zone
   instance_type     = var.instance_type[0]
   host              = var.host
-  ssl_cert          = var.ssl_cert
   timeout           = var.timeout
   prom_service_acct = var.prom_service_acct
   opsgenie_key      = var.opsgenie_key
@@ -63,6 +63,7 @@ module "blc-testnet" {
   certbot_docker        = var.certbot_docker
   net                   = "testnet"
   env                   = local.env
+  target_pool           = google_compute_target_pool.blc-pool[0].self_link
 
   create_resources = local.create_testnet
 
@@ -71,7 +72,6 @@ module "blc-testnet" {
   zone              = var.zone
   instance_type     = var.instance_type[0]
   host              = var.host
-  ssl_cert          = var.ssl_cert
   timeout           = var.timeout
   prom_service_acct = var.prom_service_acct
   opsgenie_key      = var.opsgenie_key

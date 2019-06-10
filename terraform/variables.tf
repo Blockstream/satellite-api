@@ -53,7 +53,7 @@ variable "create_resources" {
   default = ""
 }
 
-variable "ssl_cert" {
+variable "target_pool" {
   type    = string
   default = ""
 }

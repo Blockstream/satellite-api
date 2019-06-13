@@ -80,4 +80,3 @@ resource "google_compute_instance_template" "tor" {
     create_before_destroy = true
   }
 }
-

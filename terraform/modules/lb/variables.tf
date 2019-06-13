@@ -3,20 +3,7 @@ variable "project" {
   default = "satellite-api"
 }
 
-variable "boot_image" {
-  type    = string
-  default = "cos-cloud/cos-stable"
-}
-
 variable "create_resources" {
-  type = string
-}
-
-variable "rpcuser" {
-  type = string
-}
-
-variable "rpcpass" {
   type = string
 }
 
@@ -44,7 +31,7 @@ variable "instance_type" {
   type = string
 }
 
-variable "net" {
+variable "host" {
   type = string
 }
 
@@ -52,7 +39,19 @@ variable "timeout" {
   type = string
 }
 
-variable "opsgenie_key" {
+variable "public_bucket_url" {
+  type = string
+}
+
+variable "letsencrypt_email" {
+  type = string
+}
+
+variable "internal_ip_mainnet" {
+  type = string
+}
+
+variable "internal_ip_testnet" {
   type = string
 }
 
@@ -60,30 +59,14 @@ variable "prom_service_acct" {
   type = string
 }
 
-variable "lb_svc_acct" {
-  type = string
-}
-
-variable "bitcoin_docker" {
-  type = string
-}
-
-variable "charge_docker" {
-  type = string
-}
-
-variable "lightning_docker" {
-  type = string
-}
-
-variable "ionosphere_docker" {
-  type = string
-}
-
-variable "ionosphere_sse_docker" {
+variable "target_pool" {
   type = string
 }
 
 variable "node_exporter_docker" {
+  type = string
+}
+
+variable "certbot_docker" {
   type = string
 }

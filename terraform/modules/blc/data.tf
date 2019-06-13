@@ -17,7 +17,6 @@ data "template_file" "blc" {
     rpcuser               = var.rpcuser
     rpcpass               = var.rpcpass
     net                   = var.net
-    url_path              = var.net == "testnet" ? "/testnet" : ""
     bitcoin_cmd           = "bitcoind ${var.net == "testnet" ? "-testnet" : ""} -printtoconsole"
     lightning_cmd         = "lightningd ${var.net == "testnet" ? "--testnet" : "--mainnet"} --conf=/root/.lightning/lightning.conf --plugin-dir=/usr/local/bin/plugins"
     charge_cmd            = "charged -d /data/charge.db -l /root/.lightning"
@@ -26,17 +25,11 @@ data "template_file" "blc" {
     bitcoin_docker        = var.bitcoin_docker
     lightning_docker      = var.lightning_docker
     charge_docker         = var.charge_docker
-    certbot_docker        = var.certbot_docker
     redis_port            = 6379
     ionosphere_docker     = var.ionosphere_docker
     ionosphere_sse_docker = var.ionosphere_sse_docker
     node_exporter_docker  = var.node_exporter_docker
     opsgenie_key          = var.opsgenie_key
-    host                  = var.host
-    public_bucket_url     = "${var.public_bucket_url}-${var.env}"
-    public_bucket         = replace(google_storage_bucket.blc-public[count.index].url, "gs://", "")
-    private_bucket        = replace(google_storage_bucket.blc-private[count.index].url, "gs://", "")
-    letsencrypt_email     = var.letsencrypt_email
   }
 }
 
@@ -50,4 +43,3 @@ data "template_cloudinit_config" "blc" {
     content      = data.template_file.blc[0].rendered
   }
 }
-

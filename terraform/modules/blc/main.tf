@@ -1,10 +1,22 @@
-# Instance group
+resource "google_compute_disk" "blc" {
+  name  = "${var.name}-data-${var.net}-${var.env}"
+  type  = "pd-standard"
+  image = data.google_compute_image.blc[0].self_link
+  zone  = var.zone
+  count = var.create_resources
+
+  lifecycle {
+    prevent_destroy = true
+    ignore_changes  = [image]
+  }
+}
+
+# Instance group & template
 resource "google_compute_instance_group_manager" "blc" {
-  name         = "${var.name}-ig-${var.net}-${var.env}"
-  target_pools = [var.target_pool]
-  project      = var.project
-  provider     = google-beta
-  count        = var.create_resources
+  name     = "${var.name}-ig-${var.net}-${var.env}"
+  project  = var.project
+  provider = google-beta
+  count    = var.create_resources
 
   base_instance_name = "${var.name}-ig-${var.net}-${var.env}"
   zone               = var.zone
@@ -24,20 +36,6 @@ resource "google_compute_instance_group_manager" "blc" {
   }
 }
 
-resource "google_compute_disk" "blc" {
-  name  = "${var.name}-data-${var.net}-${var.env}"
-  type  = "pd-standard"
-  image = data.google_compute_image.blc[0].self_link
-  zone  = var.zone
-  count = var.create_resources
-
-  lifecycle {
-    prevent_destroy = true
-    ignore_changes  = [image]
-  }
-}
-
-# Instance template
 resource "google_compute_instance_template" "blc" {
   name_prefix  = "${var.name}-${var.net}-${var.env}-tmpl-"
   description  = "This template is used to create ${var.name} ${var.net} ${var.env} instances."

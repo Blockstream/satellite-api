@@ -1,22 +1,19 @@
 data "terraform_remote_state" "blc-mainnet" {
-  backend = "gcs"
+  backend   = "gcs"
+  workspace = local.env
 
   config = {
-    bucket = "tf-state-satellite-api"
-    prefix = "terraform/state"
+    bucket = "terraform-bs-source"
+    prefix = "satellite-api"
   }
-
-  workspace = "prod"
 }
 
 data "terraform_remote_state" "blc-testnet" {
-  backend = "gcs"
+  backend   = "gcs"
+  workspace = "testnet-${local.env}"
 
   config = {
-    bucket = "tf-state-satellite-api"
-    prefix = "terraform/state"
+    bucket = "terraform-bs-source"
+    prefix = "satellite-api"
   }
-
-  workspace = "testnet-prod"
 }
-

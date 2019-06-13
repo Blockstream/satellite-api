@@ -9,7 +9,7 @@ resource "google_compute_address" "lb" {
 # Forwarding rules
 resource "google_compute_forwarding_rule" "rule-https" {
   name        = "satellite-api-https-forwarding-rule-${local.env}"
-  target      = google_compute_target_pool.blc-pool[0].self_link
+  target      = google_compute_target_pool.lb-pool[0].self_link
   port_range  = "443"
   ip_protocol = "TCP"
   ip_address  = google_compute_address.lb[0].address
@@ -20,7 +20,7 @@ resource "google_compute_forwarding_rule" "rule-https" {
 
 resource "google_compute_forwarding_rule" "rule-http" {
   name        = "satellite-api-http-forwarding-rule-${local.env}"
-  target      = google_compute_target_pool.blc-pool[0].self_link
+  target      = google_compute_target_pool.lb-pool[0].self_link
   port_range  = "80"
   ip_protocol = "TCP"
   ip_address  = google_compute_address.lb[0].address
@@ -29,19 +29,19 @@ resource "google_compute_forwarding_rule" "rule-http" {
   count       = local.create_mainnet
 }
 
-resource "google_compute_target_pool" "blc-pool" {
-  name    = "satellite-api-target-pool-${local.env}"
+resource "google_compute_target_pool" "lb-pool" {
+  name    = "satellite-api-lb-target-pool-${local.env}"
   region  = var.region
   project = var.project
   count   = local.create_mainnet
 
   health_checks = [
-    google_compute_http_health_check.blc-health[0].self_link
+    google_compute_http_health_check.lb-health[0].self_link
   ]
 }
 
-resource "google_compute_http_health_check" "blc-health" {
-  name    = "satellite-api-http-health-${local.env}"
+resource "google_compute_http_health_check" "lb-health" {
+  name    = "satellite-api-lb-http-health-${local.env}"
   project = var.project
   count   = local.create_mainnet
 

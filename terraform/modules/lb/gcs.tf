@@ -1,5 +1,5 @@
 # Public bucket (certbot acme-challenge)
-resource "google_storage_bucket" "blc-public" {
+resource "google_storage_bucket" "satapi-lb-public" {
   name          = "${var.name}-certbot-${var.env}"
   location      = "US"
   storage_class = "MULTI_REGIONAL"
@@ -11,14 +11,14 @@ resource "google_storage_bucket" "blc-public" {
   }
 }
 
-resource "google_storage_bucket_acl" "blc-public-acl" {
-  bucket         = google_storage_bucket.blc-public[count.index].name
+resource "google_storage_bucket_acl" "satapi-lb-public-acl" {
+  bucket         = google_storage_bucket.satapi-lb-public[count.index].name
   predefined_acl = "publicread"
   count          = var.create_resources
 }
 
 # Private bucket (server certs)
-resource "google_storage_bucket" "blc-private" {
+resource "google_storage_bucket" "satapi-lb-private" {
   name          = "${var.name}-certs-${var.env}"
   location      = "US"
   storage_class = "MULTI_REGIONAL"
@@ -30,8 +30,8 @@ resource "google_storage_bucket" "blc-private" {
   }
 }
 
-resource "google_storage_bucket_acl" "blc-private-acl" {
-  bucket         = google_storage_bucket.blc-private[count.index].name
+resource "google_storage_bucket_acl" "satapi-lb-private-acl" {
+  bucket         = google_storage_bucket.satapi-lb-private[count.index].name
   predefined_acl = "projectprivate"
   count          = var.create_resources
 }

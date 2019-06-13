@@ -2,7 +2,7 @@ variables:
   GIT_SUBMODULE_STRATEGY: none
   CI_DISPOSABLE_ENVIRONMENT: "true"
 
-image: blockstream/gcloud-docker@sha256:2ab8222c44502282a614cdda4a9f1434d6f91e93888a39c56b82ebc52f6bd3b1
+image: blockstream/gcloud-docker@sha256:e12152fa1daade1a1e3ff1c61ccc434fd99d7ad3627508fd2aa59f0f6b79910b
 stages:
   - build
   - plan
@@ -77,13 +77,14 @@ plan_satapi:
          -var "zone=$ZONE"
          -var "instance_type=$INSTANCE_TYPE"
          -var "host=$HOST_STAGING"
-         -var "public_bucket_url=$PUBLIC_BUCKET_URL"
-         -var "letsencrypt_email=$LE_EMAIL"
          -var "timeout=$TIMEOUT"
          -var "prom_service_acct=$PROM_SA"
          -var "opsgenie_key=$OPSGENIE_KEY"
          -var "rpcuser=$RPCUSER"
          -var "rpcpass=$RPCPASS"
+         -var "public_bucket_url=$PUBLIC_BUCKET_URL"
+         -var "letsencrypt_email=$LE_EMAIL"
+         -var "lb_svc_acct=$LB_SA_STAGING"
          -input=false)
          
 # This plan gets triggered only for miscellaneous branches/tags (i.e. tor, prometheus, etc), so make sure the branch/tag name starts with misc_
@@ -134,7 +135,7 @@ deploy_misc:
         -var "satellite_lb=$SATELLITE_LB"
         -var "satellite_api_lb=$SATELLITE_API_LB"
         -var "satellite_api_lb_staging=$SATELLITE_API_LB_STAGING"
-         -input=false -auto-approve)
+        -input=false -auto-approve)
 
 # Tag with staging_v.* to deploy mainnet staging (e.g. staging_v0.1.1)
 deploy_staging:
@@ -152,13 +153,13 @@ deploy_staging:
          -var "zone=$ZONE"
          -var "instance_type=$INSTANCE_TYPE"
          -var "host=$HOST_STAGING"
-         -var "public_bucket_url=$PUBLIC_BUCKET_URL"
-         -var "letsencrypt_email=$LE_EMAIL"
          -var "timeout=$TIMEOUT"
          -var "prom_service_acct=$PROM_SA"
          -var "opsgenie_key=$OPSGENIE_KEY"
          -var "rpcuser=$RPCUSER"
          -var "rpcpass=$RPCPASS"
+         -var "public_bucket_url=$PUBLIC_BUCKET_URL"
+         -var "letsencrypt_email=$LE_EMAIL"
          -input=false -auto-approve)
 
 # Tag with production_v.* to deploy mainnet production (e.g. prod_v0.1.1)
@@ -177,13 +178,13 @@ deploy_production:
          -var "zone=$ZONE"
          -var "instance_type=$INSTANCE_TYPE"
          -var "host=$HOST"
-         -var "public_bucket_url=$PUBLIC_BUCKET_URL"
-         -var "letsencrypt_email=$LE_EMAIL"
          -var "timeout=$TIMEOUT"
          -var "prom_service_acct=$PROM_SA"
          -var "opsgenie_key=$OPSGENIE_KEY"
          -var "rpcuser=$RPCUSER"
          -var "rpcpass=$RPCPASS"
+         -var "public_bucket_url=$PUBLIC_BUCKET_URL"
+         -var "letsencrypt_email=$LE_EMAIL"
          -input=false -auto-approve)
 
 # Tag with testnet_staging_v.* to deploy testnet staging (e.g. testnet_staging_v0.1.1)
@@ -202,13 +203,14 @@ deploy_staging_testnet:
          -var "zone=$ZONE"
          -var "instance_type=$INSTANCE_TYPE"
          -var "host=$HOST_STAGING"
-         -var "public_bucket_url=$PUBLIC_BUCKET_URL"
-         -var "letsencrypt_email=$LE_EMAIL"
          -var "timeout=$TIMEOUT"
          -var "prom_service_acct=$PROM_SA"
          -var "opsgenie_key=$OPSGENIE_KEY"
          -var "rpcuser=$RPCUSER"
          -var "rpcpass=$RPCPASS"
+         -var "public_bucket_url=$PUBLIC_BUCKET_URL"
+         -var "letsencrypt_email=$LE_EMAIL"
+         -var "lb_svc_acct=$LB_SA_STAGING"
          -input=false -auto-approve)
 
 # Tag with production_v.* to deploy testnet production (e.g. testnet_prod_v0.1.1)
@@ -226,22 +228,20 @@ deploy_production_testnet:
          -var "region=$REGION"
          -var "zone=$ZONE"
          -var "instance_type=$INSTANCE_TYPE"
-         -var "host=$HOST"
-         -var "public_bucket_url=$PUBLIC_BUCKET_URL"
-         -var "letsencrypt_email=$LE_EMAIL"
+         -var "host=$HOST_STAGING"
          -var "timeout=$TIMEOUT"
          -var "prom_service_acct=$PROM_SA"
          -var "opsgenie_key=$OPSGENIE_KEY"
          -var "rpcuser=$RPCUSER"
          -var "rpcpass=$RPCPASS"
+         -var "public_bucket_url=$PUBLIC_BUCKET_URL"
+         -var "letsencrypt_email=$LE_EMAIL"
+         -var "lb_svc_acct=$LB_SA"
          -input=false -auto-approve)
 
 # Pushing to this branch destroys the staging infrastructure
 cleanup_staging:
   stage: deploy
-  image:
-    name: hashicorp/terraform:light
-    entrypoint: [""]
   only:
     - cleanup_staging@satellite/ionosphere
   script:
@@ -249,6 +249,7 @@ cleanup_staging:
        terraform workspace select staging &&
        terraform destroy
           -target module.blc.google_compute_instance_group_manager.blc
+          -target module.lb.google_compute_region_instance_group_manager.satapi-lb
           -auto-approve)
     - (cd terraform && terraform init -input=false &&
       terraform workspace select testnet-staging &&

@@ -27,10 +27,9 @@ module "blc-mainnet" {
   ionosphere_docker     = var.ionosphere_docker
   ionosphere_sse_docker = var.ionosphere_sse_docker
   node_exporter_docker  = var.node_exporter_docker
-  certbot_docker        = var.certbot_docker
   net                   = "mainnet"
   env                   = local.env
-  target_pool           = google_compute_target_pool.blc-pool[0].self_link
+  lb_svc_acct           = module.lb.lb_svc_acct
 
   create_resources = local.create_mainnet
 
@@ -38,14 +37,11 @@ module "blc-mainnet" {
   region            = var.region
   zone              = var.zone
   instance_type     = var.instance_type[0]
-  host              = var.host
   timeout           = var.timeout
   prom_service_acct = var.prom_service_acct
   opsgenie_key      = var.opsgenie_key
   rpcuser           = var.rpcuser
   rpcpass           = var.rpcpass
-  letsencrypt_email = var.letsencrypt_email
-  public_bucket_url = var.public_bucket_url
 }
 
 module "blc-testnet" {
@@ -60,10 +56,8 @@ module "blc-testnet" {
   ionosphere_docker     = var.ionosphere_docker
   ionosphere_sse_docker = var.ionosphere_sse_docker
   node_exporter_docker  = var.node_exporter_docker
-  certbot_docker        = var.certbot_docker
   net                   = "testnet"
   env                   = local.env
-  target_pool           = google_compute_target_pool.blc-pool[0].self_link
 
   create_resources = local.create_testnet
 
@@ -71,12 +65,36 @@ module "blc-testnet" {
   region            = var.region
   zone              = var.zone
   instance_type     = var.instance_type[0]
-  host              = var.host
   timeout           = var.timeout
   prom_service_acct = var.prom_service_acct
   opsgenie_key      = var.opsgenie_key
   rpcuser           = var.rpcuser
   rpcpass           = var.rpcpass
+  lb_svc_acct       = var.lb_svc_acct
+}
+
+module "lb" {
+  source = "./modules/lb"
+
+  project              = var.project
+  name                 = "satellite-api-lb"
+  network              = "default"
+  certbot_docker       = var.certbot_docker
+  node_exporter_docker = var.node_exporter_docker
+  env                  = local.env
+  internal_ip_mainnet  = module.blc-mainnet.internal_ip
+  internal_ip_testnet  = data.terraform_remote_state.blc-testnet.outputs.blc_internal_ip_testnet
+  target_pool          = google_compute_target_pool.lb-pool[0].self_link
+
+  create_resources = local.create_mainnet
+
+  # CI vars
+  region            = var.region
+  zone              = var.zone
+  instance_type     = var.instance_type[1]
+  host              = var.host
+  timeout           = var.timeout
+  prom_service_acct = var.prom_service_acct
   letsencrypt_email = var.letsencrypt_email
   public_bucket_url = var.public_bucket_url
 }

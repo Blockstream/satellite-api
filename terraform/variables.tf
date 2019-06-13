@@ -95,10 +95,15 @@ variable "instance_type" {
 
 variable "timeout" {
   type    = string
-  default = 15
+  default = 7200
 }
 
 variable "prom_service_acct" {
+  type    = string
+  default = ""
+}
+
+variable "lb_svc_acct" {
   type    = string
   default = ""
 }
@@ -128,23 +133,33 @@ variable "satellite_api_lb_staging" {
   default = ""
 }
 
+variable "internal_ip_mainnet" {
+  type    = string
+  default = ""
+}
+
+variable "internal_ip_testnet" {
+  type    = string
+  default = ""
+}
+
 # Overwritten by CI
-variable "ionosphere_docker" {
-  type    = string
-  default = ""
-}
-
-variable "ionosphere_sse_docker" {
-  type    = string
-  default = ""
-}
-
 variable "public_bucket_url" {
   type    = string
   default = ""
 }
 
 variable "letsencrypt_email" {
+  type    = string
+  default = ""
+}
+
+variable "ionosphere_docker" {
+  type    = string
+  default = ""
+}
+
+variable "ionosphere_sse_docker" {
   type    = string
   default = ""
 }

@@ -40,14 +40,14 @@ write_files:
         RUNNING_CONT="$$(docker ps --format '{{.Names}}' | tr '\n' ', ' | sed -e 's/,$//g')"
 
         # If less than 10 are running, send alert to opsgenie
-        if [ $${NUM_CONT} != '10' ]
+        if [ $${NUM_CONT} != '9' ]
         then
                curl -s -X POST https://api.opsgenie.com/v2/alerts \
                   -H "Content-Type: application/json" \
                   -H "Authorization: GenieKey ${opsgenie_key}" \
                   -d \
               '{
-                  "message": "Satellite API instance does not have all 10 containers running",
+                  "message": "Satellite API instance does not have all 9 containers running",
                   "alias": "satapi-missing-containers",
                   "description":"Currently running '$${NUM_CONT}'/10: '$${RUNNING_CONT}'",
                   "tags": ["SatAPI","Critical"],
@@ -207,7 +207,7 @@ write_files:
         Environment=HOME=/home/bs
         ExecStartPre=/usr/bin/docker pull ${ionosphere_docker}
         ExecStartPre=/sbin/iptables -A INPUT -p tcp -s 10.138.0.0/16 --dport 9292 -j ACCEPT
-        ExecStopPost=/sbin/iptables -A INPUT -p tcp -s 10.138.0.0/16 --dport 4500 -j ACCEPT
+        ExecStartPre=/sbin/iptables -A INPUT -p tcp -s 10.138.0.0/16 --dport 4500 -j ACCEPT
         ExecStartPre=/usr/bin/docker run \
             --user root \
             -v /mnt/disks/data/ionosphere:/data \

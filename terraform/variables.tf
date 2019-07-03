@@ -167,7 +167,7 @@ variable "ionosphere_sse_docker" {
 # Less frequently updated images
 variable "bitcoin_docker" {
   type    = string
-  default = "blockstream/bitcoind@sha256:81613885baa6028e2981964f953c29ec8255b16eb5f2ecdf8b88375fdd2e4fe8"
+  default = "blockstream/bitcoind@sha256:70f5ed2674975cf353b3ff07e85e23bb6e3dd6082dc3de91ce5fd06b6f16395a"
 }
 
 variable "lightning_docker" {

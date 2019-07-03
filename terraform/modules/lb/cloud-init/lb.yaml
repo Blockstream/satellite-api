@@ -79,7 +79,7 @@ write_files:
                 if ($ssl_client_verify != SUCCESS) {
                   return 403;
                 }
-                proxy_pass http://${mainnet_ip}:9292/;
+                proxy_pass http://${mainnet_ip}:9292/order/tx/;
             }
 
             location /order/rx/ {
@@ -90,7 +90,7 @@ write_files:
                 if ($ssl_client_verify != SUCCESS) {
                   return 403;
                 }
-                proxy_pass http://${mainnet_ip}:9292/;
+                proxy_pass http://${mainnet_ip}:9292/order/rx/;
             }
             
             # Proxy to mainnet Satellite API

@@ -96,7 +96,7 @@ get '/orders/pending' do
 end
 
 get '/message/:tx_seq_num' do
-  (order = Order.find_by(tx_seq_num: params[:tx_seq_num], status: [:sent, :transmitting])) || sequence_number_not_found_error
+  (order = Order.find_by(tx_seq_num: params[:tx_seq_num], status: [:sent, :transmitting, :received])) || sequence_number_not_found_error
   send_file order.message_path, :disposition => 'attachment'
 end
 

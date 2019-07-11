@@ -36,13 +36,12 @@ loop do
     sleep 1
     
     # look for an elligble order to transmit and, if one is found, begin transmitting it
-    Order.transaction do
-      sendable_order = Order.where(status: :paid).order(bid_per_byte: :desc).first
-      if sendable_order
-        logger.info "transmission start #{sendable_order.uuid}"
-        sendable_order.transmit!
-      end
+    sendable_order = Order.where(status: :paid).order(bid_per_byte: :desc).first
+    if sendable_order
+      logger.info "transmission start #{sendable_order.uuid}"
+      sendable_order.transmit!
     end
+    
   end  
   
   if TRANSMIT_RATE

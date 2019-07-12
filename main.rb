@@ -63,7 +63,7 @@ end
 # params: 
 #   before - return the previous PAGE_SIZE orders sent before the given time (time should be sent as in ISO 8601 format and defaults to now)
 # returns:
-#   array of JSON orders sorted in reverse chronological order
+#   JSON array of sent and received orders sorted in reverse chronological order
 get '/orders/sent' do
   param :before, String, required: false, default: lambda { Time.now.utc.iso8601 }
   begin
@@ -71,7 +71,7 @@ get '/orders/sent' do
   rescue
     invalid_date_error
   end
-  Order.where(status: :sent).where("created_at < ?", before)
+  Order.where(status: [:sent, :received]).where("created_at < ?", before)
        .select(Order::PUBLIC_FIELDS)
        .order(ended_transmission_at: :desc)
        .limit(PAGE_SIZE).to_json(:only => Order::PUBLIC_FIELDS)

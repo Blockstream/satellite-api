@@ -58,7 +58,7 @@ resource "google_compute_url_map" "tor-proxy" {
   }
 
   test {
-    service = data.terraform_remote_state.blc-mainnet.outputs.blc_backend_service_mainnet
+    service = data.terraform_remote_state.blc-mainnet.outputs.lb_backend_service
     host    = var.onion_host
     path    = "/queue.html"
   }

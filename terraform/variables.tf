@@ -25,7 +25,7 @@ locals {
       create_misc    = 0
     }
     "misc" = {
-      env            = ""
+      env            = "prod"
       create_mainnet = 0
       create_testnet = 0
       create_misc    = 1

@@ -85,6 +85,7 @@ module "lb" {
   internal_ip_mainnet  = module.blc-mainnet.internal_ip
   internal_ip_testnet  = data.terraform_remote_state.blc-testnet.outputs.blc_internal_ip_testnet
   target_pool          = google_compute_target_pool.lb-pool[0].self_link
+  health_check         = google_compute_http_health_check.lb-health[0].self_link
 
   create_resources = local.create_mainnet
 

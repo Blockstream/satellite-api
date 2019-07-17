@@ -13,8 +13,8 @@ write_files:
                             'rt="$request_time" uct="$upstream_connect_time" uht="$upstream_header_time" urt="$upstream_response_time"';
             
         server {
-            access_log /var/log/nginx/access-80.log withtime;
-            error_log /var/log/nginx/error-80.log;
+            access_log /var/log/nginx/access.log withtime;
+            error_log /var/log/nginx/error.log;
             root /usr/share/nginx/html/;
 
             server_name ${host};
@@ -22,10 +22,25 @@ write_files:
             server_tokens off;
             proxy_set_header X-Forwarded-For 0.0.0.0;
 
-            location / {
-                return 301 https://$host$request_uri;
+            location = / {
+                rewrite ^ /index.html break;
             }
 
+            location = /testnet {
+                rewrite ^ /index.html break;
+            }
+
+            location / {
+                allow 130.211.0.0/22;
+                deny all;
+                proxy_pass http://${mainnet_ip}:9292/;
+            }
+
+            location /testnet {
+                allow 130.211.0.0/22;
+                deny all;
+                proxy_pass http://${testnet_ip}:9292/;
+            }
             location /.well-known {
                 auth_basic off;
                 allow all; # Allow all to see content

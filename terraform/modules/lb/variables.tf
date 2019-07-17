@@ -55,6 +55,10 @@ variable "internal_ip_testnet" {
   type = string
 }
 
+variable "health_check" {
+  type = string
+}
+
 variable "prom_service_acct" {
   type = string
 }

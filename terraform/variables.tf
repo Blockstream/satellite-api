@@ -143,6 +143,11 @@ variable "internal_ip_testnet" {
   default = ""
 }
 
+variable "health_check" {
+  type    = string
+  default = ""
+}
+
 # Overwritten by CI
 variable "public_bucket_url" {
   type    = string
@@ -182,7 +187,7 @@ variable "charge_docker" {
 
 variable "tor_docker" {
   type    = string
-  default = "blockstream/tor@sha256:f4d1373cde79fd79b467d2d6da88e37b0da137924bc10ae2d51a83c686c2c125"
+  default = "blockstream/tor@sha256:46594b0a84f7503de70078652e7bd94f6152b7976d11779ad9f143f02508284c"
 }
 
 variable "node_exporter_docker" {

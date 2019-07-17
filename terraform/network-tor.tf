@@ -49,16 +49,11 @@ resource "google_compute_url_map" "tor-proxy" {
 
   path_matcher {
     name            = "allpaths"
-    default_service = data.terraform_remote_state.blc-mainnet.outputs.blc_backend_service_mainnet
+    default_service = data.terraform_remote_state.blc-mainnet.outputs.lb_backend_service
 
     path_rule {
       paths   = ["/*"]
-      service = data.terraform_remote_state.blc-mainnet.outputs.blc_backend_service_mainnet
-    }
-
-    path_rule {
-      paths   = ["/testnet", "/testnet/*"]
-      service = data.terraform_remote_state.blc-testnet.outputs.blc_backend_service_testnet
+      service = data.terraform_remote_state.blc-mainnet.outputs.lb_backend_service
     }
   }
 

@@ -5,6 +5,7 @@ data "google_compute_network" "default" {
 
 data "template_file" "tor" {
   template = file("${path.module}/cloud-init/tor.yaml")
+  count    = var.create_resources
 
   vars = {
     tor_lb               = var.tor_lb

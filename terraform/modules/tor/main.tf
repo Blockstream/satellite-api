@@ -2,8 +2,8 @@ resource "google_compute_health_check" "tor" {
   name               = "${var.name}-health-check"
   timeout_sec        = 5
   check_interval_sec = 10
-
-  count = var.create_resources
+  project            = var.project
+  count              = var.create_resources
 
   tcp_health_check {
     port = "9050"
@@ -13,6 +13,7 @@ resource "google_compute_health_check" "tor" {
 resource "google_compute_region_instance_group_manager" "tor" {
   name     = "${var.name}-ig"
   count    = var.create_resources
+  project  = var.project
   provider = google-beta
 
   region             = var.region
@@ -37,6 +38,7 @@ resource "google_compute_instance_template" "tor" {
   name_prefix  = "${var.name}-template-"
   description  = "This template is used to create ${var.name} instances."
   machine_type = var.instance_type
+  project      = var.project
   count        = var.create_resources
 
   labels = {

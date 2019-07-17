@@ -1,8 +1,8 @@
 resource "google_compute_firewall" "tor-healthcheck" {
   name    = "${var.name}-healthcheck"
   network = data.google_compute_network.default.self_link
-
-  count = var.create_resources
+  project = var.project
+  count   = var.create_resources
 
   allow {
     protocol = "tcp"
@@ -19,8 +19,8 @@ resource "google_compute_firewall" "tor-healthcheck" {
 resource "google_compute_firewall" "prom-traffic" {
   name    = "${var.name}-prometheus-access"
   network = data.google_compute_network.default.self_link
-
-  count = var.create_resources
+  project = var.project
+  count   = var.create_resources
 
   allow {
     protocol = "tcp"

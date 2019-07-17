@@ -154,15 +154,15 @@ write_files:
               target_label: 'instance_name'
           gce_sd_configs:
             - project: satellite-api
-              filter: (labels.type = "lightning-app")
+              filter: (labels.type = "lightning-app-blc")
               zone: us-west1-a
               port: 9900
             - project: satellite-api
-              filter: (labels.type = "lightning-app")
+              filter: (labels.type = "lightning-app-blc")
               zone: us-west1-b
               port: 9900
             - project: satellite-api
-              filter: (labels.type = "lightning-app")
+              filter: (labels.type = "lightning-app-blc")
               zone: us-west1-c
               port: 9900
 

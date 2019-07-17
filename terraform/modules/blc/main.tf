@@ -45,7 +45,7 @@ resource "google_compute_instance_template" "blc" {
   project      = var.project
 
   labels = {
-    type = "lightning-app"
+    type = "lightning-app-blc"
     name = var.name
     net  = var.net
   }

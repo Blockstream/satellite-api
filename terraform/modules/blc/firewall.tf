@@ -42,7 +42,7 @@ resource "google_compute_firewall" "blc-prom" {
 
   allow {
     protocol = "tcp"
-    ports    = ["9100"]
+    ports    = ["9100", "9900"]
   }
 
   source_service_accounts = [

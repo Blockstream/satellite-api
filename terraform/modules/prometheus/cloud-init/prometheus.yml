@@ -141,6 +141,31 @@ write_files:
               zone: us-west1-c
               port: 9100
 
+        - job_name: lightningd
+          relabel_configs:
+            - source_labels:
+              - '__meta_gce_label_network'
+              target_label: 'network'
+            - source_labels:
+              - '__meta_gce_label_name'
+              target_label: 'name'
+            - source_labels:
+              - '__meta_gce_instance_name'
+              target_label: 'instance_name'
+          gce_sd_configs:
+            - project: satellite-api
+              filter: (labels.type = "lightning-app")
+              zone: us-west1-a
+              port: 9900
+            - project: satellite-api
+              filter: (labels.type = "lightning-app")
+              zone: us-west1-b
+              port: 9900
+            - project: satellite-api
+              filter: (labels.type = "lightning-app")
+              zone: us-west1-c
+              port: 9900
+
 
   - path: /etc/systemd/system/prometheus.service
     permissions: 0644

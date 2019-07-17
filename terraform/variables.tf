@@ -202,7 +202,7 @@ variable "prom_docker" {
 
 variable "gcloud_docker" {
   type    = string
-  default = "google/cloud-sdk@sha256:78e68a98c5d6aa36eca45099bae38a1544a1688fd16b506fb914a29fdf6e4afa"
+  default = "google/cloud-sdk@sha256:ce81a5731934dabf2a402412a6cd4ef5733581302053007ba7de261513bff9bd"
 }
 
 variable "certbot_docker" {

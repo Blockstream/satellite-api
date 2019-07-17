@@ -27,7 +27,7 @@ data "template_cloudinit_config" "tor" {
 
   part {
     content_type = "text/cloud-config"
-    content      = data.template_file.tor.rendered
+    content      = data.template_file.tor[0].rendered
   }
 }
 

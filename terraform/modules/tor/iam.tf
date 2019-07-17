@@ -15,7 +15,6 @@ resource "google_project_iam_member" "tor" {
 resource "google_kms_crypto_key_iam_binding" "crypto-key" {
   crypto_key_id = var.kms_key_link
   role          = "roles/cloudkms.cryptoKeyDecrypter"
-  project       = var.project
   count         = var.create_resources
 
   members = [

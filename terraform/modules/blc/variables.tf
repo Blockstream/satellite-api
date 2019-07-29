@@ -64,6 +64,14 @@ variable "lb_svc_acct" {
   type = string
 }
 
+variable "pguser" {
+  type = string
+}
+
+variable "pgpass" {
+  type = string
+}
+
 variable "bitcoin_docker" {
   type = string
 }
@@ -85,5 +93,9 @@ variable "ionosphere_sse_docker" {
 }
 
 variable "node_exporter_docker" {
+  type = string
+}
+
+variable "postgres_docker" {
   type = string
 }

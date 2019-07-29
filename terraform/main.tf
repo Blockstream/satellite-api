@@ -27,6 +27,7 @@ module "blc-mainnet" {
   ionosphere_docker     = var.ionosphere_docker
   ionosphere_sse_docker = var.ionosphere_sse_docker
   node_exporter_docker  = var.node_exporter_docker
+  postgres_docker       = var.postgres_docker
   net                   = "mainnet"
   env                   = local.env
   lb_svc_acct           = module.lb.lb_svc_acct
@@ -42,6 +43,8 @@ module "blc-mainnet" {
   opsgenie_key      = var.opsgenie_key
   rpcuser           = var.rpcuser
   rpcpass           = var.rpcpass
+  pguser            = var.pguser
+  pgpass            = var.pgpass
 }
 
 module "blc-testnet" {
@@ -56,6 +59,7 @@ module "blc-testnet" {
   ionosphere_docker     = var.ionosphere_docker
   ionosphere_sse_docker = var.ionosphere_sse_docker
   node_exporter_docker  = var.node_exporter_docker
+  postgres_docker       = var.postgres_docker
   net                   = "testnet"
   env                   = local.env
 
@@ -71,6 +75,8 @@ module "blc-testnet" {
   rpcuser           = var.rpcuser
   rpcpass           = var.rpcpass
   lb_svc_acct       = var.lb_svc_acct
+  pguser            = var.pguser
+  pgpass            = var.pgpass
 }
 
 module "lb" {

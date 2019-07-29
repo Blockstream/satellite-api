@@ -85,6 +85,8 @@ plan_satapi:
          -var "public_bucket_url=$PUBLIC_BUCKET_URL"
          -var "letsencrypt_email=$LE_EMAIL"
          -var "lb_svc_acct=$LB_SA_STAGING"
+         -var "pguser=$PGUSER"
+         -var "pgpass=$PGPASS"
          -input=false)
          
 # This plan gets triggered only for miscellaneous branches/tags (i.e. tor, prometheus, etc), so make sure the branch/tag name starts with misc_
@@ -160,6 +162,8 @@ deploy_staging:
          -var "rpcpass=$RPCPASS"
          -var "public_bucket_url=$PUBLIC_BUCKET_URL"
          -var "letsencrypt_email=$LE_EMAIL"
+         -var "pguser=$PGUSER"
+         -var "pgpass=$PGPASS"
          -input=false -auto-approve)
 
 # Tag with production_v.* to deploy mainnet production (e.g. prod_v0.1.1)
@@ -185,6 +189,8 @@ deploy_production:
          -var "rpcpass=$RPCPASS"
          -var "public_bucket_url=$PUBLIC_BUCKET_URL"
          -var "letsencrypt_email=$LE_EMAIL"
+         -var "pguser=$PGUSER"
+         -var "pgpass=$PGPASS"
          -input=false -auto-approve)
 
 # Tag with testnet_staging_v.* to deploy testnet staging (e.g. testnet_staging_v0.1.1)
@@ -211,6 +217,8 @@ deploy_staging_testnet:
          -var "public_bucket_url=$PUBLIC_BUCKET_URL"
          -var "letsencrypt_email=$LE_EMAIL"
          -var "lb_svc_acct=$LB_SA_STAGING"
+         -var "pguser=$PGUSER"
+         -var "pgpass=$PGPASS"
          -input=false -auto-approve)
 
 # Tag with production_v.* to deploy testnet production (e.g. testnet_prod_v0.1.1)
@@ -237,6 +245,8 @@ deploy_production_testnet:
          -var "public_bucket_url=$PUBLIC_BUCKET_URL"
          -var "letsencrypt_email=$LE_EMAIL"
          -var "lb_svc_acct=$LB_SA"
+         -var "pguser=$PGUSER"
+         -var "pgpass=$PGPASS"
          -input=false -auto-approve)
 
 # Pushing to this branch destroys the staging infrastructure

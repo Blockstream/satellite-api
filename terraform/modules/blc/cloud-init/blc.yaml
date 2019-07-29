@@ -9,26 +9,6 @@ users:
     uid: 2000
 
 write_files:
-  - path: /home/bs/bitcoin.conf
-    permissions: 0644
-    owner: root
-    content: |
-        rpcuser=${rpcuser}
-        rpcpassword=${rpcpass}
-        txindex=1
-        dbcache=4000
-
-  - path: /home/bs/lightning.conf
-    permissions: 0644
-    owner: root
-    content: |
-        alias=ionosphere-${net}
-        bitcoin-rpcuser=${rpcuser}
-        bitcoin-rpcpassword=${rpcpass}
-        announce-addr=${announce_addr}
-        bind-addr=0.0.0.0
-
-
   - path: /home/bs/check_containers.sh
     permissions: 0744
     owner: root
@@ -114,6 +94,42 @@ write_files:
         ExecStopPost=/usr/bin/docker rm node-exporter
         ExecStopPost=/sbin/iptables -D INPUT -m tcp -p tcp --dport 9100 -j ACCEPT
 
+  - path: /etc/systemd/system/postgres.service
+    permissions: 0644
+    owner: root
+    content: |
+        [Unit]
+        Description=PostgreSQL Server
+        Wants=gcr-online.target docker.service
+        After=gcr-online.service docker.service
+
+        [Service]
+        Restart=always
+        RestartSec=3
+        Environment=HOME=/home/bs
+        ExecStartPre=/usr/bin/docker pull ${postgres_docker}
+        ExecStartPre=/sbin/iptables -A INPUT -p tcp -s localhost --dport 5432 -j ACCEPT
+        ExecStart=/usr/bin/docker run \
+            --name=postgres \
+            --network=host \
+            -v /mnt/disks/data/postgres:/var/lib/postgresql/data/pgdata \
+            -e "PGDATA=/var/lib/postgresql/data/pgdata" \
+            -e "POSTGRES_USER=${pguser}" \
+            -e "POSTGRES_PASSWORD=${pgpass}" \
+            "${postgres_docker}" postgres
+        ExecStop=/usr/bin/docker stop postgres
+        ExecStopPost=/usr/bin/docker rm postgres
+        ExecStopPost=/sbin/iptables -D INPUT -p tcp -s localhost --dport 5432 -j ACCEPT
+
+  - path: /home/bs/bitcoin.conf
+    permissions: 0644
+    owner: root
+    content: |
+        rpcuser=${rpcuser}
+        rpcpassword=${rpcpass}
+        txindex=1
+        dbcache=4000
+
   - path: /etc/systemd/system/bitcoin.service
     permissions: 0644
     owner: root
@@ -139,6 +155,16 @@ write_files:
         ExecStop=/usr/bin/docker exec bitcoin bitcoin-cli stop
         ExecStopPost=/usr/bin/sleep 3
         ExecStopPost=/usr/bin/docker rm -f bitcoin
+
+  - path: /home/bs/lightning.conf
+    permissions: 0644
+    owner: root
+    content: |
+        alias=ionosphere-${net}
+        bitcoin-rpcuser=${rpcuser}
+        bitcoin-rpcpassword=${rpcpass}
+        announce-addr=${announce_addr}
+        bind-addr=0.0.0.0        
 
   - path: /etc/systemd/system/lightning.service
     permissions: 0644
@@ -313,6 +339,8 @@ runcmd:
   - systemctl enable bitcoin.service
   - systemctl start lightning.service
   - systemctl enable lightning.service
+  - systemctl start postgres.service
+  - systemctl enable postgres.service  
   - systemctl start redis.service
   - systemctl enable redis.service
   - systemctl start ionosphere.service

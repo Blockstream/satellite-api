@@ -148,6 +148,16 @@ variable "health_check" {
   default = ""
 }
 
+variable "pguser" {
+  type    = string
+  default = ""
+}
+
+variable "pgpass" {
+  type    = string
+  default = ""
+}
+
 # Overwritten by CI
 variable "public_bucket_url" {
   type    = string
@@ -208,4 +218,9 @@ variable "gcloud_docker" {
 variable "certbot_docker" {
   type    = string
   default = "blockstream/certbot-gcs@sha256:516ba43a03f558c73cd3807dc2b31a3ad123205dd53682a5da70396b75b53881"
+}
+
+variable "postgres_docker" {
+  type    = string
+  default = "postgres@sha256:077793cc0ed31fd0568ce468d85d0843b8dea37c9ef74eb81b4ccf0fe9539e2e"
 }

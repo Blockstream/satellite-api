@@ -21,13 +21,14 @@ module "blc-mainnet" {
   project               = var.project
   name                  = "satellite-api"
   network               = "default"
-  bitcoin_docker        = var.bitcoin_docker
   lightning_docker      = var.lightning_docker
   charge_docker         = var.charge_docker
   ionosphere_docker     = var.ionosphere_docker
   ionosphere_sse_docker = var.ionosphere_sse_docker
   node_exporter_docker  = var.node_exporter_docker
   postgres_docker       = var.postgres_docker
+  autossh_docker        = var.autossh_docker
+  certbot_docker        = var.certbot_docker
   net                   = "mainnet"
   env                   = local.env
   lb_svc_acct           = module.lb.lb_svc_acct
@@ -42,10 +43,11 @@ module "blc-mainnet" {
   timeout           = var.timeout
   prom_service_acct = var.prom_service_acct
   opsgenie_key      = var.opsgenie_key
-  rpcuser           = var.rpcuser
   rpcpass           = var.rpcpass
   pguser            = var.pguser
   pgpass            = var.pgpass
+  charge_token      = var.charge_token
+  k8s_autossh_lb    = var.k8s_autossh_lb
 }
 
 module "blc-testnet" {
@@ -54,13 +56,14 @@ module "blc-testnet" {
   project               = var.project
   name                  = "satellite-api"
   network               = "default"
-  bitcoin_docker        = var.bitcoin_docker
   lightning_docker      = var.lightning_docker
   charge_docker         = var.charge_docker
   ionosphere_docker     = var.ionosphere_docker
   ionosphere_sse_docker = var.ionosphere_sse_docker
   node_exporter_docker  = var.node_exporter_docker
   postgres_docker       = var.postgres_docker
+  autossh_docker        = var.autossh_docker
+  certbot_docker        = var.certbot_docker
   net                   = "testnet"
   env                   = local.env
   cert_bucket           = "" #data.terraform_remote_state.blc-mainnet.outputs.lb_cert_bucket
@@ -74,11 +77,12 @@ module "blc-testnet" {
   timeout           = var.timeout
   prom_service_acct = var.prom_service_acct
   opsgenie_key      = var.opsgenie_key
-  rpcuser           = var.rpcuser
   rpcpass           = var.rpcpass
   lb_svc_acct       = var.lb_svc_acct
   pguser            = var.pguser
   pgpass            = var.pgpass
+  charge_token      = var.charge_token
+  k8s_autossh_lb    = var.k8s_autossh_lb
 }
 
 module "lb" {

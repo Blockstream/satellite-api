@@ -58,12 +58,7 @@ variable "target_pool" {
   default = ""
 }
 
-variable "rpcuser" {
-  type    = string
-  default = ""
-}
-
-variable "rpcpass" {
+variable "charge_token" {
   type    = string
   default = ""
 }
@@ -158,6 +153,16 @@ variable "pgpass" {
   default = ""
 }
 
+variable "k8s_autossh_lb" {
+  type    = string
+  default = ""
+}
+
+variable "rpcpass" {
+  type    = string
+  default = ""
+}
+
 # Overwritten by CI
 variable "public_bucket_url" {
   type    = string
@@ -180,11 +185,6 @@ variable "ionosphere_sse_docker" {
 }
 
 # Less frequently updated images
-variable "bitcoin_docker" {
-  type    = string
-  default = "blockstream/bitcoind@sha256:70f5ed2674975cf353b3ff07e85e23bb6e3dd6082dc3de91ce5fd06b6f16395a"
-}
-
 variable "lightning_docker" {
   type    = string
   default = "blockstream/lightningd@sha256:3aab864ba0ee4bf1191c6243bf4bc00f99d29590f5d7bce4340c5b5a9f2b4c98"
@@ -217,10 +217,15 @@ variable "gcloud_docker" {
 
 variable "certbot_docker" {
   type    = string
-  default = "blockstream/certbot-gcs@sha256:516ba43a03f558c73cd3807dc2b31a3ad123205dd53682a5da70396b75b53881"
+  default = "blockstream/certbot-gcs@sha256:fc5d7cb31bcf04169f37cbebd74c3bde49651f79e54e1ff3c3eaf6ec47b9f6d0"
 }
 
 variable "postgres_docker" {
   type    = string
   default = "postgres@sha256:077793cc0ed31fd0568ce468d85d0843b8dea37c9ef74eb81b4ccf0fe9539e2e"
+}
+
+variable "autossh_docker" {
+  type    = "string"
+  default = "blockstream/autossh@sha256:5e30a60d6ef17aeafdde63bb859238e132fadef174af4092a435bc7325430ebd"
 }

@@ -12,11 +12,7 @@ variable "create_resources" {
   type = string
 }
 
-variable "rpcuser" {
-  type = string
-}
-
-variable "rpcpass" {
+variable "charge_token" {
   type = string
 }
 
@@ -72,12 +68,16 @@ variable "pgpass" {
   type = string
 }
 
-variable "cert_bucket" {
-  type = string
+variable "k8s_autossh_lb" {
+  type    = string
 }
 
-variable "bitcoin_docker" {
-  type = string
+variable "rpcpass" {
+  type    = string
+}
+
+variable "cert_bucket" {
+  type    = string
 }
 
 variable "charge_docker" {
@@ -101,5 +101,13 @@ variable "node_exporter_docker" {
 }
 
 variable "postgres_docker" {
+  type = string
+}
+
+variable "autossh_docker" {
+  type = string
+}
+
+variable "certbot_docker" {
   type = string
 }

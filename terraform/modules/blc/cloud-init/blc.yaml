@@ -121,47 +121,61 @@ write_files:
         ExecStopPost=/usr/bin/docker rm postgres
         ExecStopPost=/sbin/iptables -D INPUT -p tcp -s localhost --dport 5432 -j ACCEPT
 
-  - path: /home/bs/bitcoin.conf
-    permissions: 0644
-    owner: root
-    content: |
-        rpcuser=${rpcuser}
-        rpcpassword=${rpcpass}
-        txindex=1
-        dbcache=4000
-
-  - path: /etc/systemd/system/bitcoin.service
+  - path: /etc/systemd/system/autossh-key-downloader.service
     permissions: 0644
     owner: root
     content: |
         [Unit]
-        Description=Bitcoin node
+        Description=Download SSH privkey from GCS
         Wants=gcr-online.target
-        After=gcr-online.service
+        After=gcr-online.target
+
+        [Service]
+        Type=oneshot
+        RemainAfterExit=true
+        Environment=HOME=/home/bs
+        ExecStart=/usr/bin/docker run \
+            --name=autosssh-key \
+            --tmpfs /root \
+            --tmpfs /tmp \
+            --rm \
+            -v /home/bs:/mnt/bs:rw \
+            "${certbot_docker}" /google-cloud-sdk/bin/gsutil -m cp -r gs://${cert_bucket}/k8s_keys/* /mnt/bs/
+        ExecStartPost=-/bin/chmod 0600 /home/bs/k8s_autossh.key
+        ExecStopPost=-/bin/chmod 0600 /home/bs/k8s_autossh.key
+
+  - path: /etc/systemd/system/k8s-autossh.service
+    permissions: 0644
+    owner: root
+    content: |
+        [Unit]
+        Description=SSH tunnel to on-prem K8s node
+        Wants=gcr-online.target
+        After=autossh-key-downloader.service
 
         [Service]
         Restart=always
-        RestartSec=3
+        RestartSec=5
         Environment=HOME=/home/bs
-        ExecStartPre=/usr/bin/docker pull ${bitcoin_docker}
+        ExecStartPre=/sbin/iptables -A INPUT -p tcp -s localhost --dport ${k8s_autossh_btc_port} -j ACCEPT
         ExecStart=/usr/bin/docker run \
             --network=host \
-            --pid=host \
-            --name=bitcoin \
-            --log-opt max-size=1g \
-            -v /home/bs/bitcoin.conf:/root/.bitcoin/bitcoin.conf:ro \
-            -v /mnt/disks/data/${net}:/root/.bitcoin:rw \
-            "${bitcoin_docker}" ${bitcoin_cmd}
-        ExecStop=/usr/bin/docker exec bitcoin bitcoin-cli stop
-        ExecStopPost=/usr/bin/sleep 3
-        ExecStopPost=/usr/bin/docker rm -f bitcoin
+            --name=k8s-autossh \
+            -e AUTOSSH_GATETIME=0 \
+            -v /home/bs/k8s_autossh.key:/root/.ssh/id_ed25519:ro \
+            ${autossh_docker} ${k8s_autossh_btc_port}:localhost:${k8s_autossh_btc_port} -p ${k8s_autossh_ssh_port} root@${k8s_autossh_lb}
+        ExecStop=/usr/bin/docker stop k8s-autossh
+        ExecStopPost=/usr/bin/docker rm k8s-autossh
+        ExecStopPost=/sbin/iptables -D INPUT -p tcp -s localhost --dport ${k8s_autossh_btc_port} -j ACCEPT
 
   - path: /home/bs/lightning.conf
     permissions: 0644
     owner: root
     content: |
+        log-level=debug
+        plugin-dir=/usr/local/bin/plugins
         alias=ionosphere-${net}
-        bitcoin-rpcuser=${rpcuser}
+        bitcoin-rpcuser=${net}-def
         bitcoin-rpcpassword=${rpcpass}
         announce-addr=${announce_addr}
         bind-addr=0.0.0.0
@@ -173,7 +187,7 @@ write_files:
         [Unit]
         Description=Lightning node
         Wants=gcr-online.target
-        After=bitcoin.service
+        After=k8s-autossh.service
 
         [Service]
         Restart=always
@@ -186,6 +200,8 @@ write_files:
             --network=host \
             --pid=host \
             --name=lightning \
+            --cap-add=SYS_PTRACE \
+            --memory=2g \
             --log-opt max-size=1g \
             -v /home/bs/lightning.conf:/root/.lightning/lightning.conf:ro \
             -v /mnt/disks/data/lightning:/root/.lightning:rw \
@@ -251,7 +267,7 @@ write_files:
             --log-opt max-file=3 \
             -v /mnt/disks/data/ionosphere:/data \
             -e "RACK_ENV=production" \
-            -e "CHARGE_ROOT=http://api-token:${rpcpass}@localhost:9112" \
+            -e "CHARGE_ROOT=http://api-token:${charge_token}@localhost:9112" \
             -e "CALLBACK_URI_ROOT=http://localhost:9292" \
             "${ionosphere_docker}"
         ExecStop=/usr/bin/docker stop ionosphere
@@ -327,7 +343,7 @@ write_files:
             --name=charge \
             -v /mnt/disks/data/lightning:/root/.lightning:ro \
             -v /mnt/disks/data/charge:/data:rw \
-            -e "API_TOKEN=${rpcpass}" \
+            -e "API_TOKEN=${charge_token}" \
             "${charge_docker}" ${charge_cmd}
         ExecStop=/usr/bin/docker stop charge
         ExecStopPost=/usr/bin/docker rm charge
@@ -335,8 +351,10 @@ write_files:
 
 runcmd:
   - systemctl daemon-reload
-  - systemctl start bitcoin.service
-  - systemctl enable bitcoin.service
+  - systemctl start autossh-key-downloader.service
+  - systemctl enable autossh-key-downloader.service
+  - systemctl start k8s-autossh.service
+  - systemctl enable k8s-autossh.service
   - systemctl start lightning.service
   - systemctl enable lightning.service
   - systemctl start postgres.service

@@ -17,7 +17,7 @@ resource "google_storage_bucket_acl" "satapi-lb-public-acl" {
   count          = var.create_resources
 }
 
-# Private bucket (server certs)
+# Private bucket (server certs, ssh keys)
 resource "google_storage_bucket" "satapi-lb-private" {
   name          = "${var.name}-certs-${var.env}"
   location      = "US"

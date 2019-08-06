@@ -80,13 +80,14 @@ plan_satapi:
          -var "timeout=$TIMEOUT"
          -var "prom_service_acct=$PROM_SA"
          -var "opsgenie_key=$OPSGENIE_KEY"
-         -var "rpcuser=$RPCUSER"
-         -var "rpcpass=$RPCPASS"
          -var "public_bucket_url=$PUBLIC_BUCKET_URL"
          -var "letsencrypt_email=$LE_EMAIL"
          -var "lb_svc_acct=$LB_SA_STAGING"
          -var "pguser=$PGUSER"
          -var "pgpass=$PGPASS"
+         -var "charge_token=$CHARGE_TOKEN"
+         -var "rpcpass=$RPCPASS_TESTNET"
+         -var "k8s_autossh_lb=$GKE_LB"
          -input=false)
          
 # This plan gets triggered only for miscellaneous branches/tags (i.e. tor, prometheus, etc), so make sure the branch/tag name starts with misc_
@@ -158,12 +159,13 @@ deploy_staging:
          -var "timeout=$TIMEOUT"
          -var "prom_service_acct=$PROM_SA"
          -var "opsgenie_key=$OPSGENIE_KEY"
-         -var "rpcuser=$RPCUSER"
-         -var "rpcpass=$RPCPASS"
          -var "public_bucket_url=$PUBLIC_BUCKET_URL"
          -var "letsencrypt_email=$LE_EMAIL"
          -var "pguser=$PGUSER"
          -var "pgpass=$PGPASS"
+         -var "charge_token=$CHARGE_TOKEN"
+         -var "rpcpass=$RPCPASS"
+         -var "k8s_autossh_lb=$GKE_LB"
          -input=false -auto-approve)
 
 # Tag with production_v.* to deploy mainnet production (e.g. prod_v0.1.1)
@@ -185,12 +187,13 @@ deploy_production:
          -var "timeout=$TIMEOUT"
          -var "prom_service_acct=$PROM_SA"
          -var "opsgenie_key=$OPSGENIE_KEY"
-         -var "rpcuser=$RPCUSER"
-         -var "rpcpass=$RPCPASS"
          -var "public_bucket_url=$PUBLIC_BUCKET_URL"
          -var "letsencrypt_email=$LE_EMAIL"
          -var "pguser=$PGUSER"
          -var "pgpass=$PGPASS"
+         -var "charge_token=$CHARGE_TOKEN"
+         -var "rpcpass=$RPCPASS"
+         -var "k8s_autossh_lb=$GKE_LB"
          -input=false -auto-approve)
 
 # Tag with testnet_staging_v.* to deploy testnet staging (e.g. testnet_staging_v0.1.1)
@@ -212,13 +215,14 @@ deploy_staging_testnet:
          -var "timeout=$TIMEOUT"
          -var "prom_service_acct=$PROM_SA"
          -var "opsgenie_key=$OPSGENIE_KEY"
-         -var "rpcuser=$RPCUSER"
-         -var "rpcpass=$RPCPASS"
          -var "public_bucket_url=$PUBLIC_BUCKET_URL"
          -var "letsencrypt_email=$LE_EMAIL"
          -var "lb_svc_acct=$LB_SA_STAGING"
          -var "pguser=$PGUSER"
          -var "pgpass=$PGPASS"
+         -var "charge_token=$CHARGE_TOKEN"
+         -var "rpcpass=$RPCPASS_TESTNET"
+         -var "k8s_autossh_lb=$GKE_LB"
          -input=false -auto-approve)
 
 # Tag with production_v.* to deploy testnet production (e.g. testnet_prod_v0.1.1)
@@ -240,13 +244,14 @@ deploy_production_testnet:
          -var "timeout=$TIMEOUT"
          -var "prom_service_acct=$PROM_SA"
          -var "opsgenie_key=$OPSGENIE_KEY"
-         -var "rpcuser=$RPCUSER"
-         -var "rpcpass=$RPCPASS"
          -var "public_bucket_url=$PUBLIC_BUCKET_URL"
          -var "letsencrypt_email=$LE_EMAIL"
          -var "lb_svc_acct=$LB_SA"
          -var "pguser=$PGUSER"
          -var "pgpass=$PGPASS"
+         -var "charge_token=$CHARGE_TOKEN"
+         -var "rpcpass=$RPCPASS_TESTNET"
+         -var "k8s_autossh_lb=$GKE_LB"
          -input=false -auto-approve)
 
 # Pushing to this branch destroys the staging infrastructure

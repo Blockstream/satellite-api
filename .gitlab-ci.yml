@@ -2,7 +2,7 @@ variables:
   GIT_SUBMODULE_STRATEGY: none
   CI_DISPOSABLE_ENVIRONMENT: "true"
 
-image: blockstream/gcloud-docker@sha256:6187ae766a84319d1a1cb47d78f8ec04b19d728d13b315135d1f5fe9a35dafb1
+image: blockstream/gcloud-docker@sha256:5eeec9172aa9a7854a919df12d9217f4529931130c613b8de0a1df63dcd00a52
 stages:
   - build
   - plan

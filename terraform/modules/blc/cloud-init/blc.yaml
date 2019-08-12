@@ -164,7 +164,7 @@ write_files:
         bitcoin-rpcuser=${rpcuser}
         bitcoin-rpcpassword=${rpcpass}
         announce-addr=${announce_addr}
-        bind-addr=0.0.0.0        
+        bind-addr=0.0.0.0
 
   - path: /etc/systemd/system/lightning.service
     permissions: 0644

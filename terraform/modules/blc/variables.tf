@@ -72,6 +72,10 @@ variable "pgpass" {
   type = string
 }
 
+variable "cert_bucket" {
+  type = string
+}
+
 variable "bitcoin_docker" {
   type = string
 }

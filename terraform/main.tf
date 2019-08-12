@@ -31,6 +31,7 @@ module "blc-mainnet" {
   net                   = "mainnet"
   env                   = local.env
   lb_svc_acct           = module.lb.lb_svc_acct
+  cert_bucket           = module.lb.lb_cert_bucket
 
   create_resources = local.create_mainnet
 
@@ -62,6 +63,7 @@ module "blc-testnet" {
   postgres_docker       = var.postgres_docker
   net                   = "testnet"
   env                   = local.env
+  cert_bucket           = "" #data.terraform_remote_state.blc-mainnet.outputs.lb_cert_bucket
 
   create_resources = local.create_testnet
 

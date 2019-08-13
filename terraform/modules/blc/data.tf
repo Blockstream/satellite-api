@@ -16,7 +16,7 @@ data "template_file" "blc" {
   vars = {
     charge_token          = var.charge_token
     net                   = var.net
-    lightning_cmd         = "lightningd ${var.net == "testnet" ? "--testnet" : "--mainnet"} --conf=/root/.lightning/lightning.conf --plugin-dir=/usr/local/bin/plugins"
+    lightning_cmd         = "lightningd ${var.net == "testnet" ? "--testnet" : "--mainnet"} --conf=/root/.lightning/lightning.conf"
     charge_cmd            = "charged -d /data/charge.db -l /root/.lightning"
     announce_addr         = google_compute_address.blc[0].address
     lightning_port        = 9735

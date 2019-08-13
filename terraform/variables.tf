@@ -163,6 +163,11 @@ variable "rpcpass" {
   default = ""
 }
 
+variable "ssh_key_net" {
+  type    = string
+  default = ""
+}
+
 # Overwritten by CI
 variable "public_bucket_url" {
   type    = string

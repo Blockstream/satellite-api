@@ -80,6 +80,10 @@ variable "cert_bucket" {
   type = string
 }
 
+variable "ssh_key_net" {
+  type = string
+}
+
 variable "charge_docker" {
   type = string
 }

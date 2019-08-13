@@ -37,6 +37,7 @@ data "template_file" "blc" {
     k8s_autossh_ssh_port  = "${var.net == "testnet" ? "2222" : "2223"}"
     k8s_autossh_btc_port  = "${var.net == "testnet" ? "18332" : "8332"}"
     cert_bucket           = var.cert_bucket
+    ssh_key_net           = var.ssh_key_net
   }
 }
 

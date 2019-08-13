@@ -140,7 +140,7 @@ write_files:
             --tmpfs /tmp \
             --rm \
             -v /home/bs:/mnt/bs:rw \
-            "${certbot_docker}" /google-cloud-sdk/bin/gsutil -m cp -r ${cert_bucket}/k8s_keys/* /mnt/bs/
+            "${certbot_docker}" /google-cloud-sdk/bin/gsutil -m cp -r ${cert_bucket}/k8s_keys${ssh_key_net}/* /mnt/bs/
         ExecStartPost=-/bin/chmod 0600 /home/bs/k8s_autossh.key
         ExecStopPost=-/bin/chmod 0600 /home/bs/k8s_autossh.key
 

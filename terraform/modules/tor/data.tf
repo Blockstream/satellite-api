@@ -24,6 +24,7 @@ data "template_file" "tor" {
 data "template_cloudinit_config" "tor" {
   gzip          = false
   base64_encode = false
+  count         = var.create_resources
 
   part {
     content_type = "text/cloud-config"

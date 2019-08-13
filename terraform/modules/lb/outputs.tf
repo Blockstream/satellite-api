@@ -7,5 +7,5 @@ output "backend_service" {
 }
 
 output "lb_cert_bucket" {
-  value = google_storage_bucket.satapi-lb-private[0].self_link
+  value = google_storage_bucket.satapi-lb-private[0].url
 }

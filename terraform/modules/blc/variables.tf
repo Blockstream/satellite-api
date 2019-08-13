@@ -69,15 +69,15 @@ variable "pgpass" {
 }
 
 variable "k8s_autossh_lb" {
-  type    = string
+  type = string
 }
 
 variable "rpcpass" {
-  type    = string
+  type = string
 }
 
 variable "cert_bucket" {
-  type    = string
+  type = string
 }
 
 variable "charge_docker" {

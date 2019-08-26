@@ -281,7 +281,8 @@ write_files:
         Description=Run full cert-renewer every 24 hours
 
         [Timer]
-        OnUnitActiveSec=1d
+        OnBootSec=5m
+        OnUnitActiveSec=24h
         Persistent=true
 
         [Install]

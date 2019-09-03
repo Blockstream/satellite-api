@@ -1,7 +1,7 @@
 data "google_compute_network" "default" {
   name    = "default"
   project = var.project
-  count    = var.create_resources
+  count   = var.create_resources
 }
 
 data "template_file" "tor" {

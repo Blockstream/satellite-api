@@ -57,7 +57,7 @@ resource "google_compute_instance_template" "tor" {
   }
 
   network_interface {
-    network = data.google_compute_network.default.self_link
+    network = data.google_compute_network.default[0].self_link
 
     access_config {
     }

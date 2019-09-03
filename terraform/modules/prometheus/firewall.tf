@@ -1,6 +1,6 @@
 resource "google_compute_firewall" "all-traffic" {
   name    = "prometheus-${var.name}-all-traffic-access"
-  network = data.google_compute_network.default.self_link
+  network = data.google_compute_network.default[0].self_link
 
   count = var.create_resources
 

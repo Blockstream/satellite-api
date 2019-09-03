@@ -1,7 +1,7 @@
 data "google_compute_network" "default" {
   name    = "default"
   project = var.project
-  count    = var.create_resources
+  count   = var.create_resources
 }
 
 data "template_file" "prometheus" {
@@ -19,11 +19,11 @@ data "template_file" "prometheus" {
 data "template_cloudinit_config" "prometheus" {
   gzip          = false
   base64_encode = false
-  count    = var.create_resources
+  count         = var.create_resources
 
   part {
     content_type = "text/cloud-config"
-    content      = data.template_file.prometheus.rendered
+    content      = data.template_file.prometheus[0].rendered
   }
 }
 

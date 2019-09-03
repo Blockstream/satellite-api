@@ -63,7 +63,7 @@ resource "google_compute_instance" "prometheus-server" {
   }
 
   network_interface {
-    network = data.google_compute_network.default.self_link
+    network = data.google_compute_network.default[0].self_link
     network_ip = element(
       google_compute_address.prometheus-internal-address.*.address,
       count.index,
@@ -78,7 +78,7 @@ resource "google_compute_instance" "prometheus-server" {
   }
 
   metadata = {
-    user-data = data.template_cloudinit_config.prometheus.rendered
+    user-data = data.template_cloudinit_config.prometheus[0].rendered
   }
 }
 

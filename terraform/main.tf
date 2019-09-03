@@ -40,7 +40,7 @@ module "blc-mainnet" {
   # CI vars
   region            = var.region
   zone              = var.zone
-  instance_type     = var.instance_type[0]
+  instance_type     = var.instance_type[1]
   timeout           = var.timeout
   prom_service_acct = var.prom_service_acct
   opsgenie_key      = var.opsgenie_key
@@ -75,7 +75,7 @@ module "blc-testnet" {
   # CI vars
   region            = var.region
   zone              = var.zone
-  instance_type     = var.instance_type[0]
+  instance_type     = var.instance_type[1]
   timeout           = var.timeout
   prom_service_acct = var.prom_service_acct
   opsgenie_key      = var.opsgenie_key
@@ -106,7 +106,7 @@ module "lb" {
   # CI vars
   region            = var.region
   zone              = var.zone
-  instance_type     = var.instance_type[1]
+  instance_type     = var.instance_type[0]
   host              = var.host
   timeout           = var.timeout
   prom_service_acct = var.prom_service_acct
@@ -139,7 +139,7 @@ module "tor" {
   # CI vars
   region            = var.region
   zone              = var.zone
-  instance_type     = var.instance_type[1]
+  instance_type     = var.instance_type[0]
   onion_host        = var.onion_host
   prom_service_acct = var.prom_service_acct
 }
@@ -158,7 +158,7 @@ module "prometheus" {
   # CI vars
   region                 = var.region
   zone                   = var.zone
-  instance_type          = var.instance_type[2]
+  instance_type          = var.instance_type[1]
   prom_allowed_source_ip = var.prom_allowed_source_ip
   opsgenie_key           = var.opsgenie_key
   prom_service_acct      = var.prom_service_acct

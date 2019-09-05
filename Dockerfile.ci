@@ -1,9 +1,11 @@
+# docker build --cache-from blockstream/satapi-builder@sha256:a3a137b80a08325bdd50a7c59ae0429b933e7a36db0d74f6ae34af067dfdee2d -f Dockerfile.ci .
+
 FROM docker@sha256:453c52a7a7200677f9effa3acc8498a2f71af77c2951ac5e1ac1391053573374 AS docker
 FROM alpine:latest
 
 COPY --from=docker /usr/local/bin/docker /usr/local/bin/docker
 
-RUN apk --no-cache add curl python py-crcmod bash libc6-compat openssh-client git gnupg
+RUN apk --no-cache add curl python python3 py-crcmod bash libc6-compat openssh-client git gnupg
 
 ENV RUBY_PACKAGES ruby ruby-io-console ruby-irb ruby-rake ruby-bundler ruby-bigdecimal ruby-json
 ENV RUBY_DEPS libstdc++ tzdata bash ca-certificates openssl sqlite sqlite-dev

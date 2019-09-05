@@ -19,7 +19,7 @@ before_script:
 # Run tests
 test_build:
   stage: build
-  image: blockstream/satapi-builder@sha256:a3a137b80a08325bdd50a7c59ae0429b933e7a36db0d74f6ae34af067dfdee2d
+  image: blockstream/satapi-builder@sha256:a768bbd26e1b52dd681e122d35226943c043e9a35efeba45cea41a07d64357c4
   only:
     - branches@satellite/ionosphere
   except:
@@ -36,7 +36,7 @@ test_build:
 # Run tests and build docker images
 build:
   stage: build
-  image: blockstream/satapi-builder@sha256:a3a137b80a08325bdd50a7c59ae0429b933e7a36db0d74f6ae34af067dfdee2d
+  image: blockstream/satapi-builder@sha256:a768bbd26e1b52dd681e122d35226943c043e9a35efeba45cea41a07d64357c4
   only:
     - master@satellite/ionosphere
   before_script:

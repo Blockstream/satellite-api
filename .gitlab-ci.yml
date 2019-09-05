@@ -45,16 +45,16 @@ build:
   script:
     - bundle exec rake db:create && bundle exec rake db:schema:load && bundle exec rake db:migrate
     - bundle exec ruby tests/tests.rb || { echo "Tests failed.."; exit 1; }
-    - curl https://raw.githubusercontent.com/Yelp/docker-push-latest-if-changed/master/docker_push_latest_if_changed.py > /usr/local/bin/docker-push-latest-if-changed
-    - chmod 755 /usr/local/bin/docker-push-latest-if-changed
     - echo $DOCKERHUB_PW | docker login -u $DOCKERHUB_USER --password-stdin
     - docker pull blockstream/satellite-api:latest
     - docker pull blockstream/satellite-api-sse:latest
     - docker build --cache-from blockstream/satellite-api:latest -f Dockerfile -t blockstream/satellite-api:latest -t blockstream/satellite-api:$CI_COMMIT_SHA .
-    - docker-push-latest-if-changed --source blockstream/satellite-api:$CI_COMMIT_SHA
+    - docker push blockstream/satellite-api:latest
+    - docker push blockstream/satellite-api:$CI_COMMIT_SHA
     - echo "Building Satellite API SSE image"
     - docker build --cache-from blockstream/satellite-api-sse:latest  -f Dockerfile.sse -t blockstream/satellite-api-sse:latest -t blockstream/satellite-api-sse:$CI_COMMIT_SHA sse/
-    - docker-push-latest-if-changed --source blockstream/satellite-api-sse:$CI_COMMIT_SHA
+    - docker push blockstream/satellite-api-sse:latest
+    - docker push blockstream/satellite-api-sse:$CI_COMMIT_SHA
 
 # Any newly-pushed, WIP branch will be ran through plan (keep in mind docker images are using the latest tag, which may be an older one since the current commit may not match an available image)
 plan_satapi:

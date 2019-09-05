@@ -45,16 +45,17 @@ build:
   script:
     - bundle exec rake db:create && bundle exec rake db:schema:load && bundle exec rake db:migrate
     - bundle exec ruby tests/tests.rb || { echo "Tests failed.."; exit 1; }
+    - curl https://raw.githubusercontent.com/Yelp/docker-push-latest-if-changed/master/docker_push_latest_if_changed.py > /usr/local/bin/docker-push-latest-if-changed
+    - chmod 755 /usr/local/bin/docker-push-latest-if-changed
+    - sed -i 's/3.6/3.7/' /usr/local/bin/docker-push-latest-if-changed
     - echo $DOCKERHUB_PW | docker login -u $DOCKERHUB_USER --password-stdin
     - docker pull blockstream/satellite-api:latest
     - docker pull blockstream/satellite-api-sse:latest
     - docker build --cache-from blockstream/satellite-api:latest -f Dockerfile -t blockstream/satellite-api:latest -t blockstream/satellite-api:$CI_COMMIT_SHA .
-    - docker push blockstream/satellite-api:latest
-    - docker push blockstream/satellite-api:$CI_COMMIT_SHA
+    - docker-push-latest-if-changed --source blockstream/satellite-api:$CI_COMMIT_SHA
     - echo "Building Satellite API SSE image"
     - docker build --cache-from blockstream/satellite-api-sse:latest  -f Dockerfile.sse -t blockstream/satellite-api-sse:latest -t blockstream/satellite-api-sse:$CI_COMMIT_SHA sse/
-    - docker push blockstream/satellite-api-sse:$CI_COMMIT_SHA
-    - docker push blockstream/satellite-api-sse:latest
+    - docker-push-latest-if-changed --source blockstream/satellite-api-sse:$CI_COMMIT_SHA
 
 # Any newly-pushed, WIP branch will be ran through plan (keep in mind docker images are using the latest tag, which may be an older one since the current commit may not match an available image)
 plan_satapi:
@@ -140,9 +141,38 @@ deploy_misc:
         -var "satellite_api_lb_staging=$SATELLITE_API_LB_STAGING"
         -input=false -auto-approve)
 
-# Tag with staging_v.* to deploy mainnet staging (e.g. staging_v0.1.1)
+# Tag with staging_v.* to plan mainnet + LB to staging (e.g. staging_v0.1.1)
+plan_staging:
+  stage: plan
+  only:
+    - /^staging_v.*/
+  script:
+    - (cd terraform
+       && terraform init -input=false
+       && terraform workspace select staging
+       && terraform plan
+         -var "ionosphere_docker=blockstream/satellite-api:$CI_COMMIT_SHA"
+         -var "ionosphere_sse_docker=blockstream/satellite-api-sse:$CI_COMMIT_SHA"
+         -var "region=$REGION"
+         -var "zone=$ZONE"
+         -var "instance_type=$INSTANCE_TYPE"
+         -var "host=$HOST_STAGING"
+         -var "timeout=$TIMEOUT"
+         -var "prom_service_acct=$PROM_SA"
+         -var "opsgenie_key=$OPSGENIE_KEY"
+         -var "public_bucket_url=$PUBLIC_BUCKET_URL"
+         -var "letsencrypt_email=$LE_EMAIL"
+         -var "pguser=$PGUSER"
+         -var "pgpass=$PGPASS"
+         -var "charge_token=$CHARGE_TOKEN"
+         -var "rpcpass=$RPCPASS"
+         -var "k8s_autossh_lb=$GKE_LB"
+         -input=false)
+
+# Tag with staging_v.* to deploy mainnet + LB to staging (e.g. staging_v0.1.1)
 deploy_staging:
   stage: deploy
+  when: manual
   only:
     - /^staging_v.*/
   script:
@@ -168,9 +198,38 @@ deploy_staging:
          -var "k8s_autossh_lb=$GKE_LB"
          -input=false -auto-approve)
 
-# Tag with production_v.* to deploy mainnet production (e.g. prod_v0.1.1)
+# Tag with prod_v.* to plan mainnet + LB to production (e.g. prod_v0.1.1)
+plan_production:
+  stage: plan
+  only:
+    - /^prod_v.*/
+  script:
+    - (cd terraform
+       && terraform init -input=false
+       && terraform workspace select prod
+       && terraform plan
+         -var "ionosphere_docker=blockstream/satellite-api:$CI_COMMIT_SHA"
+         -var "ionosphere_sse_docker=blockstream/satellite-api-sse:$CI_COMMIT_SHA"
+         -var "region=$REGION"
+         -var "zone=$ZONE"
+         -var "instance_type=$INSTANCE_TYPE"
+         -var "host=$HOST"
+         -var "timeout=$TIMEOUT"
+         -var "prom_service_acct=$PROM_SA"
+         -var "opsgenie_key=$OPSGENIE_KEY"
+         -var "public_bucket_url=$PUBLIC_BUCKET_URL"
+         -var "letsencrypt_email=$LE_EMAIL"
+         -var "pguser=$PGUSER"
+         -var "pgpass=$PGPASS"
+         -var "charge_token=$CHARGE_TOKEN"
+         -var "rpcpass=$RPCPASS"
+         -var "k8s_autossh_lb=$GKE_LB"
+         -input=false)
+
+# Tag with prod_v.* to deploy mainnet + LB to production (e.g. prod_v0.1.1)
 deploy_production:
   stage: deploy
+  when: manual
   only:
     - /^prod_v.*/
   script:
@@ -196,9 +255,38 @@ deploy_production:
          -var "k8s_autossh_lb=$GKE_LB"
          -input=false -auto-approve)
 
+# Tag with testnet_staging_v.* to plan testnet staging (e.g. testnet_staging_v0.1.1)
+plan_staging_testnet:
+  stage: plan
+  only:
+    - /^testnet_staging_v.*/
+  script:
+    - (cd terraform
+       && terraform init -input=false
+       && terraform workspace select testnet-staging
+       && terraform plan
+         -var "ionosphere_docker=blockstream/satellite-api:$CI_COMMIT_SHA"
+         -var "ionosphere_sse_docker=blockstream/satellite-api-sse:$CI_COMMIT_SHA"
+         -var "region=$REGION"
+         -var "zone=$ZONE"
+         -var "instance_type=$INSTANCE_TYPE"
+         -var "timeout=$TIMEOUT"
+         -var "prom_service_acct=$PROM_SA"
+         -var "opsgenie_key=$OPSGENIE_KEY"
+         -var "public_bucket_url=$PUBLIC_BUCKET_URL"
+         -var "letsencrypt_email=$LE_EMAIL"
+         -var "lb_svc_acct=$LB_SA_STAGING"
+         -var "pguser=$PGUSER"
+         -var "pgpass=$PGPASS"
+         -var "charge_token=$CHARGE_TOKEN"
+         -var "rpcpass=$RPCPASS_TESTNET"
+         -var "k8s_autossh_lb=$GKE_LB"
+         -input=false)
+
 # Tag with testnet_staging_v.* to deploy testnet staging (e.g. testnet_staging_v0.1.1)
 deploy_staging_testnet:
   stage: deploy
+  when: manual
   only:
     - /^testnet_staging_v.*/
   script:
@@ -211,7 +299,6 @@ deploy_staging_testnet:
          -var "region=$REGION"
          -var "zone=$ZONE"
          -var "instance_type=$INSTANCE_TYPE"
-         -var "host=$HOST_STAGING"
          -var "timeout=$TIMEOUT"
          -var "prom_service_acct=$PROM_SA"
          -var "opsgenie_key=$OPSGENIE_KEY"
@@ -225,9 +312,37 @@ deploy_staging_testnet:
          -var "k8s_autossh_lb=$GKE_LB"
          -input=false -auto-approve)
 
-# Tag with production_v.* to deploy testnet production (e.g. testnet_prod_v0.1.1)
+# Tag with testnet_prod_v.* to plan testnet to production (e.g. prod_v0.1.1)
+plan_production_testnet:
+  stage: plan
+  only:
+    - /^testnet_prod_v.*/
+  script:
+    - (cd terraform
+       && terraform init -input=false
+       && terraform workspace select testnet-prod
+       && terraform plan
+         -var "ionosphere_docker=blockstream/satellite-api:$CI_COMMIT_SHA"
+         -var "ionosphere_sse_docker=blockstream/satellite-api-sse:$CI_COMMIT_SHA"
+         -var "region=$REGION"
+         -var "zone=$ZONE"
+         -var "instance_type=$INSTANCE_TYPE"
+         -var "timeout=$TIMEOUT"
+         -var "prom_service_acct=$PROM_SA"
+         -var "opsgenie_key=$OPSGENIE_KEY"
+         -var "public_bucket_url=$PUBLIC_BUCKET_URL"
+         -var "letsencrypt_email=$LE_EMAIL"
+         -var "pguser=$PGUSER"
+         -var "pgpass=$PGPASS"
+         -var "charge_token=$CHARGE_TOKEN"
+         -var "rpcpass=$RPCPASS"
+         -var "k8s_autossh_lb=$GKE_LB"
+         -input=false)
+
+# Tag with testnet_prod_v.* to deploy testnet to production (e.g. testnet_prod_v0.1.1)
 deploy_production_testnet:
   stage: deploy
+  when: manual
   only:
     - /^testnet_prod_v.*/
   script:
@@ -240,7 +355,6 @@ deploy_production_testnet:
          -var "region=$REGION"
          -var "zone=$ZONE"
          -var "instance_type=$INSTANCE_TYPE"
-         -var "host=$HOST_STAGING"
          -var "timeout=$TIMEOUT"
          -var "prom_service_acct=$PROM_SA"
          -var "opsgenie_key=$OPSGENIE_KEY"

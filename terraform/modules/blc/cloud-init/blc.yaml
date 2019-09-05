@@ -357,8 +357,8 @@ runcmd:
   - systemctl enable k8s-autossh.service
   - systemctl start lightning.service
   - systemctl enable lightning.service
-  - systemctl start postgres.service
-  - systemctl enable postgres.service  
+#  - systemctl start postgres.service
+#  - systemctl enable postgres.service  
   - systemctl start redis.service
   - systemctl enable redis.service
   - systemctl start ionosphere.service

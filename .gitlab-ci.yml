@@ -47,7 +47,6 @@ build:
     - bundle exec ruby tests/tests.rb || { echo "Tests failed.."; exit 1; }
     - curl https://raw.githubusercontent.com/Yelp/docker-push-latest-if-changed/master/docker_push_latest_if_changed.py > /usr/local/bin/docker-push-latest-if-changed
     - chmod 755 /usr/local/bin/docker-push-latest-if-changed
-    - sed -i 's/3.6/3.7/' /usr/local/bin/docker-push-latest-if-changed
     - echo $DOCKERHUB_PW | docker login -u $DOCKERHUB_USER --password-stdin
     - docker pull blockstream/satellite-api:latest
     - docker pull blockstream/satellite-api-sse:latest

@@ -67,7 +67,7 @@ module "blc-testnet" {
   certbot_docker        = var.certbot_docker
   net                   = "testnet"
   env                   = local.env
-  cert_bucket           = "" #data.terraform_remote_state.blc-mainnet.outputs.lb_cert_bucket
+  cert_bucket           = data.terraform_remote_state.blc-mainnet.outputs.lb_cert_bucket
   ssh_key_net           = "_testnet"
 
   create_resources = local.create_testnet

@@ -3,12 +3,6 @@ data "google_compute_network" "blc" {
   project = var.project
 }
 
-data "google_compute_image" "blc" {
-  family  = "satapi-data-${var.net}-${var.env}"
-  project = var.project
-  count   = var.create_resources
-}
-
 data "template_file" "blc" {
   template = file("${path.module}/cloud-init/blc.yaml")
   count    = var.create_resources
@@ -36,7 +30,7 @@ data "template_file" "blc" {
     rpcpass               = var.rpcpass
     k8s_autossh_ssh_port  = "${var.net == "testnet" ? "2222" : "2223"}"
     k8s_autossh_btc_port  = "${var.net == "testnet" ? "18332" : "8332"}"
-    cert_bucket           = var.cert_bucket
+    private_bucket        = var.private_bucket
     ssh_key_net           = var.ssh_key_net
   }
 }

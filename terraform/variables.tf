@@ -174,6 +174,11 @@ variable "public_bucket_url" {
   default = ""
 }
 
+variable "private_bucket" {
+  type    = string
+  default = ""
+}
+
 variable "letsencrypt_email" {
   type    = string
   default = ""

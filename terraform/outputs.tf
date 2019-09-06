@@ -15,7 +15,3 @@ output "lb_svc_acct" {
 output "lb_backend_service" {
   value = module.lb.backend_service
 }
-
-output "lb_cert_bucket" {
-  value = module.lb.lb_cert_bucket
-}

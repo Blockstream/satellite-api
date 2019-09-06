@@ -32,7 +32,6 @@ module "blc-mainnet" {
   net                   = "mainnet"
   env                   = local.env
   lb_svc_acct           = module.lb.lb_svc_acct
-  cert_bucket           = module.lb.lb_cert_bucket
   ssh_key_net           = ""
 
   create_resources = local.create_mainnet
@@ -49,6 +48,7 @@ module "blc-mainnet" {
   pgpass            = var.pgpass
   charge_token      = var.charge_token
   k8s_autossh_lb    = var.k8s_autossh_lb
+  private_bucket    = var.private_bucket
 }
 
 module "blc-testnet" {
@@ -67,7 +67,6 @@ module "blc-testnet" {
   certbot_docker        = var.certbot_docker
   net                   = "testnet"
   env                   = local.env
-  cert_bucket           = data.terraform_remote_state.blc-mainnet.outputs.lb_cert_bucket
   ssh_key_net           = "_testnet"
 
   create_resources = local.create_testnet
@@ -85,6 +84,7 @@ module "blc-testnet" {
   pgpass            = var.pgpass
   charge_token      = var.charge_token
   k8s_autossh_lb    = var.k8s_autossh_lb
+  private_bucket    = var.private_bucket
 }
 
 module "lb" {

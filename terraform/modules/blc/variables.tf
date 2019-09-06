@@ -76,7 +76,7 @@ variable "rpcpass" {
   type = string
 }
 
-variable "cert_bucket" {
+variable "private_bucket" {
   type = string
 }
 

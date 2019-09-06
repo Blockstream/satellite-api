@@ -1,13 +1,11 @@
 resource "google_compute_disk" "blc" {
   name  = "${var.name}-data-${var.net}-${var.env}"
   type  = "pd-standard"
-  image = data.google_compute_image.blc[0].self_link
   zone  = var.zone
   count = var.create_resources
 
   lifecycle {
     prevent_destroy = true
-    ignore_changes  = [image]
   }
 }
 

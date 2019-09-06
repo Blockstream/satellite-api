@@ -19,7 +19,7 @@ write_files:
         NUM_CONT=$$(docker ps -q | wc -l)
         RUNNING_CONT="$$(docker ps --format '{{.Names}}' | tr '\n' ', ' | sed -e 's/,$//g')"
 
-        # If less than 10 are running, send alert to opsgenie
+        # If less than 9 are running, send alert to opsgenie
         if [ $${NUM_CONT} != '9' ]
         then
                curl -s -X POST https://api.opsgenie.com/v2/alerts \
@@ -29,13 +29,13 @@ write_files:
               '{
                   "message": "Satellite API instance does not have all 9 containers running",
                   "alias": "satapi-missing-containers",
-                  "description":"Currently running '$${NUM_CONT}'/10: '$${RUNNING_CONT}'",
+                  "description":"Currently running '$${NUM_CONT}'/9: '$${RUNNING_CONT}'",
                   "tags": ["SatAPI","Critical"],
                   "entity":"api.blockstream.space",
-                  "priority":"P3"
+                  "priority":"P2"
               }'
           else
-                echo "'$${NUM_CONT}'/10 containers are running"
+                echo "'$${NUM_CONT}'/9 containers are running"
         fi
 
   - path: /etc/systemd/system/check-containers.service

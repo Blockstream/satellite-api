@@ -30,7 +30,7 @@ data "template_file" "blc" {
     rpcpass               = var.rpcpass
     k8s_autossh_ssh_port  = "${var.net == "testnet" ? "2222" : "2223"}"
     k8s_autossh_btc_port  = "${var.net == "testnet" ? "18332" : "8332"}"
-    private_bucket        = var.private_bucket
+    private_bucket        = "${var.private_bucket}-${var.env}"
     ssh_key_net           = var.ssh_key_net
   }
 }

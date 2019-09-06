@@ -67,6 +67,7 @@ module "blc-testnet" {
   certbot_docker        = var.certbot_docker
   net                   = "testnet"
   env                   = local.env
+  lb_svc_acct           = data.terraform_remote_state.blc-mainnet.outputs.lb_svc_acct
   ssh_key_net           = "_testnet"
 
   create_resources = local.create_testnet
@@ -79,7 +80,6 @@ module "blc-testnet" {
   prom_service_acct = var.prom_service_acct
   opsgenie_key      = var.opsgenie_key
   rpcpass           = var.rpcpass
-  lb_svc_acct       = var.lb_svc_acct
   pguser            = var.pguser
   pgpass            = var.pgpass
   charge_token      = var.charge_token

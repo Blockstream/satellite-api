@@ -1,6 +1,12 @@
 variables:
   GIT_SUBMODULE_STRATEGY: none
   CI_DISPOSABLE_ENVIRONMENT: "true"
+  DOCKER_DRIVER: overlay2
+  DOCKER_HOST: tcp://localhost:2375
+  DOCKER_TLS_CERTDIR: ""
+
+services:
+  - docker:19-dind
 
 image: blockstream/gcloud-docker@sha256:832d8a67d102fe4651ba96e51fe3a82287d0b3d1bf7eb5b5337286aa5b70b527
 stages:
@@ -37,6 +43,9 @@ test_build:
 build:
   stage: build
   image: blockstream/satapi-builder@sha256:a768bbd26e1b52dd681e122d35226943c043e9a35efeba45cea41a07d64357c4
+  tags:
+    - docker
+    - k8s
   only:
     - master@satellite/ionosphere
   before_script:
@@ -89,7 +98,7 @@ plan_satapi:
          -var "rpcpass=$RPCPASS"
          -var "k8s_autossh_lb=$GKE_LB"
          -input=false)
-         
+
 # This plan gets triggered only for miscellaneous branches/tags (i.e. tor, prometheus, etc), so make sure the branch/tag name starts with misc_
 plan_misc:
   stage: plan

@@ -236,6 +236,6 @@ variable "postgres_docker" {
 }
 
 variable "autossh_docker" {
-  type    = "string"
+  type    = string
   default = "blockstream/autossh@sha256:5e30a60d6ef17aeafdde63bb859238e132fadef174af4092a435bc7325430ebd"
 }

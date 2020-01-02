@@ -203,8 +203,8 @@ write_files:
             --cap-add=SYS_PTRACE \
             --memory=2g \
             --log-opt max-size=1g \
-            -v /home/bs/lightning.conf:/root/.lightning/lightning.conf:ro \
-            -v /mnt/disks/data/lightning:/root/.lightning:rw \
+            -v /home/bs/lightning.conf:/root/.lightning${network_dir}/lightning.conf:ro \
+            -v /mnt/disks/data/lightning:/root/.lightning${network_dir}:rw \
             "${lightning_docker}" ${lightning_cmd}
         ExecStop=/usr/bin/docker exec lightning lightning-cli stop
         ExecStopPost=/usr/bin/sleep 3

@@ -8,11 +8,11 @@ terraform {
 }
 
 provider "google" {
-  project = "var.project"
+  project = var.project
 }
 
 provider "google-beta" {
-  project = "var.project"
+  project = var.project
 }
 
 module "blc-mainnet" {
@@ -176,4 +176,3 @@ module "dns" {
   satellite_api_lb         = var.satellite_api_lb
   satellite_api_lb_staging = var.satellite_api_lb_staging
 }
-

@@ -7,7 +7,7 @@ resource "google_storage_bucket" "satapi-lb-public" {
   count         = var.create_resources
 
   lifecycle {
-    ignore_changes = ["name"]
+    ignore_changes = [name]
   }
 }
 
@@ -26,7 +26,7 @@ resource "google_storage_bucket" "satapi-lb-private" {
   count         = var.create_resources
 
   lifecycle {
-    ignore_changes = ["name"]
+    ignore_changes = [name]
   }
 }
 

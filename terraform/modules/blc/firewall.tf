@@ -1,6 +1,6 @@
 resource "google_compute_firewall" "blc" {
   name    = "${var.name}-${var.net}-fw-rule-${var.env}"
-  network = data.google_compute_network.blc.self_link
+  network = data.google_compute_network.blc[0].self_link
   project = var.project
   count   = var.create_resources
 
@@ -16,7 +16,7 @@ resource "google_compute_firewall" "blc" {
 
 resource "google_compute_firewall" "api-internal" {
   name    = "${var.name}-${var.net}-lb-internal-fw-rule-${var.env}"
-  network = data.google_compute_network.blc.self_link
+  network = data.google_compute_network.blc[0].self_link
   project = var.project
   count   = var.create_resources
 
@@ -36,7 +36,7 @@ resource "google_compute_firewall" "api-internal" {
 
 resource "google_compute_firewall" "blc-prom" {
   name    = "${var.name}-${var.net}-prometheus-access-${var.env}"
-  network = data.google_compute_network.blc.self_link
+  network = data.google_compute_network.blc[0].self_link
   project = var.project
   count   = var.create_resources
 
@@ -53,4 +53,3 @@ resource "google_compute_firewall" "blc-prom" {
     google_service_account.blc[0].email,
   ]
 }
-

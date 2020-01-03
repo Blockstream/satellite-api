@@ -1,6 +1,7 @@
 data "google_compute_network" "blc" {
   name    = "default"
   project = var.project
+  count   = var.create_resources
 }
 
 data "template_file" "blc" {

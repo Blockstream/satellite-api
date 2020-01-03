@@ -68,7 +68,7 @@ resource "google_compute_instance_template" "blc" {
   }
 
   network_interface {
-    network    = data.google_compute_network.blc.self_link
+    network    = data.google_compute_network.blc[0].self_link
     network_ip = google_compute_address.blc-internal[0].address
 
     access_config {

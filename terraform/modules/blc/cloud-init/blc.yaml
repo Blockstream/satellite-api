@@ -204,7 +204,7 @@ write_files:
             --memory=2g \
             --log-opt max-size=1g \
             -v /home/bs/lightning.conf:/root/.lightning${network_dir}/lightning.conf:ro \
-            -v /mnt/disks/data/lightning:/root/.lightning${network_dir}:rw \
+            -v /mnt/disks/data/lightning:/root/.lightning:rw \
             "${lightning_docker}" ${lightning_cmd}
         ExecStop=/usr/bin/docker exec lightning lightning-cli stop
         ExecStopPost=/usr/bin/sleep 3
@@ -341,7 +341,7 @@ write_files:
             --network=host \
             --pid=host \
             --name=charge \
-            -v /mnt/disks/data/lightning:/root/.lightning:ro \
+            -v /mnt/disks/data/lightning${network_dir}:/root/.lightning:ro \
             -v /mnt/disks/data/charge:/data:rw \
             -e "API_TOKEN=${charge_token}" \
             "${charge_docker}" ${charge_cmd}

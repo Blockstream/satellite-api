@@ -10,7 +10,7 @@ data "template_file" "blc" {
   vars = {
     charge_token          = var.charge_token
     net                   = var.net
-    lightning_cmd         = "lightningd ${var.net == "testnet" ? "--testnet" : "--mainnet"} --conf=/root/.lightning/lightning.conf"
+    lightning_cmd         = var.lightning_cmd
     charge_cmd            = "charged -d /data/charge.db -l /root/.lightning"
     announce_addr         = google_compute_address.blc[0].address
     lightning_port        = 9735
@@ -32,7 +32,7 @@ data "template_file" "blc" {
     k8s_autossh_btc_port  = "${var.net == "testnet" ? "18332" : "8332"}"
     private_bucket        = "${var.private_bucket}-${var.env}"
     ssh_key_net           = var.ssh_key_net
-    network_dir           = "${var.net == "testnet" ? "/testnet" : ""}"
+    network_dir           = "${var.net == "testnet" ? "/testnet" : "/bitcoin"}"
   }
 }
 

@@ -168,6 +168,11 @@ variable "ssh_key_net" {
   default = ""
 }
 
+variable "lighning_cmd" {
+  type    = string
+  default = ""
+}
+
 # Overwritten by CI
 variable "public_bucket_url" {
   type    = string

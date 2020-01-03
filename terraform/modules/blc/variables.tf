@@ -84,7 +84,7 @@ variable "ssh_key_net" {
   type = string
 }
 
-variable "lighning_cmd" {
+variable "lightning_cmd" {
   type = string
 }
 

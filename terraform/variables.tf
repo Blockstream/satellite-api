@@ -168,7 +168,7 @@ variable "ssh_key_net" {
   default = ""
 }
 
-variable "lighning_cmd" {
+variable "lightning_cmd" {
   type    = string
   default = ""
 }

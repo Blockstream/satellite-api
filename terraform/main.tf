@@ -68,7 +68,7 @@ module "blc-testnet" {
   certbot_docker        = var.certbot_docker
   net                   = "testnet"
   env                   = local.env
-  lb_svc_acct           = data.terraform_remote_state.blc-mainnet.outputs.lb_svc_acct
+  lb_svc_acct           = "${length(data.terraform_remote_state.blc-mainnet.outputs) > 1 ? data.terraform_remote_state.blc-mainnet.outputs.lb_svc_acct : ""}"
   ssh_key_net           = "_testnet"
   lightning_cmd         = "lightningd --testnet --conf=/root/.lightning/testnet/lightning.conf"
 

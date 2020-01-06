@@ -12,4 +12,3 @@ resource "google_kms_crypto_key" "tor-crypto-key" {
 
   count = local.create_misc
 }
-

@@ -207,7 +207,7 @@ variable "lightning_docker" {
 
 variable "charge_docker" {
   type    = string
-  default = "blockstream/charged@sha256:0d49c1202b8b718b5a93f7e82509d3d724f9d18ff6c14376347f67866ac47ff8"
+  default = "blockstream/charged@sha256:bcc5f91643f03bd97601471d335f133d75455d096054f01c15d332138a55a49c"
 }
 
 variable "tor_docker" {

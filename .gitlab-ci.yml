@@ -42,6 +42,9 @@ test_build:
     - bundle exec rake db:create && bundle exec rake db:schema:load && bundle exec rake db:migrate
     - bundle exec ruby tests/tests.rb || { echo -e "Tests failed..\n Sleeping for an hour to debug."; sleep 3600; exit 1; }
     - echo "Tests passed!"
+    - docker pull blockstream/satellite-api:latest
+    - docker build --cache-from blockstream/satellite-api:latest -t blockstream/satellite-api:latest .
+    - docker rmi blockstream/satellite-api:latest || true
 
 # Run tests and build docker images
 build:

@@ -35,6 +35,7 @@ test_build:
     - export CHARGE_ROOT=$CHARGE_ROOT_CI
     - export REDIS_URI=$REDIS_URI_CI
   script:
+    - bundle update --bundler
     - bundle exec rake db:create && bundle exec rake db:schema:load && bundle exec rake db:migrate
     - bundle exec ruby tests/tests.rb || { echo -e "Tests failed..\n Sleeping for an hour to debug."; sleep 3600; exit 1; }
     - echo "Tests passed!"
@@ -52,6 +53,7 @@ build:
     - export CHARGE_ROOT=$CHARGE_ROOT_CI
     - export REDIS_URI=$REDIS_URI_CI
   script:
+    - bundle update --bundler
     - bundle exec rake db:create && bundle exec rake db:schema:load && bundle exec rake db:migrate
     - bundle exec ruby tests/tests.rb || { echo "Tests failed.."; exit 1; }
     - echo $DOCKERHUB_PW | docker login -u $DOCKERHUB_USER --password-stdin

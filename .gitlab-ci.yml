@@ -8,7 +8,7 @@ variables:
 services:
   - docker:19-dind
 
-image: blockstream/gcloud-docker@sha256:115e68c4f187e24b8e9dd04f6b82c0f670c967c11c115e29c2123c03fc32a7fb
+image: blockstream/gcloud-docker@sha256:3f5037b4fa387ee44ab9c732cf6436b22b3f077f87ea62d61aaafc1e782350fc
 stages:
   - build
   - plan
@@ -26,6 +26,9 @@ before_script:
 test_build:
   stage: build
   image: blockstream/satapi-builder@sha256:35b3d427bc205407410eb4fbaa4c1865306d241a7a8b4d5d57ca4ec1926b373d
+  tags:
+    - docker
+    - k8s
   only:
     - branches@satellite/ionosphere
   except:
@@ -70,6 +73,9 @@ build:
 # Any newly-pushed, WIP branch will be ran through plan (keep in mind docker images are using the latest tag, which may be an older one since the current commit may not match an available image)
 plan_satapi:
   stage: plan
+  tags:
+    - docker
+    - k8s
   only:
     - branches@satellite/ionosphere
   except:
@@ -104,6 +110,9 @@ plan_satapi:
 # This plan gets triggered only for miscellaneous branches/tags (i.e. tor, prometheus, etc), so make sure the branch/tag name starts with misc_
 plan_misc:
   stage: plan
+  tags:
+    - docker
+    - k8s
   only:
     - /^misc_.*/
   except:
@@ -130,6 +139,9 @@ plan_misc:
 # This deploys only tags/branches starting with misc_v.* (i.e. tor, prometheus, etc)
 deploy_misc:
   stage: deploy
+  tags:
+    - docker
+    - k8s
   only:
     - /^misc_v.*/
   script:
@@ -154,6 +166,9 @@ deploy_misc:
 # Tag with staging_v.* to plan mainnet + LB to staging (e.g. staging_v0.1.1)
 plan_staging:
   stage: plan
+  tags:
+    - docker
+    - k8s
   only:
     - /^staging_v.*/
   script:
@@ -184,6 +199,9 @@ plan_staging:
 deploy_staging:
   stage: deploy
   when: manual
+  tags:
+    - docker
+    - k8s
   only:
     - /^staging_v.*/
   script:
@@ -213,6 +231,9 @@ deploy_staging:
 # Tag with prod_v.* to plan mainnet + LB to production (e.g. prod_v0.1.1)
 plan_production:
   stage: plan
+  tags:
+    - docker
+    - k8s
   only:
     - /^prod_v.*/
   script:
@@ -243,6 +264,9 @@ plan_production:
 deploy_production:
   stage: deploy
   when: manual
+  tags:
+    - docker
+    - k8s
   only:
     - /^prod_v.*/
   script:
@@ -272,6 +296,9 @@ deploy_production:
 # Tag with testnet_staging_v.* to plan testnet staging (e.g. testnet_staging_v0.1.1)
 plan_staging_testnet:
   stage: plan
+  tags:
+    - docker
+    - k8s
   only:
     - /^testnet_staging_v.*/
   script:
@@ -301,6 +328,9 @@ plan_staging_testnet:
 deploy_staging_testnet:
   stage: deploy
   when: manual
+  tags:
+    - docker
+    - k8s
   only:
     - /^testnet_staging_v.*/
   script:
@@ -329,6 +359,9 @@ deploy_staging_testnet:
 # Tag with testnet_prod_v.* to plan testnet to production (e.g. testnet_prod_v0.1.1)
 plan_production_testnet:
   stage: plan
+  tags:
+    - docker
+    - k8s
   only:
     - /^testnet_prod_v.*/
   script:
@@ -358,6 +391,9 @@ plan_production_testnet:
 deploy_production_testnet:
   stage: deploy
   when: manual
+  tags:
+    - docker
+    - k8s
   only:
     - /^testnet_prod_v.*/
   script:
@@ -386,6 +422,9 @@ deploy_production_testnet:
 # Pushing to this branch destroys the staging infrastructure
 cleanup_staging:
   stage: deploy
+  tags:
+    - docker
+    - k8s
   only:
     - cleanup_staging@satellite/ionosphere
   script:

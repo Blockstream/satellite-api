@@ -14,18 +14,17 @@ RUN apk update && \
 RUN mkdir /app && \
     mkdir -p /data/ionosphere
 
-COPY Gemfile /app
-COPY Gemfile.lock /app
+COPY . /app
 WORKDIR /app
 
 # install packages needed for building compiled gems; install gems; then delete build dependencies to keep Docker image small
 ENV BUILD_PACKAGES sudo build-base ruby-dev libc-dev linux-headers openssl-dev git
 RUN apk --update add --virtual build_deps $BUILD_PACKAGES && \
+    bundle update --bundler && \
     bundle install && \
     apk del build_deps && \
     rm -rf /var/cache/apk/*
 
-COPY . /app
 RUN chown -R ionosphere:ionosphere /app
 USER ionosphere
 

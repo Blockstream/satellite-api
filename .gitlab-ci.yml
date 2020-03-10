@@ -25,7 +25,7 @@ before_script:
 # Run tests
 test_build:
   stage: build
-  image: blockstream/satapi-builder@sha256:a768bbd26e1b52dd681e122d35226943c043e9a35efeba45cea41a07d64357c4
+  image: blockstream/satapi-builder@sha256:35b3d427bc205407410eb4fbaa4c1865306d241a7a8b4d5d57ca4ec1926b373d
   only:
     - branches@satellite/ionosphere
   except:
@@ -42,7 +42,7 @@ test_build:
 # Run tests and build docker images
 build:
   stage: build
-  image: blockstream/satapi-builder@sha256:a768bbd26e1b52dd681e122d35226943c043e9a35efeba45cea41a07d64357c4
+  image: blockstream/satapi-builder@sha256:35b3d427bc205407410eb4fbaa4c1865306d241a7a8b4d5d57ca4ec1926b373d
   tags:
     - docker
     - k8s

@@ -1,6 +1,6 @@
-# docker build --cache-from blockstream/satapi-builder@sha256:a3a137b80a08325bdd50a7c59ae0429b933e7a36db0d74f6ae34af067dfdee2d -f Dockerfile.ci .
+# docker build --cache-from blockstream/satapi-builder@sha256:35b3d427bc205407410eb4fbaa4c1865306d241a7a8b4d5d57ca4ec1926b373d -t blockstream/satapi-builder:latest -f Dockerfile.ci .
 
-FROM docker@sha256:453c52a7a7200677f9effa3acc8498a2f71af77c2951ac5e1ac1391053573374 AS docker
+FROM docker@sha256:bc7f740e2c0a8a9ec43b009b7cd35aafb10e69488a017110ad723003fbd3a7ae AS docker
 FROM alpine:latest
 
 COPY --from=docker /usr/local/bin/docker /usr/local/bin/docker
@@ -18,15 +18,14 @@ RUN apk update && \
 RUN mkdir /app && \
     mkdir -p /data/ionosphere
 
-COPY Gemfile /app
-COPY Gemfile.lock /app
+COPY . /app
 WORKDIR /app
 
 # install packages needed for building compiled gems; install gems; then delete build dependencies to keep Docker image small
 ENV BUILD_PACKAGES sudo build-base ruby-dev libc-dev linux-headers openssl-dev
 RUN apk --update add --virtual build_deps $BUILD_PACKAGES && \
+    bundle update --bundler && \
     bundle install && \
     apk del build_deps && \
     rm -rf /var/cache/apk/*
 
-COPY . /app

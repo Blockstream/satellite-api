@@ -8,7 +8,7 @@ variables:
 services:
   - docker:19-dind
 
-image: blockstream/gcloud-docker@sha256:3f5037b4fa387ee44ab9c732cf6436b22b3f077f87ea62d61aaafc1e782350fc
+image: blockstream/gcloud-docker@sha256:4067927b561fbeefa3ffd808bab9b4e4e287805aab51931a433bd924fe3de78a
 stages:
   - build
   - plan

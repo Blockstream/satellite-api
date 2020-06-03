@@ -314,26 +314,40 @@ class MainAppTest < Minitest::Test
     @order = create_pay_and_transmit_order
     assert_equal 0, @order.tx_confirmations.count
     assert_equal 0, @order.rx_confirmations.count
-    
+
     post "/order/rx/#{@order.tx_seq_num}", params={"region" => 0}
     assert last_response.ok?
     @order.reload
     assert_equal 1, @order.rx_confirmations.count
     assert_equal 1, @order.rx_regions.count
     assert @order.sent?
-    
-    post "/order/tx/#{@order.tx_seq_num}", params={"regions" => [0, 1, 2, 3, 4].to_json}
+
+    post "/order/tx/#{@order.tx_seq_num}", params={"regions" => [0, 1, 2, 3, 4, 5].to_json}
     assert last_response.ok?
     @order.reload
-    assert_equal 5, @order.tx_confirmations.count
-    assert_equal 5, @order.tx_regions.count
+    assert_equal 6, @order.tx_confirmations.count
+    assert_equal 6, @order.tx_regions.count
     assert @order.sent?
-    
+
+    post "/order/rx/#{@order.tx_seq_num}", params={"region" => 1}
+    assert last_response.ok?
+    @order.reload
+    assert_equal 2, @order.rx_confirmations.count
+    assert_equal 2, @order.rx_regions.count
+
     post "/order/rx/#{@order.tx_seq_num}", params={"region" => 4}
     assert last_response.ok?
     @order.reload
-    assert_equal 5, @order.rx_confirmations.count
-    assert_equal 5, @order.rx_regions.count
+    assert_equal 3, @order.rx_confirmations.count
+    assert_equal 3, @order.rx_regions.count
+
+    # Once all required regions are confirmed (0, 1, 4, and 5), the two other
+    # regions (2 and 3) are expected to have inferred rx confirmations
+    post "/order/rx/#{@order.tx_seq_num}", params={"region" => 5}
+    assert last_response.ok?
+    @order.reload
+    assert_equal 6, @order.rx_confirmations.count
+    assert_equal 6, @order.rx_regions.count
     assert @order.received?
   end
 

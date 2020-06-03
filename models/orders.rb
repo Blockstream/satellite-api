@@ -94,11 +94,13 @@ class Order < ActiveRecord::Base
   def received_criteria_met?
     (self.tx_confirmations.count == Region.count) && 
     self.rx_regions.exists?(Region::REGIONS[:north_america].id) &&
-    self.rx_regions.exists?(Region::REGIONS[:asia].id)
+    self.rx_regions.exists?(Region::REGIONS[:south_america].id) &&
+    self.rx_regions.exists?(Region::REGIONS[:asia_c].id) &&
+    self.rx_regions.exists?(Region::REGIONS[:asia_ku].id)
   end
   
   def synthesize_presumed_rx_confirmations
-    [:south_america, :africa, :europe].each do |r|
+    [:africa, :europe].each do |r|
       RxConfirmation.create(order: self, region: Region::REGIONS[r], presumed: true)
     end
   end

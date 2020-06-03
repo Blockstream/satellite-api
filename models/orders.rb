@@ -111,7 +111,9 @@ class Order < ActiveRecord::Base
   end
   
   def message_size_with_overhead
-    self.message_size.to_f + FRAMING_OVERHEAD_PER_FRAGMENT * (self.message_size.to_f / FRAGMENT_SIZE).ceil    
+    n_frags  = (self.message_size.to_f / MAX_BLOCKSAT_PAYLOAD).ceil
+    overhead = n_frags * L2_OVERHEAD
+    self.message_size.to_f + overhead
   end
 
   def paid_invoices_total

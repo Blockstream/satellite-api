@@ -14,7 +14,8 @@ unless File.exists?(TEST_FILE) and File.exists?(TINY_TEST_FILE)
   `touch #{TINY_TEST_FILE}`
 end
 
-DEFAULT_BID = File.stat(TEST_FILE).size * (MIN_PER_BYTE_BID + 1)
+DEFAULT_OVERHEAD = (File.stat(TEST_FILE).size / MAX_BLOCKSAT_PAYLOAD).ceil * L2_OVERHEAD
+DEFAULT_BID = (File.stat(TEST_FILE).size + DEFAULT_OVERHEAD) * (MIN_PER_BYTE_BID + 1)
 
 class MainAppTest < Minitest::Test
   include Rack::Test::Methods

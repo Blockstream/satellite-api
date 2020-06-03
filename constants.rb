@@ -22,9 +22,10 @@ MIN_MESSAGE_SIZE = 1
 FRAGMENT_SIZE = 2 * KILO_BYTE
 FRAMING_OVERHEAD_PER_FRAGMENT = 16
 
-TRANSMIT_RATE = Integer(ENV['TRANSMIT_RATE'] || KILO_BYTE) # bytes per second
-MAX_HEAD_OF_LINE_BLOCKING_TIME = 10 # more than 10 seconds and it doesn't feel "instant"
-MAX_MESSAGE_SIZE = MAX_HEAD_OF_LINE_BLOCKING_TIME * TRANSMIT_RATE * 100
+DEFAULT_TX_RATE = 1000 # bytes per second
+TRANSMIT_RATE = Integer(ENV['TRANSMIT_RATE'] || DEFAULT_TX_RATE) # bytes per second
+MAX_HEAD_OF_LINE_BLOCKING_TIME = 1050 # max duration (secs) over which the tx link can be blocked by a message
+MAX_MESSAGE_SIZE = MAX_HEAD_OF_LINE_BLOCKING_TIME * TRANSMIT_RATE
 
 LN_INVOICE_EXPIRY = ONE_HOUR
 LN_INVOICE_DESCRIPTION = (ENV['RACK_ENV'] == 'production') ? "Blockstream Satellite Transmission" : "BSS Test"

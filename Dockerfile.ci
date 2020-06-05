@@ -1,11 +1,11 @@
-# docker build --cache-from blockstream/satapi-builder@sha256:35b3d427bc205407410eb4fbaa4c1865306d241a7a8b4d5d57ca4ec1926b373d -t blockstream/satapi-builder:latest -f Dockerfile.ci .
+# docker build --cache-from blockstream/satapi-builder:latest -t blockstream/satapi-builder:latest -f Dockerfile.ci .
 
-FROM docker@sha256:42d6cb181396874f78ad6bba0b94d1572bf44812e1cbd374c0642460818f6f5a AS docker
+FROM docker@sha256:13ac93a28fec12fec2efad68351b10ec1bd9fa5929a0a98283597a506180b708 AS docker
 FROM alpine:latest
 
 COPY --from=docker /usr/local/bin/docker /usr/local/bin/docker
 
-RUN apk --no-cache add curl python python3 py-crcmod bash libc6-compat openssh-client gnupg
+RUN apk --no-cache add curl python2 python3 py-crcmod bash libc6-compat openssh-client git gnupg
 
 ENV RUBY_PACKAGES ruby ruby-io-console ruby-irb ruby-rake ruby-bundler ruby-bigdecimal ruby-json
 ENV RUBY_DEPS libstdc++ tzdata bash ca-certificates openssl sqlite sqlite-dev
@@ -28,4 +28,3 @@ RUN apk --update add --virtual build_deps $BUILD_PACKAGES && \
     bundle install && \
     apk del build_deps && \
     rm -rf /var/cache/apk/*
-

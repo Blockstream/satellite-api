@@ -8,7 +8,7 @@ variables:
 services:
   - docker:19-dind
 
-image: blockstream/gcloud-docker@sha256:4067927b561fbeefa3ffd808bab9b4e4e287805aab51931a433bd924fe3de78a
+image: blockstream/gcloud-docker
 stages:
   - build
   - plan
@@ -22,10 +22,26 @@ before_script:
   - gcloud auth list
   - gcloud --version
 
+build_ci_image:
+  stage: build
+  when: manual
+  image: blockstream/satapi-builder
+  tags:
+    - docker
+    - k8s
+  only:
+    - build_ci_image@satellite/ionosphere
+  before_script:
+    - echo $DOCKERHUB_PW | docker login -u $DOCKERHUB_USER --password-stdin
+  script:
+    - docker pull blockstream/satapi-builder:latest
+    - docker build --cache-from blockstream/satapi-builder:latest -t blockstream/satapi-builder:latest -f Dockerfile.ci .
+    - docker push blockstream/satapi-builder:latest
+
 # Run tests
 test_build:
   stage: build
-  image: blockstream/satapi-builder@sha256:35b3d427bc205407410eb4fbaa4c1865306d241a7a8b4d5d57ca4ec1926b373d
+  image: blockstream/satapi-builder
   tags:
     - docker
     - k8s
@@ -49,7 +65,7 @@ test_build:
 # Run tests and build docker images
 build:
   stage: build
-  image: blockstream/satapi-builder@sha256:35b3d427bc205407410eb4fbaa4c1865306d241a7a8b4d5d57ca4ec1926b373d
+  image: blockstream/satapi-builder
   tags:
     - docker
     - k8s
@@ -83,6 +99,7 @@ plan_satapi:
     - branches@satellite/ionosphere
   except:
     - cleanup_staging@satellite/ionosphere
+    - build_ci_image@satellite/ionosphere
     - /^staging_.*/
     - /^prod_.*/
     - /^misc_.*/

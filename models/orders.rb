@@ -92,7 +92,12 @@ class Order < ActiveRecord::Base
   end
   
   def received_criteria_met?
-    (self.tx_confirmations.count == Region.count) && 
+    self.tx_regions.exists?(Region::REGIONS[:north_america].id) &&
+    self.tx_regions.exists?(Region::REGIONS[:south_america].id) &&
+    self.tx_regions.exists?(Region::REGIONS[:africa].id) &&
+    self.tx_regions.exists?(Region::REGIONS[:europe].id) &&
+    self.tx_regions.exists?(Region::REGIONS[:asia_c].id) &&
+    self.tx_regions.exists?(Region::REGIONS[:asia_ku].id) &&
     self.rx_regions.exists?(Region::REGIONS[:north_america].id) &&
     self.rx_regions.exists?(Region::REGIONS[:south_america].id) &&
     self.rx_regions.exists?(Region::REGIONS[:asia_c].id) &&

@@ -107,6 +107,7 @@ plan_satapi:
     - (cd terraform
        && terraform init -input=false
        && terraform workspace select staging
+       && terraform init -input=false
        && terraform plan
          -var "ionosphere_docker=blockstream/satellite-api:latest"
          -var "ionosphere_sse_docker=blockstream/satellite-api-sse:latest"
@@ -143,6 +144,7 @@ plan_misc:
     - (cd terraform
       && terraform init -input=false
       && terraform workspace select misc
+      && terraform init -input=false
       && terraform plan
         -var "region=$REGION"
         -var "zone=$ZONE"
@@ -170,6 +172,7 @@ deploy_misc:
     - (cd terraform
       && terraform init -input=false
       && terraform workspace select misc
+      && terraform init -input=false
       && terraform apply
         -var "region=$REGION"
         -var "zone=$ZONE"
@@ -195,6 +198,7 @@ plan_staging:
     - (cd terraform
        && terraform init -input=false
        && terraform workspace select staging
+       && terraform init -input=false
        && terraform plan
          -var "ionosphere_docker=blockstream/satellite-api:$CI_COMMIT_SHA"
          -var "ionosphere_sse_docker=blockstream/satellite-api-sse:$CI_COMMIT_SHA"
@@ -228,6 +232,7 @@ deploy_staging:
     - (cd terraform
        && terraform init -input=false
        && terraform workspace select staging
+       && terraform init -input=false
        && terraform apply
          -var "ionosphere_docker=blockstream/satellite-api:$CI_COMMIT_SHA"
          -var "ionosphere_sse_docker=blockstream/satellite-api-sse:$CI_COMMIT_SHA"
@@ -260,6 +265,7 @@ plan_production:
     - (cd terraform
        && terraform init -input=false
        && terraform workspace select prod
+       && terraform init -input=false
        && terraform plan
          -var "ionosphere_docker=blockstream/satellite-api:$CI_COMMIT_SHA"
          -var "ionosphere_sse_docker=blockstream/satellite-api-sse:$CI_COMMIT_SHA"
@@ -293,6 +299,7 @@ deploy_production:
     - (cd terraform
        && terraform init -input=false
        && terraform workspace select prod
+       && terraform init -input=false
        && terraform apply
          -var "ionosphere_docker=blockstream/satellite-api:$CI_COMMIT_SHA"
          -var "ionosphere_sse_docker=blockstream/satellite-api-sse:$CI_COMMIT_SHA"
@@ -325,6 +332,7 @@ plan_staging_testnet:
     - (cd terraform
        && terraform init -input=false
        && terraform workspace select testnet-staging
+       && terraform init -input=false
        && terraform plan
          -var "ionosphere_docker=blockstream/satellite-api:$CI_COMMIT_SHA"
          -var "ionosphere_sse_docker=blockstream/satellite-api-sse:$CI_COMMIT_SHA"
@@ -357,6 +365,7 @@ deploy_staging_testnet:
     - (cd terraform
        && terraform init -input=false
        && terraform workspace select testnet-staging
+       && terraform init -input=false
        && terraform apply
          -var "ionosphere_docker=blockstream/satellite-api:$CI_COMMIT_SHA"
          -var "ionosphere_sse_docker=blockstream/satellite-api-sse:$CI_COMMIT_SHA"
@@ -388,6 +397,7 @@ plan_production_testnet:
     - (cd terraform
        && terraform init -input=false
        && terraform workspace select testnet-prod
+       && terraform init -input=false
        && terraform plan
          -var "ionosphere_docker=blockstream/satellite-api:$CI_COMMIT_SHA"
          -var "ionosphere_sse_docker=blockstream/satellite-api-sse:$CI_COMMIT_SHA"
@@ -420,6 +430,7 @@ deploy_production_testnet:
     - (cd terraform
        && terraform init -input=false
        && terraform workspace select testnet-prod
+       && terraform init -input=false
        && terraform apply
          -var "ionosphere_docker=blockstream/satellite-api:$CI_COMMIT_SHA"
          -var "ionosphere_sse_docker=blockstream/satellite-api-sse:$CI_COMMIT_SHA"

@@ -108,6 +108,7 @@ module "lb" {
   env                  = local.env
   internal_ip_mainnet  = module.blc-mainnet.internal_ip
   internal_ip_testnet  = data.terraform_remote_state.blc-testnet.outputs.blc_internal_ip_testnet
+  internal_ip_gossip   = data.terraform_remote_state.gossip-prod.outputs.gossip_internal_ip
   target_pool          = length(google_compute_target_pool.lb-pool) > 0 ? google_compute_target_pool.lb-pool[0].self_link : ""
   health_check         = length(google_compute_http_health_check.lb-health) > 0 ? google_compute_http_health_check.lb-health[0].self_link : ""
 

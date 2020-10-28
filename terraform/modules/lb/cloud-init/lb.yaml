@@ -21,26 +21,11 @@ write_files:
             listen 80;
             server_tokens off;
             proxy_set_header X-Forwarded-For 0.0.0.0;
-
-            location = / {
-                rewrite ^ /index.html break;
-            }
-
-            location = /testnet {
-                rewrite ^ /index.html break;
-            }
-
+            
             location / {
-                allow 130.211.0.0/22;
-                deny all;
-                proxy_pass http://${mainnet_ip}:9292/;
+                rewrite ^ https://$http_host$request_uri? permanent;
             }
-
-            location /testnet {
-                allow 130.211.0.0/22;
-                deny all;
-                proxy_pass http://${testnet_ip}:9292/;
-            }
+            
             location /.well-known {
                 auth_basic off;
                 allow all; # Allow all to see content
@@ -89,7 +74,8 @@ write_files:
             location /order/tx/ {
                 # Allow base stations only
                 allow 202.161.136.2; 
-                allow 66.203.141.162; 
+                allow 66.203.141.162;
+                deny all;
                 
                 if ($ssl_client_verify != SUCCESS) {
                   return 403;
@@ -100,7 +86,8 @@ write_files:
             location /order/rx/ {
                 # Allow base stations only
                 allow 202.161.136.2; 
-                allow 66.203.141.162; 
+                allow 66.203.141.162;
+                deny all; 
                 
                 if ($ssl_client_verify != SUCCESS) {
                   return 403;
@@ -159,7 +146,7 @@ write_files:
                 proxy_pass http://${testnet_ip}:9292/;
             }
 
-            # Proxy to mainnet SSE container
+            # Proxy to testnet SSE container
             location /testnet/subscribe/ {
                 chunked_transfer_encoding off;
                 proxy_buffering off;
@@ -168,6 +155,50 @@ write_files:
                 proxy_http_version 1.1;
 
                 proxy_pass http://${testnet_ip}:4500/stream?channels=;
+            }
+            
+            # Proxy to Gossip 
+            location /gossip/ {
+                add_header 'Access-Control-Allow-Origin' '*' always;
+                add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS, DELETE' always;
+                add_header 'Access-Control-Allow-Headers' 'X-Auth-Token,DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range' always;
+                add_header 'X-XSS-Protection' '1; mode=block' always;
+
+                if ($request_uri ~* "^/gossip/?$")
+                {
+                  return 301 https://$host;
+                }
+
+                if ($request_method = 'OPTIONS')
+                {
+                  return 200;
+                }
+
+                proxy_pass http://${gossip_ip}:9292/queue.html;
+            }
+
+            # Proxy to SSE container
+            location /gossip/subscribe/ {
+                chunked_transfer_encoding off;
+                proxy_buffering off;
+                proxy_request_buffering off;
+                proxy_cache off;
+                proxy_http_version 1.1;
+
+                proxy_pass http://${gossip_ip}:4500/stream?channels=;
+            }
+            
+            # Client cert authenticated gossip endpoints
+            location ~ ^/gossip/(order/.*)$ {
+                # Allow base stations only
+                allow 202.161.136.2; 
+                allow 66.203.141.162;
+                deny all;
+                
+                if ($ssl_client_verify != SUCCESS) {
+                  return 403;
+                }
+                proxy_pass http://${gossip_ip}:9292/$1;
             }
         }
 

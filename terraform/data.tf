@@ -17,3 +17,13 @@ data "terraform_remote_state" "blc-testnet" {
     prefix = "satellite-api"
   }
 }
+
+data "terraform_remote_state" "gossip-prod" {
+  backend   = "gcs"
+  workspace = "prod"
+
+  config = {
+    bucket = "terraform-bs-source"
+    prefix = "satellite-api-gossip"
+  }
+}

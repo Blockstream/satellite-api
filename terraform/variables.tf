@@ -138,6 +138,11 @@ variable "internal_ip_testnet" {
   default = ""
 }
 
+variable "internal_ip_gossip" {
+  type    = string
+  default = ""
+}
+
 variable "health_check" {
   type    = string
   default = ""

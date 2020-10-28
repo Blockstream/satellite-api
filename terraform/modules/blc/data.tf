@@ -29,11 +29,11 @@ data "template_file" "blc" {
     opsgenie_key          = var.opsgenie_key
     k8s_autossh_lb        = var.k8s_autossh_lb
     rpcpass               = var.rpcpass
-    k8s_autossh_ssh_port  = "${var.net == "testnet" ? "2222" : "2223"}"
-    k8s_autossh_btc_port  = "${var.net == "testnet" ? "18332" : "8332"}"
+    k8s_autossh_ssh_port  = var.net == "testnet" ? "2222" : "2223"
+    k8s_autossh_btc_port  = var.net == "testnet" ? "18332" : "8332"
     private_bucket        = "${var.private_bucket}-${var.env}"
     ssh_key_net           = var.ssh_key_net
-    network_dir           = "${var.net == "testnet" ? "/testnet" : "/bitcoin"}"
+    network_dir           = var.net == "testnet" ? "/testnet" : "/bitcoin"
   }
 }
 

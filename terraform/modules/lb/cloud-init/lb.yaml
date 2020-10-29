@@ -174,7 +174,7 @@ write_files:
                   return 200;
                 }
 
-                proxy_pass http://${gossip_ip}:9292/queue.html;
+                proxy_pass http://${gossip_ip}:9292/;
             }
 
             # Proxy to SSE container
@@ -376,15 +376,8 @@ write_files:
 
 runcmd:
   - systemctl daemon-reload
-  - systemctl start nginx.service
-  - systemctl enable nginx.service
-  - systemctl start cert-renewer.timer
-  - systemctl enable cert-renewer.timer
-  - systemctl start cert-downloader.service
-  - systemctl enable cert-downloader.service
-  - systemctl start nginx.service
-  - systemctl enable nginx.service
-  - systemctl start nginx-tls.service
-  - systemctl enable nginx-tls.service
-  - systemctl start node-exporter.service
-  - systemctl enable node-exporter.service
+  - systemctl enable --now cert-renewer.timer
+  - systemctl enable --now cert-downloader.service
+  - systemctl enable --now nginx.service
+  - systemctl enable --now nginx-tls.service
+  - systemctl enable --now node-exporter.service

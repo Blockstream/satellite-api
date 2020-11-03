@@ -189,7 +189,10 @@ write_files:
             }
 
             # Client cert authenticated gossip endpoints
-            location ~ ^/gossip/(order/?.*)$ {
+            location ~ ^/gossip/order($|/.*)$ {
+                # Allow up to 2MB uploads
+                client_max_body_size 2M;
+                
                 # Allow base stations only
                 allow 202.161.136.2;
                 allow 66.203.141.162;

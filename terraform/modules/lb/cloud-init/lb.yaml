@@ -201,7 +201,7 @@ write_files:
                 if ($ssl_client_verify != SUCCESS) {
                   return 403;
                 }
-                proxy_pass http://${gossip_ip}:9292/$1;
+                proxy_pass http://${gossip_ip}:9292/order$1;
             }
         }
 

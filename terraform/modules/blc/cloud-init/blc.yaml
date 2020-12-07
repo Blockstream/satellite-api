@@ -269,6 +269,7 @@ write_files:
             -e "RACK_ENV=production" \
             -e "CHARGE_ROOT=http://api-token:${charge_token}@localhost:9112" \
             -e "CALLBACK_URI_ROOT=http://localhost:9292" \
+            -e "MIN_PER_BYTE_BID=1" \
             "${ionosphere_docker}"
         ExecStop=/usr/bin/docker stop ionosphere
         ExecStopPost=/usr/bin/docker rm ionosphere

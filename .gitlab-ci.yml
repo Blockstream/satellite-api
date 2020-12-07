@@ -5,9 +5,6 @@ variables:
   DOCKER_HOST: tcp://localhost:2375
   DOCKER_TLS_CERTDIR: ""
 
-services:
-  - docker:19-dind
-
 image: blockstream/gcloud-docker
 stages:
   - build
@@ -27,8 +24,9 @@ build_ci_image:
   when: manual
   image: blockstream/satapi-builder
   tags:
-    - docker
-    - k8s
+    - k8s-docker
+  services:
+    - docker:19-dind
   only:
     - build_ci_image@satellite/ionosphere
   before_script:
@@ -43,8 +41,9 @@ test_build:
   stage: build
   image: blockstream/satapi-builder
   tags:
-    - docker
-    - k8s
+    - k8s-docker
+  services:
+    - docker:19-dind
   only:
     - branches@satellite/ionosphere
   except:
@@ -67,8 +66,9 @@ build:
   stage: build
   image: blockstream/satapi-builder
   tags:
-    - docker
-    - k8s
+    - k8s-docker
+  services:
+    - docker:19-dind
   only:
     - master@satellite/ionosphere
   before_script:
@@ -93,7 +93,6 @@ build:
 plan_satapi:
   stage: plan
   tags:
-    - docker
     - k8s
   only:
     - branches@satellite/ionosphere
@@ -132,7 +131,6 @@ plan_satapi:
 plan_misc:
   stage: plan
   tags:
-    - docker
     - k8s
   only:
     - /^misc_.*/
@@ -162,7 +160,6 @@ plan_misc:
 deploy_misc:
   stage: deploy
   tags:
-    - docker
     - k8s
   only:
     - /^misc_v.*/
@@ -190,7 +187,6 @@ deploy_misc:
 plan_staging:
   stage: plan
   tags:
-    - docker
     - k8s
   only:
     - /^staging_v.*/
@@ -224,7 +220,6 @@ deploy_staging:
   stage: deploy
   when: manual
   tags:
-    - docker
     - k8s
   only:
     - /^staging_v.*/
@@ -257,7 +252,6 @@ deploy_staging:
 plan_production:
   stage: plan
   tags:
-    - docker
     - k8s
   only:
     - /^prod_v.*/
@@ -291,7 +285,6 @@ deploy_production:
   stage: deploy
   when: manual
   tags:
-    - docker
     - k8s
   only:
     - /^prod_v.*/
@@ -324,7 +317,6 @@ deploy_production:
 plan_staging_testnet:
   stage: plan
   tags:
-    - docker
     - k8s
   only:
     - /^testnet_staging_v.*/
@@ -357,7 +349,6 @@ deploy_staging_testnet:
   stage: deploy
   when: manual
   tags:
-    - docker
     - k8s
   only:
     - /^testnet_staging_v.*/
@@ -389,7 +380,6 @@ deploy_staging_testnet:
 plan_production_testnet:
   stage: plan
   tags:
-    - docker
     - k8s
   only:
     - /^testnet_prod_v.*/
@@ -422,7 +412,6 @@ deploy_production_testnet:
   stage: deploy
   when: manual
   tags:
-    - docker
     - k8s
   only:
     - /^testnet_prod_v.*/
@@ -454,7 +443,6 @@ deploy_production_testnet:
 cleanup_staging:
   stage: deploy
   tags:
-    - docker
     - k8s
   only:
     - cleanup_staging@satellite/ionosphere

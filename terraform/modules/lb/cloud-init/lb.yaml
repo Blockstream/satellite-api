@@ -346,7 +346,7 @@ write_files:
             -e DOMAIN=${host} \
             -e EMAIL=${letsencrypt_email} \
             "${certbot_docker}" renew
-        ExecStartPost=-/usr/bin/systemctl restart nginx-tls
+        ExecStartPost=-/usr/bin/docker exec nginx-tls nginx -s reload
 
   - path: /etc/systemd/system/node-exporter.service
     permissions: 0644

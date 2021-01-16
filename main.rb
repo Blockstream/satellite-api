@@ -181,8 +181,10 @@ post '/order' do
 
   order.message_size = message_size
   order.message_digest = sha256.to_s
-  
-  if bid.to_f / order.message_size_with_overhead < MIN_PER_BYTE_BID
+
+  if bid.to_f < MIN_BID
+    bid_below_minimum_error()
+  elsif bid.to_f / order.message_size_with_overhead < MIN_PER_BYTE_BID
     bid_too_small_error(order.message_size_with_overhead * MIN_PER_BYTE_BID)
   end
 

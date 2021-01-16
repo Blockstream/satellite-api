@@ -139,6 +139,17 @@ class MainAppTest < Minitest::Test
     assert_equal ERROR::CODES[:BID_TOO_SMALL], last_response_error_code
   end
 
+  def test_bid_below_min_bid
+    post '/order', params={"bid" => (4 + L2_OVERHEAD), "message" => "test"}
+    refute last_response.ok?
+    assert_equal ERROR::CODES[:BID_TOO_SMALL], last_response_error_code
+    post '/order', params={"bid" => (MIN_BID - 1), "message" => "test"}
+    refute last_response.ok?
+    assert_equal ERROR::CODES[:BID_TOO_SMALL], last_response_error_code
+    post '/order', params={"bid" => (MIN_BID), "message" => "test"}
+    assert last_response.ok?
+  end
+
   def test_bid_too_low
     post '/order', params={"bid" => 1, "file" => Rack::Test::UploadedFile.new(TEST_FILE, "image/png")}
     refute last_response.ok?

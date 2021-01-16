@@ -112,7 +112,7 @@ class Order < ActiveRecord::Base
 
   def paid_enough?
     self.adjust_bids
-    self.bid_per_byte >= MIN_PER_BYTE_BID
+    self.bid_per_byte >= MIN_PER_BYTE_BID && self.bid.to_f >= MIN_BID
   end
   
   def message_size_with_overhead

@@ -53,6 +53,10 @@ module Sinatra
       halt 400, error_object("Message upload problem", "Message too small. Minimum message size is #{MIN_MESSAGE_SIZE} byte", ERROR::CODES[:MESSAGE_FILE_TOO_SMALL])
     end
 
+    def bid_below_minimum_error()
+      halt 413, error_object("Bid too low", "Bid cannot be below #{MIN_BID} millisatoshis.", ERROR::CODES[:BID_TOO_SMALL])
+    end
+
     def bid_too_small_error(min_bid)
       halt 413, error_object("Bid too low", "Per byte bid cannot be below #{MIN_PER_BYTE_BID} millisatoshis per byte. The minimum bid for this message is #{min_bid} millisatoshis.", ERROR::CODES[:BID_TOO_SMALL])
     end

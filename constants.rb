@@ -17,6 +17,7 @@ CHARGE_API_TOKEN = ENV['CHARGE_API_TOKEN'] || 'mySecretToken'
 CHARGE_ROOT = ENV['CHARGE_ROOT'] || "http://api-token:#{CHARGE_API_TOKEN}@localhost:9112"
 
 MIN_PER_BYTE_BID = Integer(ENV['MIN_PER_BYTE_BID'] || 1) # minimum price per byte in millisatoshis
+MIN_BID = 1000 # minimum absolute bid in millisatoshis
 MIN_MESSAGE_SIZE = 1
 
 UDP_HDR_SIZE         = 8

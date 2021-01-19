@@ -32,8 +32,8 @@ build_ci_image:
   before_script:
     - echo $DOCKERHUB_PW | docker login -u $DOCKERHUB_USER --password-stdin
   script:
-    - docker pull blockstream/satapi-builder:latest
-    - docker build --cache-from blockstream/satapi-builder:latest -t blockstream/satapi-builder:latest -f Dockerfile.ci .
+    - docker pull blockstream/satapi-builder:latest || true
+    - docker build --network=host -t blockstream/satapi-builder:latest -f Dockerfile.ci .
     - docker push blockstream/satapi-builder:latest
 
 # Run tests
@@ -58,7 +58,7 @@ test_build:
     - bundle exec ruby tests/tests.rb || { echo -e "Tests failed..\n Sleeping for an hour to debug."; sleep 3600; exit 1; }
     - echo "Tests passed!"
     - docker pull blockstream/satellite-api:latest
-    - docker build --cache-from blockstream/satellite-api:latest -t blockstream/satellite-api:latest .
+    - docker build --network=host -t blockstream/satellite-api:latest .
     - docker rmi blockstream/satellite-api:latest || true
 
 # Run tests and build docker images
@@ -81,11 +81,11 @@ build:
     - echo $DOCKERHUB_PW | docker login -u $DOCKERHUB_USER --password-stdin
     - docker pull blockstream/satellite-api:latest
     - docker pull blockstream/satellite-api-sse:latest
-    - docker build --cache-from blockstream/satellite-api:latest -f Dockerfile -t blockstream/satellite-api:latest -t blockstream/satellite-api:$CI_COMMIT_SHA .
+    - docker build --network=host -f Dockerfile -t blockstream/satellite-api:latest -t blockstream/satellite-api:$CI_COMMIT_SHA .
     - docker push blockstream/satellite-api:latest
     - docker push blockstream/satellite-api:$CI_COMMIT_SHA
     - echo "Building Satellite API SSE image"
-    - docker build --cache-from blockstream/satellite-api-sse:latest  -f Dockerfile.sse -t blockstream/satellite-api-sse:latest -t blockstream/satellite-api-sse:$CI_COMMIT_SHA sse/
+    - docker build --network=host -f Dockerfile.sse -t blockstream/satellite-api-sse:latest -t blockstream/satellite-api-sse:$CI_COMMIT_SHA sse/
     - docker push blockstream/satellite-api-sse:latest
     - docker push blockstream/satellite-api-sse:$CI_COMMIT_SHA
 

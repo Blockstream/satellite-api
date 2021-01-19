@@ -1,7 +1,7 @@
 # docker build --cache-from blockstream/satapi-builder:latest -t blockstream/satapi-builder:latest -f Dockerfile.ci .
 
-FROM docker@sha256:13ac93a28fec12fec2efad68351b10ec1bd9fa5929a0a98283597a506180b708 AS docker
-FROM alpine:latest
+FROM docker:19 AS docker
+FROM alpine:3.12
 
 COPY --from=docker /usr/local/bin/docker /usr/local/bin/docker
 

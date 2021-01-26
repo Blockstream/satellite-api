@@ -11,6 +11,8 @@ data "template_file" "satapi-lb" {
     mainnet_ip           = var.internal_ip_mainnet
     testnet_ip           = var.internal_ip_testnet
     gossip_ip            = var.internal_ip_gossip
+    auth_ip              = var.internal_ip_auth
+    btc_src_ip           = var.internal_ip_btc_src
     certbot_docker       = var.certbot_docker
     node_exporter_docker = var.node_exporter_docker
     host                 = var.host
@@ -18,6 +20,8 @@ data "template_file" "satapi-lb" {
     public_bucket        = replace(google_storage_bucket.satapi-lb-public[count.index].url, "gs://", "")
     private_bucket       = replace(google_storage_bucket.satapi-lb-private[count.index].url, "gs://", "")
     letsencrypt_email    = var.letsencrypt_email
+    station1             = var.station1
+    station2             = var.station2
   }
 }
 

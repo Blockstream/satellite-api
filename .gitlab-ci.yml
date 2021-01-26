@@ -125,6 +125,8 @@ plan_satapi:
          -var "charge_token=$CHARGE_TOKEN"
          -var "rpcpass=$RPCPASS"
          -var "k8s_autossh_lb=$GKE_LB"
+         -var "station1=$STATION_1"
+         -var "station2=$STATION_2"
          -input=false)
 
 # This plan gets triggered only for miscellaneous branches/tags (i.e. tor, prometheus, etc), so make sure the branch/tag name starts with misc_
@@ -213,6 +215,8 @@ plan_staging:
          -var "charge_token=$CHARGE_TOKEN"
          -var "rpcpass=$RPCPASS"
          -var "k8s_autossh_lb=$GKE_LB"
+         -var "station1=$STATION_1"
+         -var "station2=$STATION_2"
          -input=false)
 
 # Tag with staging_v.* to deploy mainnet + LB to staging (e.g. staging_v0.1.1)
@@ -246,6 +250,8 @@ deploy_staging:
          -var "charge_token=$CHARGE_TOKEN"
          -var "rpcpass=$RPCPASS"
          -var "k8s_autossh_lb=$GKE_LB"
+         -var "station1=$STATION_1"
+         -var "station2=$STATION_2"
          -input=false -auto-approve)
 
 # Tag with prod_v.* to plan mainnet + LB to production (e.g. prod_v0.1.1)
@@ -278,6 +284,8 @@ plan_production:
          -var "charge_token=$CHARGE_TOKEN"
          -var "rpcpass=$RPCPASS"
          -var "k8s_autossh_lb=$GKE_LB"
+         -var "station1=$STATION_1"
+         -var "station2=$STATION_2"
          -input=false)
 
 # Tag with prod_v.* to deploy mainnet + LB to production (e.g. prod_v0.1.1)
@@ -311,6 +319,8 @@ deploy_production:
          -var "charge_token=$CHARGE_TOKEN"
          -var "rpcpass=$RPCPASS"
          -var "k8s_autossh_lb=$GKE_LB"
+         -var "station1=$STATION_1"
+         -var "station2=$STATION_2"
          -input=false -auto-approve)
 
 # Tag with testnet_staging_v.* to plan testnet staging (e.g. testnet_staging_v0.1.1)

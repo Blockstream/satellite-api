@@ -143,6 +143,16 @@ variable "internal_ip_gossip" {
   default = ""
 }
 
+variable "internal_ip_auth" {
+  type    = string
+  default = ""
+}
+
+variable "internal_ip_btc_src" {
+  type    = string
+  default = ""
+}
+
 variable "health_check" {
   type    = string
   default = ""
@@ -191,6 +201,16 @@ variable "private_bucket" {
 
 variable "letsencrypt_email" {
   type    = string
+  default = ""
+}
+
+variable "station1" {
+  type = string
+  default = ""
+}
+
+variable "station2" {
+  type = string
   default = ""
 }
 

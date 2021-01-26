@@ -59,6 +59,14 @@ variable "internal_ip_gossip" {
   type    = string
 }
 
+variable "internal_ip_auth" {
+  type    = string
+}
+
+variable "internal_ip_btc_src" {
+  type    = string
+}
+
 variable "health_check" {
   type = string
 }
@@ -68,6 +76,14 @@ variable "prom_service_acct" {
 }
 
 variable "target_pool" {
+  type = string
+}
+
+variable "station1" {
+  type = string
+}
+
+variable "station2" {
   type = string
 }
 

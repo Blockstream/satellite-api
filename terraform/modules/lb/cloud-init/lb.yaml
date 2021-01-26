@@ -73,8 +73,8 @@ write_files:
             # Client cert authenticated endpoints
             location /order/tx/ {
                 # Allow base stations only
-                allow 202.161.136.2;
-                allow 66.203.141.162;
+                allow ${station1};
+                allow ${station2};
                 deny all;
 
                 if ($ssl_client_verify != SUCCESS) {
@@ -85,8 +85,8 @@ write_files:
 
             location /order/rx/ {
                 # Allow base stations only
-                allow 202.161.136.2;
-                allow 66.203.141.162;
+                allow ${station1};
+                allow ${station2};
                 deny all;
 
                 if ($ssl_client_verify != SUCCESS) {
@@ -177,7 +177,7 @@ write_files:
                 proxy_pass http://${gossip_ip}:9292/;
             }
 
-            # Proxy to SSE container
+            # Proxy to gossip SSE container
             location /gossip/subscribe/ {
                 chunked_transfer_encoding off;
                 proxy_buffering off;
@@ -188,20 +188,117 @@ write_files:
                 proxy_pass http://${gossip_ip}:4500/stream?channels=;
             }
 
-            # Client cert authenticated gossip endpoints
+            # Only the ground station hosts are authorized to send and modify
+            # API transmission orders on the gossip server
             location ~ ^/gossip/order($|/.*)$ {
                 # Allow up to 2MB uploads
                 client_max_body_size 2M;
-                
+
                 # Allow base stations only
-                allow 202.161.136.2;
-                allow 66.203.141.162;
+                allow ${station1};
+                allow ${station2};
                 deny all;
 
                 if ($ssl_client_verify != SUCCESS) {
                   return 403;
                 }
                 proxy_pass http://${gossip_ip}:9292/order$1;
+            }
+
+            # Proxy to the authentication server
+            location /auth/ {
+                add_header 'Access-Control-Allow-Origin' '*' always;
+                add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS, DELETE' always;
+                add_header 'Access-Control-Allow-Headers' 'X-Auth-Token,DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range' always;
+                add_header 'X-XSS-Protection' '1; mode=block' always;
+
+                if ($request_uri ~* "^/auth/?$")
+                {
+                  return 301 https://$host;
+                }
+
+                if ($request_method = 'OPTIONS')
+                {
+                  return 200;
+                }
+
+                # Restrict all auth server endpoints to the ground station hosts
+                # authenticated via client-side SSL cert
+                allow ${station1};
+                allow ${station2};
+                deny all;
+
+                if ($ssl_client_verify != SUCCESS) {
+                  return 403;
+                }
+
+                proxy_pass http://${auth_ip}:9292/;
+            }
+
+            # Proxy to auth server's SSE container
+            location /auth/subscribe/ {
+                chunked_transfer_encoding off;
+                proxy_buffering off;
+                proxy_request_buffering off;
+                proxy_cache off;
+                proxy_http_version 1.1;
+
+                allow ${station1};
+                allow ${station2};
+                deny all;
+
+                if ($ssl_client_verify != SUCCESS) {
+                  return 403;
+                }
+
+                proxy_pass http://${auth_ip}:4500/stream?channels=;
+            }
+
+            # Proxy to the Bitcoin source code transmission server
+            location /btc-src/ {
+                add_header 'Access-Control-Allow-Origin' '*' always;
+                add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS, DELETE' always;
+                add_header 'Access-Control-Allow-Headers' 'X-Auth-Token,DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range' always;
+                add_header 'X-XSS-Protection' '1; mode=block' always;
+
+                if ($request_uri ~* "^/btc-src/?$")
+                {
+                  return 301 https://$host;
+                }
+
+                if ($request_method = 'OPTIONS')
+                {
+                  return 200;
+                }
+
+                proxy_pass http://${btc_src_ip}:9292/;
+            }
+
+            # Proxy to btc-src's SSE container
+            location /btc-src/subscribe/ {
+                chunked_transfer_encoding off;
+                proxy_buffering off;
+                proxy_request_buffering off;
+                proxy_cache off;
+                proxy_http_version 1.1;
+
+                proxy_pass http://${btc_src_ip}:4500/stream?channels=;
+            }
+
+            # Only the ground station hosts are authorized to send and modify
+            # API transmission orders on the btc-src server
+            location ~ ^/btc-src/order($|/.*)$ {
+                # Allow up to 2MB uploads
+                client_max_body_size 2M;
+
+                allow ${station1};
+                allow ${station2};
+                deny all;
+
+                if ($ssl_client_verify != SUCCESS) {
+                  return 403;
+                }
+                proxy_pass http://${btc_src_ip}:9292/order$1;
             }
         }
 

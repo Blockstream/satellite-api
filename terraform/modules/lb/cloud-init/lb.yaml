@@ -289,7 +289,7 @@ write_files:
             # API transmission orders on the btc-src server
             location ~ ^/btc-src/order($|/.*)$ {
                 # Allow up to 2MB uploads
-                client_max_body_size 2M;
+                client_max_body_size 16M;
 
                 allow ${station1};
                 allow ${station2};

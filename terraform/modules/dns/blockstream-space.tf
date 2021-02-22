@@ -40,3 +40,12 @@ resource "google_dns_record_set" "a-satellite-api-staging" {
   rrdatas = [var.satellite_api_lb_staging]
 }
 
+resource "google_dns_record_set" "a-blocksat-mon" {
+  name         = "satellite.${google_dns_managed_zone.blockstream-space[0].dns_name}"
+  managed_zone = google_dns_managed_zone.blockstream-space[0].name
+  type         = "A"
+  ttl          = 300
+  count        = var.create_resources
+
+  rrdatas = ["34.117.57.23"]
+}

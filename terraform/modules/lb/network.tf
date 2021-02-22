@@ -1,3 +1,11 @@
+resource "google_compute_address" "satapi-lb-internal" {
+  name         = "${var.name}-${var.net}-internal-ip-${var.env}"
+  address_type = "INTERNAL"
+  project      = var.project
+  region       = var.region
+  count        = var.create_resources
+}
+
 resource "google_compute_backend_service" "satapi-lb" {
   name        = "${var.name}-backend-service-${var.env}"
   description = "Satellite API"

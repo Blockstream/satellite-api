@@ -206,6 +206,15 @@ write_files:
             }
 
             # Proxy to the authentication server
+            location ~ ^/auth/order($|/.*)$ {
+                # Restrict all auth server endpoints to local subnets only
+                allow 127.0.0.1;
+                allow 10.0.0.0/8;
+                deny all;
+
+                proxy_pass http://${auth_ip}:9292/order$1;
+            }
+
             location /auth/ {
                 add_header 'Access-Control-Allow-Origin' '*' always;
                 add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS, DELETE' always;

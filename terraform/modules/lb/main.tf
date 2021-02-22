@@ -71,6 +71,7 @@ resource "google_compute_instance_template" "satapi-lb" {
 
   network_interface {
     network = data.google_compute_network.satapi-lb.self_link
+    network_ip = google_compute_address.satapi-lb-internal[0].address
     access_config {}
   }
 

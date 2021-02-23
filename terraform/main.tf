@@ -190,4 +190,5 @@ module "dns" {
   satellite_lb             = var.satellite_lb
   satellite_api_lb         = var.satellite_api_lb
   satellite_api_lb_staging = var.satellite_api_lb_staging
+  blocksat_monitoring      = var.blocksat_monitoring
 }

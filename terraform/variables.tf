@@ -128,6 +128,11 @@ variable "satellite_api_lb_staging" {
   default = ""
 }
 
+variable "blocksat_monitoring" {
+  type    = string
+  default = ""
+}
+
 variable "internal_ip_mainnet" {
   type    = string
   default = ""

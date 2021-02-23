@@ -47,5 +47,5 @@ resource "google_dns_record_set" "a-blocksat-mon" {
   ttl          = 300
   count        = var.create_resources
 
-  rrdatas = ["34.117.57.23"]
+  rrdatas = [var.blocksat_monitoring]
 }

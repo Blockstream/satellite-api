@@ -1,5 +1,5 @@
 resource "google_compute_address" "satapi-lb-internal" {
-  name         = "${var.name}-${var.net}-internal-ip-${var.env}"
+  name         = "${var.name}-internal-ip-${var.env}"
   address_type = "INTERNAL"
   project      = var.project
   region       = var.region

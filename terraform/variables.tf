@@ -230,9 +230,10 @@ variable "ionosphere_sse_docker" {
 }
 
 # Less frequently updated images
+# v0.9.3
 variable "lightning_docker" {
   type    = string
-  default = "blockstream/lightningd@sha256:baa37ddc2019af21c187052fe6b457d7c604de512c209fc494efebecfb7a24ab"
+  default = "blockstream/lightningd@sha256:8c7a54ff6fbcb9664a8e74b08884d21de203df64f3cc18dc243b79751f586981"
 }
 
 variable "charge_docker" {

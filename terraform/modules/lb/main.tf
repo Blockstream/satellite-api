@@ -1,22 +1,3 @@
-resource "google_compute_region_autoscaler" "satapi-lb" {
-  name     = "${var.name}-autoscaler-${var.env}"
-  target   = google_compute_region_instance_group_manager.satapi-lb[0].self_link
-  region   = var.region
-  project  = var.project
-  provider = google
-  count    = var.create_resources
-
-  autoscaling_policy {
-    max_replicas    = 2
-    min_replicas    = 1
-    cooldown_period = 60
-
-    cpu_utilization {
-      target = 0.8
-    }
-  }
-}
-
 # Instance group & template
 resource "google_compute_region_instance_group_manager" "satapi-lb" {
   name         = "${var.name}-ig-${var.env}"

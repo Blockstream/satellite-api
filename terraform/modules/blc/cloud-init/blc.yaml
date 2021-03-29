@@ -173,7 +173,7 @@ write_files:
     owner: root
     content: |
         log-level=debug
-        plugin-dir=/usr/local/bin/plugins
+        plugin-dir=/opt/plugins
         alias=ionosphere-${net}
         bitcoin-rpcuser=${net}-def
         bitcoin-rpcpassword=${rpcpass}
@@ -352,25 +352,14 @@ write_files:
 
 runcmd:
   - systemctl daemon-reload
-  - systemctl start autossh-key-downloader.service
-  - systemctl enable autossh-key-downloader.service
-  - systemctl start k8s-autossh.service
-  - systemctl enable k8s-autossh.service
-  - systemctl start lightning.service
-  - systemctl enable lightning.service
-#  - systemctl start postgres.service
-#  - systemctl enable postgres.service  
-  - systemctl start redis.service
-  - systemctl enable redis.service
-  - systemctl start ionosphere.service
-  - systemctl enable ionosphere.service
-  - systemctl start ionosphere-tx.service
-  - systemctl enable ionosphere-tx.service
-  - systemctl start ionosphere-sse.service
-  - systemctl enable ionosphere-sse.service
-  - systemctl start charge.service
-  - systemctl enable charge.service
-  - systemctl start node-exporter.service
-  - systemctl enable node-exporter.service
-  - systemctl start check-containers.timer
-  - systemctl enable check-containers.timer
+  - systemctl enable --now autossh-key-downloader.service
+  - systemctl enable --now k8s-autossh.service
+  - systemctl enable --now lightning.service
+#  - systemctl enable --now postgres.service
+  - systemctl enable --now redis.service
+  - systemctl enable --now ionosphere.service
+  - systemctl enable --now ionosphere-tx.service
+  - systemctl enable --now ionosphere-sse.service
+  - systemctl enable --now charge.service
+  - systemctl enable --now node-exporter.service
+  - systemctl enable --now check-containers.timer

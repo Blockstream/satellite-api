@@ -41,7 +41,7 @@ module "blc-mainnet" {
   env                   = local.env
   lb_svc_acct           = module.lb.lb_svc_acct
   ssh_key_net           = ""
-  lightning_cmd         = "lightningd --mainnet --conf=/root/.lightning/bitcoin/lightning.conf"
+  lightning_cmd         = "--mainnet --conf=/root/.lightning/bitcoin/lightning.conf"
 
   create_resources = local.create_mainnet
 
@@ -78,7 +78,7 @@ module "blc-testnet" {
   env                   = local.env
   lb_svc_acct           = length(data.terraform_remote_state.blc-mainnet.outputs) > 1 ? data.terraform_remote_state.blc-mainnet.outputs.lb_svc_acct : ""
   ssh_key_net           = "_testnet"
-  lightning_cmd         = "lightningd --testnet --conf=/root/.lightning/testnet/lightning.conf"
+  lightning_cmd         = "--testnet --conf=/root/.lightning/testnet/lightning.conf"
 
   create_resources = local.create_testnet
 

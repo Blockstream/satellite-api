@@ -71,7 +71,7 @@ If successful, the response includes the JSON Lightning invoice as returned by L
 {"auth_token":"d784e322dad7ec2671086ce3ad94e05108f2501180d8228577fbec4115774750","uuid":"409348bc-6af0-4999-b715-4136753979df","lightning_invoice":{"id":"N0LOTYc9j0gWtQVjVW7pK","msatoshi":"514200","description":"BSS Test","rhash":"5e5c9d111bc76ce4bf9b211f12ca2d9b66b81ae9839b4e530b16cedbef653a3a","payreq":"lntb5142n1pd78922pp5tewf6ygmcakwf0umyy039j3dndntsxhfswd5u5ctzm8dhmm98gaqdqdgff4xgz5v4ehgxqzjccqp286gfgrcpvzl04sdg2f9sany7ptc5aracnd6kvr2nr0e0x5ajpmfhsjkqzw679ytqgnt6w4490jjrgcvuemz790salqyz9far68cpqtgq3q23el","expires_at":1541642146,"created_at":1541641546,"metadata":{"sha256_message_digest":"0e2bddf3bba1893b5eef660295ef12d6fc72870da539c328cf24e9e6dbb00f00","uuid":"409348bc-6af0-4999-b715-4136753979df"},"status":"unpaid"}}
 ```
 
-Error codes that can be returned by this endpoint include: `BID_TOO_SMALL` (102), `FILE_MISSING` (103), `MESSAGE_FILENAME_MISSING` (116), `MESSAGE_FILE_TOO_SMALL` (117), `MESSAGE_FILE_TOO_LARGE` (118), `BID_TOO_SMALL` (102), `MESSAGE_TOO_LONG` (125), `MESSAGE_MISSING` (126).
+Error codes that can be returned by this endpoint include: `BID_TOO_SMALL` (102), `MESSAGE_FILE_TOO_SMALL` (117), `MESSAGE_FILE_TOO_LARGE` (118), `MESSAGE_MISSING` (126).
 
 ### POST /order/:uuid/bump ###
 
@@ -85,7 +85,7 @@ Response object is in the same format as for `POST /order`.
 
 As shown below for DELETE, the `auth_token` may alternatively be provided using the `X-Auth-Token` HTTP header.
 
-Error codes that can be returned by this endpoint include: `INVALID_AUTH_TOKEN` (109), `ORDER_NOT_FOUND` (104), `BID_INCREASE_MISSING` (105), `ORDER_BUMP_ERROR` (119).
+Error codes that can be returned by this endpoint include: `INVALID_AUTH_TOKEN` (109), `ORDER_NOT_FOUND` (104).
 
 ### GET /order/:uuid ###
 
@@ -127,7 +127,6 @@ curl $SATELLITE_API/orders/pending?before=2019-01-16T18:13:46-08:00
 
 The response is a JSON array of records (one for each queued message). The revealed fields for each record include: `uuid`, `bid`, `bid_per_byte`, `message_size`, `message_digest`, `status`, `created_at`, `started_transmission_at`, and `ended_transmission_at`.
 
-Error codes that can be returned by this endpoint include: `INVALID_DATE` (113).
 
 ### GET /orders/queued  ###
 
@@ -143,7 +142,6 @@ curl $SATELLITE_API/orders/queued?limit=18
 
 The response is a JSON array of records (one for each queued message). The revealed fields for each record include: `uuid`, `bid`, `bid_per_byte`, `message_size`, `message_digest`, `status`, `created_at`, `started_transmission_at`, and `ended_transmission_at`.
 
-Error codes that can be returned by this endpoint include: `LIMIT_TOO_LARGE` (101).
 
 ### GET /orders/sent  ###
 
@@ -159,7 +157,6 @@ curl $SATELLITE_API/orders/sent?before=2019-01-16T18:13:46-08:00
 
 The response is a JSON array of records (one for each queued message). The revealed fields for each record include: `uuid`, `bid`, `bid_per_byte`, `message_size`, `message_digest`, `status`, `created_at`, `started_transmission_at`, and `ended_transmission_at`.
 
-Error codes that can be returned by this endpoint include: `INVALID_DATE` (113).
 
 ### GET /info
 

@@ -1,4 +1,3 @@
-from constants import InvoiceStatus
 from error import get_http_error_resp
 from flask_restful import Resource
 from invoice_helpers import get_and_authenticate_invoice,\
@@ -13,13 +12,10 @@ class InvoiceResource(Resource):
         if not success:
             return invoice_or_error
         invoice = invoice_or_error
-
         if not invoice.order_id:
             return get_http_error_resp('ORPHANED_INVOICE')
 
-        if invoice.status == InvoiceStatus.paid.value:
-            return get_http_error_resp('ORDER_ALREADY_PAID')
-
-        pay_invoice(invoice)
-
+        error_msg = pay_invoice(invoice)
+        if error_msg:
+            return error_msg
         return {'message': f'invoice {invoice.lid} paid'}

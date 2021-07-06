@@ -35,8 +35,8 @@ errors = {
                                  "Order already {}", HTTPStatus.BAD_REQUEST),
     'ORPHANED_INVOICE': (122, "Payment problem", "Orphaned invoice",
                          HTTPStatus.NOT_FOUND),
-    'ORDER_ALREADY_PAID': (123, "Payment problem", "Order already paid",
-                           HTTPStatus.BAD_REQUEST),
+    'INVOICE_ALREADY_PAID': (123, "Payment problem", "Invoice already paid",
+                             HTTPStatus.BAD_REQUEST),
     'CHANNELS_EQUALITY': (124, "invalid channel",
                           "channel {} is not a valid channel name",
                           HTTPStatus.INTERNAL_SERVER_ERROR),
@@ -47,7 +47,9 @@ errors = {
     'LIGHTNING_CHARGE_INFO_FAILED':
     (128, "Lightning Charge communication error",
      "Failed to fetch information about the Lightning node",
-     HTTPStatus.INTERNAL_SERVER_ERROR)
+     HTTPStatus.INTERNAL_SERVER_ERROR),
+    'INVOICE_ALREADY_EXPIRED':
+    (129, "Payment problem", "Invoice already expired", HTTPStatus.BAD_REQUEST)
 }
 
 

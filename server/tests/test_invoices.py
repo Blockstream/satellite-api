@@ -87,7 +87,7 @@ def test_paid_invoice_callback_pay_twice(mock_new_invoice, client):
                                             invoice.lid)
     rv = client.post(f'/callback/{invoice.lid}/{charged_auth_token}')
     assert rv.status_code == HTTPStatus.BAD_REQUEST
-    assert_error(rv.get_json(), 'ORDER_ALREADY_PAID')
+    assert_error(rv.get_json(), 'INVOICE_ALREADY_PAID')
 
 
 @patch('orders.new_invoice')
@@ -209,7 +209,8 @@ def test_try_to_pay_an_expired_invoice(mock_new_invoice, client):
     charged_auth_token = hmac_sha256_digest(constants.LIGHTNING_WEBHOOK_KEY,
                                             invoice.lid)
     rv = client.post(f'/callback/{invoice.lid}/{charged_auth_token}')
-    assert rv.status_code == HTTPStatus.OK
+    assert rv.status_code == HTTPStatus.BAD_REQUEST
+    assert_error(rv.get_json(), 'INVOICE_ALREADY_EXPIRED')
 
     # refetch the order and the invoice from the database
     # expecation is that none of them change their status

@@ -103,12 +103,16 @@ def get_and_authenticate_invoice(lid, charged_auth_token):
 
 
 def pay_invoice(invoice):
-    if invoice.status != InvoiceStatus.pending.value:
-        return
+    if invoice.status == InvoiceStatus.paid.value:
+        return get_http_error_resp('INVOICE_ALREADY_PAID')
+    if invoice.status == InvoiceStatus.expired.value:
+        return get_http_error_resp('INVOICE_ALREADY_EXPIRED')
+
     invoice.status = InvoiceStatus.paid.value
     invoice.paid_at = datetime.datetime.utcnow()
     db.session.commit()
     maybe_mark_order_as_paid(invoice.order_id)
+    return None
 
 
 def get_pending_invoices(order_id):

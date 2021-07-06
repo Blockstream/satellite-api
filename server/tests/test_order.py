@@ -253,7 +253,7 @@ def test_adjust_bids(client):
     assert order.bid == paid_bid
     assert order.unpaid_bid == unpaid_bid
     expected_bid_per_byte = paid_bid / (n_bytes + 52)  # w/ 52 overhead bytes
-    assert order.bid_per_byte == round(expected_bid_per_byte, 2)
+    assert order.bid_per_byte == expected_bid_per_byte
 
 
 @patch('orders.new_invoice')

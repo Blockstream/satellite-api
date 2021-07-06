@@ -39,8 +39,7 @@ def _unpaid_invoices_total(order):
 
 def adjust_bids(order):
     order.bid = _paid_invoices_total(order)
-    order.bid_per_byte = round(
-        order.bid / calc_ota_msg_len(order.message_size), 2)
+    order.bid_per_byte = order.bid / calc_ota_msg_len(order.message_size)
     order.unpaid_bid = _unpaid_invoices_total(order)
     db.session.commit()
 

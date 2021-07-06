@@ -182,20 +182,21 @@ class OrdersResource(Resource):
             return error.messages, HTTPStatus.BAD_REQUEST
 
         before = db.func.datetime(args['before'])
+        limit = args['limit']
 
         if state == 'pending':
             orders = Order.query.filter_by(
                 status=OrderStatus[state].value).\
                 filter(db.func.datetime(Order.created_at) < before).\
                 order_by(Order.created_at.desc()).\
-                limit(constants.PAGE_SIZE)
+                limit(limit)
         elif state == 'queued':
-            limit = args['limit']
             orders = Order.query.filter(or_(
                 Order.status ==
                 OrderStatus.pending.value,
                 Order.status ==
                 OrderStatus.transmitting.value)).\
+                filter(db.func.datetime(Order.created_at) < before).\
                 order_by(Order.bid_per_byte.desc()).limit(limit)
         elif state == 'sent':
             orders = Order.query.filter(or_(
@@ -205,7 +206,7 @@ class OrdersResource(Resource):
                 OrderStatus.received.value)).\
                 filter(db.func.datetime(Order.created_at) < before).\
                 order_by(Order.ended_transmission_at.desc()).\
-                limit(constants.PAGE_SIZE)
+                limit(limit)
 
         return [order_schema.dump(order) for order in orders]
 

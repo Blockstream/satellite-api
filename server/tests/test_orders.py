@@ -65,7 +65,7 @@ def test_try_to_get_invalid_order_state(client):
 
 @patch('constants.PAGE_SIZE', 3)  # change PAGE_SIZE to run this test faster
 @patch('orders.new_invoice')
-@pytest.mark.parametrize("state", ['pending', 'sent'])
+@pytest.mark.parametrize("state", ['pending', 'queued', 'sent'])
 def test_get_orders_before_parameter(mock_new_invoice, client, state):
     # Create PAGE_SIZE orders with the target state
     n_orders = constants.PAGE_SIZE
@@ -106,7 +106,7 @@ def test_get_orders_before_parameter(mock_new_invoice, client, state):
 
 
 @patch('orders.new_invoice')
-@pytest.mark.parametrize("state", ['queued'])
+@pytest.mark.parametrize("state", ['pending', 'queued', 'sent'])
 def test_get_orders_limit_parameter(mock_new_invoice, client, state):
     n_bytes = 500
     mock_new_invoice.return_value = (True,

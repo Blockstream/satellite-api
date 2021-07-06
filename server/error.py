@@ -72,7 +72,11 @@ errors = {
      "Either a message file or a message parameter is required",
      HTTPStatus.BAD_REQUEST),
     'REGION_NOT_FOUND': (127, "region not found", "region {} not found",
-                         HTTPStatus.NOT_FOUND)
+                         HTTPStatus.NOT_FOUND),
+    'LIGHTNING_CHARGE_INFO_FAILED':
+    (128, "Lightning Charge communication error",
+     "Failed to fetch information about the Lightning node",
+     HTTPStatus.INTERNAL_SERVER_ERROR)
 }
 
 

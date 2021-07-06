@@ -4,6 +4,7 @@ from http import HTTPStatus
 from unittest.mock import Mock, patch
 
 import server
+from error import assert_error
 
 
 @pytest.fixture
@@ -73,7 +74,8 @@ def test_get_info_failure(mock_get_info, client):
     mock_get_info.return_value = Mock()
     mock_get_info.return_value.status_code = HTTPStatus.UNAUTHORIZED
     get_info_rv = client.get('/info')
-    assert get_info_rv.status_code == HTTPStatus.UNAUTHORIZED
+    assert get_info_rv.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
+    assert_error(get_info_rv.get_json(), 'LIGHTNING_CHARGE_INFO_FAILED')
 
 
 @patch('info.requests.get')
@@ -81,3 +83,4 @@ def test_get_info_exception(mock_get_info, client):
     mock_get_info.side_effect = requests.exceptions.RequestException
     get_info_rv = client.get('/info')
     assert get_info_rv.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
+    assert_error(get_info_rv.get_json(), 'LIGHTNING_CHARGE_INFO_FAILED')

@@ -4,6 +4,8 @@ variables:
   DOCKER_DRIVER: overlay2
   DOCKER_HOST: tcp://localhost:2375
   DOCKER_TLS_CERTDIR: ""
+  API_IMAGE: us.gcr.io/satellite-api/satellite-api
+  SSE_IMAGE: us.gcr.io/satellite-api/satellite-api-sse
 
 image: blockstream/gcloud-docker:v0.14.5
 stages:
@@ -20,8 +22,8 @@ before_script:
   - gcloud auth list
   - gcloud --version
 
-# Run tests
-test:
+# Run the unit tests
+unit_tests:
   stage: test
   image: python:3.9
   tags:
@@ -35,8 +37,35 @@ test:
     - yapf --diff --recursive --verbose server/
     - cd server/ && python -m pytest --cov=.
 
-# Run tests and build docker images
-build:
+# Test the Satellite API docker image build
+docker_build:
+  stage: build
+  tags:
+    - k8s-docker
+  services:
+    - docker:19-dind
+  only:
+    - branches@satellite/ionosphere
+  parallel:
+    matrix:
+      - IMAGE: $API_IMAGE
+        DIR: server
+      - IMAGE: $SSE_IMAGE
+        DIR: sse
+  script:
+    - cd $DIR
+    - docker pull $IMAGE:$CI_COMMIT_REF_SLUG || docker pull $IMAGE:latest || true
+    - >
+      docker build
+      -f Dockerfile
+      --network=host
+      --cache-from $IMAGE:$CI_COMMIT_REF_SLUG
+      --cache-from $IMAGE:latest
+      --build-arg BUILDKIT_INLINE_CACHE=1
+      .
+
+# Build and push the Satellite API docker image
+docker_push:
   stage: build
   tags:
     - k8s-docker
@@ -44,15 +73,32 @@ build:
     - docker:19-dind
   only:
     - master@satellite/ionosphere
-  before_script:
-    - export CHARGE_ROOT=$CHARGE_ROOT_CI
-    - export REDIS_URI=$REDIS_URI_CI
+    - /^staging_.*/
+    - /^prod_.*/
+    - /^misc_.*/
+  parallel:
+    matrix:
+      - IMAGE: $API_IMAGE
+        DIR: server
+      - IMAGE: $SSE_IMAGE
+        DIR: sse
   script:
-    - cd server/
-    - docker pull us.gcr.io/satellite-api/satellite-api:latest || true
-    - docker build --network=host -f Dockerfile -t us.gcr.io/satellite-api/satellite-api:latest -t us.gcr.io/satellite-api/satellite-api:$CI_COMMIT_SHA .
-    - docker push us.gcr.io/satellite-api/satellite-api:latest
-    - docker push us.gcr.io/satellite-api/satellite-api:$CI_COMMIT_SHA
+    - cd $DIR
+    - docker pull $IMAGE:$CI_COMMIT_REF_SLUG || docker pull $IMAGE:latest || true
+    - >
+      docker build
+      -f Dockerfile
+      --network=host
+      --cache-from $IMAGE:$CI_COMMIT_REF_SLUG
+      --cache-from $IMAGE:latest
+      --build-arg BUILDKIT_INLINE_CACHE=1
+      -t $IMAGE:$CI_COMMIT_SHA
+      -t $IMAGE:$CI_COMMIT_REF_SLUG
+      -t $IMAGE:latest
+      .
+    - docker push $IMAGE:$CI_COMMIT_SHA
+    - docker push $IMAGE:$CI_COMMIT_REF_SLUG
+    - if [ $CI_COMMIT_BRANCH == "master" ]; then docker push $IMAGE:latest; fi
 
 # Any newly-pushed, WIP branch will be ran through plan (keep in mind docker images are using the latest tag, which may be an older one since the current commit may not match an available image)
 plan_satapi:
@@ -73,8 +119,8 @@ plan_satapi:
        && terraform workspace select staging
        && terraform init -input=false
        && terraform plan
-         -var "ionosphere_docker=us.gcr.io/satellite-api/satellite-api:latest"
-         -var "ionosphere_sse_docker=us.gcr.io/satellite-api/satellite-api-sse:latest"
+         -var "ionosphere_docker=$API_IMAGE:$CI_COMMIT_SHA"
+         -var "ionosphere_sse_docker=$SSE_IMAGE:$CI_COMMIT_SHA"
          -var "region=$REGION"
          -var "zone=$ZONE"
          -var "instance_type=$INSTANCE_TYPE"
@@ -163,8 +209,8 @@ plan_staging:
        && terraform workspace select staging
        && terraform init -input=false
        && terraform plan
-         -var "ionosphere_docker=us.gcr.io/satellite-api/satellite-api:$CI_COMMIT_SHA"
-         -var "ionosphere_sse_docker=us.gcr.io/satellite-api/satellite-api-sse:$CI_COMMIT_SHA"
+         -var "ionosphere_docker=$API_IMAGE:$CI_COMMIT_SHA"
+         -var "ionosphere_sse_docker=$SSE_IMAGE:$CI_COMMIT_SHA"
          -var "region=$REGION"
          -var "zone=$ZONE"
          -var "instance_type=$INSTANCE_TYPE"
@@ -196,8 +242,8 @@ deploy_staging:
        && terraform workspace select staging
        && terraform init -input=false
        && terraform apply
-         -var "ionosphere_docker=us.gcr.io/satellite-api/satellite-api:$CI_COMMIT_SHA"
-         -var "ionosphere_sse_docker=us.gcr.io/satellite-api/satellite-api-sse:$CI_COMMIT_SHA"
+         -var "ionosphere_docker=$API_IMAGE:$CI_COMMIT_SHA"
+         -var "ionosphere_sse_docker=$SSE_IMAGE:$CI_COMMIT_SHA"
          -var "region=$REGION"
          -var "zone=$ZONE"
          -var "instance_type=$INSTANCE_TYPE"
@@ -228,8 +274,8 @@ plan_production:
        && terraform workspace select prod
        && terraform init -input=false
        && terraform plan
-         -var "ionosphere_docker=us.gcr.io/satellite-api/satellite-api:$CI_COMMIT_SHA"
-         -var "ionosphere_sse_docker=us.gcr.io/satellite-api/satellite-api-sse:$CI_COMMIT_SHA"
+         -var "ionosphere_docker=$API_IMAGE:$CI_COMMIT_SHA"
+         -var "ionosphere_sse_docker=$SSE_IMAGE:$CI_COMMIT_SHA"
          -var "region=$REGION"
          -var "zone=$ZONE"
          -var "instance_type=$INSTANCE_TYPE"
@@ -261,8 +307,8 @@ deploy_production:
        && terraform workspace select prod
        && terraform init -input=false
        && terraform apply
-         -var "ionosphere_docker=us.gcr.io/satellite-api/satellite-api:$CI_COMMIT_SHA"
-         -var "ionosphere_sse_docker=us.gcr.io/satellite-api/satellite-api-sse:$CI_COMMIT_SHA"
+         -var "ionosphere_docker=$API_IMAGE:$CI_COMMIT_SHA"
+         -var "ionosphere_sse_docker=$SSE_IMAGE:$CI_COMMIT_SHA"
          -var "region=$REGION"
          -var "zone=$ZONE"
          -var "instance_type=$INSTANCE_TYPE"
@@ -293,8 +339,8 @@ plan_production_testnet:
        && terraform workspace select testnet-prod
        && terraform init -input=false
        && terraform plan
-         -var "ionosphere_docker=us.gcr.io/satellite-api/satellite-api:$CI_COMMIT_SHA"
-         -var "ionosphere_sse_docker=us.gcr.io/satellite-api/satellite-api-sse:$CI_COMMIT_SHA"
+         -var "ionosphere_docker=$API_IMAGE:$CI_COMMIT_SHA"
+         -var "ionosphere_sse_docker=$SSE_IMAGE:$CI_COMMIT_SHA"
          -var "region=$REGION"
          -var "zone=$ZONE"
          -var "instance_type=$INSTANCE_TYPE"
@@ -323,8 +369,8 @@ deploy_production_testnet:
        && terraform workspace select testnet-prod
        && terraform init -input=false
        && terraform apply
-         -var "ionosphere_docker=us.gcr.io/satellite-api/satellite-api:$CI_COMMIT_SHA"
-         -var "ionosphere_sse_docker=us.gcr.io/satellite-api/satellite-api-sse:$CI_COMMIT_SHA"
+         -var "ionosphere_docker=$API_IMAGE:$CI_COMMIT_SHA"
+         -var "ionosphere_sse_docker=$SSE_IMAGE:$CI_COMMIT_SHA"
          -var "region=$REGION"
          -var "zone=$ZONE"
          -var "instance_type=$INSTANCE_TYPE"

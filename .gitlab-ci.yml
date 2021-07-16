@@ -19,6 +19,7 @@ before_script:
   - echo $GCLOUD_KEY > $TMPF
   - export GOOGLE_APPLICATION_CREDENTIALS=$TMPF
   - gcloud auth activate-service-account --key-file=$TMPF
+  - gcloud auth configure-docker
   - gcloud auth list
   - gcloud --version
 

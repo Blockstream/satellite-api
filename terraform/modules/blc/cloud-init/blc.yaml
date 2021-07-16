@@ -19,23 +19,23 @@ write_files:
         NUM_CONT=$$(docker ps -q | wc -l)
         RUNNING_CONT="$$(docker ps --format '{{.Names}}' | tr '\n' ', ' | sed -e 's/,$//g')"
 
-        # If less than 9 are running, send alert to opsgenie
-        if [ $${NUM_CONT} != '9' ]
+        # If less than 8 are running, send alert to opsgenie
+        if [ $${NUM_CONT} != '8' ]
         then
                curl -s -X POST https://api.opsgenie.com/v2/alerts \
                   -H "Content-Type: application/json" \
                   -H "Authorization: GenieKey ${opsgenie_key}" \
                   -d \
               '{
-                  "message": "Satellite API instance does not have all 9 containers running",
+                  "message": "Satellite API instance does not have all 8 containers running",
                   "alias": "satapi-missing-containers",
-                  "description":"Currently running '$${NUM_CONT}'/9: '$${RUNNING_CONT}'",
+                  "description":"Currently running '$${NUM_CONT}'/8: '$${RUNNING_CONT}'",
                   "tags": ["SatAPI","Critical"],
                   "entity":"api.blockstream.space",
                   "priority":"P2"
               }'
           else
-                echo "'$${NUM_CONT}'/9 containers are running"
+                echo "'$${NUM_CONT}'/8 containers are running"
         fi
 
   - path: /etc/systemd/system/check-containers.service
@@ -209,12 +209,12 @@ write_files:
         ExecStopPost=/usr/bin/docker rm sse-redis-db
         ExecStopPost=/sbin/iptables -D INPUT -p tcp -s localhost --dport ${redis_port} -j ACCEPT
 
-  - path: /etc/systemd/system/ionosphere.service
+  - path: /etc/systemd/system/api-server.service
     permissions: 0644
     owner: root
     content: |
         [Unit]
-        Description=Ionosphere daemon
+        Description=API server daemon
         Wants=gcr-online.target
         After=lightning.service
 
@@ -222,20 +222,14 @@ write_files:
         Restart=always
         RestartSec=3
         Environment=HOME=/home/bs
+        ExecStartPre=/usr/bin/docker-credential-gcr configure-docker
         ExecStartPre=/usr/bin/docker pull ${ionosphere_docker}
         ExecStartPre=/sbin/iptables -A INPUT -p tcp -s 10.138.0.0/16 --dport 9292 -j ACCEPT
         ExecStartPre=/sbin/iptables -A INPUT -p tcp -s 10.138.0.0/16 --dport 4500 -j ACCEPT
-        ExecStartPre=/usr/bin/docker run \
-            --user root \
-            -v /mnt/disks/data/ionosphere:/data \
-            --entrypoint bash \
-            --rm \
-            "${ionosphere_docker}" \
-            -c 'chown -R ionosphere:ionosphere /data'
         ExecStart=/usr/bin/docker run \
             --network=host \
             --pid=host \
-            --name=ionosphere \
+            --name=api-server \
             --log-opt max-size=200m \
             --log-opt max-file=3 \
             -v /mnt/disks/data/ionosphere:/data \
@@ -243,18 +237,19 @@ write_files:
             -e "CHARGE_ROOT=http://api-token:${charge_token}@localhost:9112" \
             -e "CALLBACK_URI_ROOT=http://localhost:9292" \
             -e "MIN_PER_BYTE_BID=1" \
+            -e "REDIS_URI=redis://localhost:6379" \
             "${ionosphere_docker}"
-        ExecStop=/usr/bin/docker stop ionosphere
-        ExecStopPost=/usr/bin/docker rm ionosphere
+        ExecStop=/usr/bin/docker stop api-server
+        ExecStopPost=/usr/bin/docker rm api-server
         ExecStopPost=/sbin/iptables -D INPUT -p tcp -s 10.138.0.0/16 --dport 9292 -j ACCEPT
         ExecStopPost=/sbin/iptables -D INPUT -p tcp -s 10.138.0.0/16 --dport 4500 -j ACCEPT
 
-  - path: /etc/systemd/system/ionosphere-tx.service
+  - path: /etc/systemd/system/api-server-tx.service
     permissions: 0644
     owner: root
     content: |
         [Unit]
-        Description=Ionosphere Transmitter daemon
+        Description=Transmitter daemon
         Wants=gcr-online.target
         After=ionosphere.service
 
@@ -265,19 +260,20 @@ write_files:
         ExecStart=/usr/bin/docker run \
             --network=host \
             --pid=host \
-            --name=ionosphere-tx \
+            --name=tx-daemon \
             -v /mnt/disks/data/ionosphere:/data \
             -e ENV="production" \
+            -e "REDIS_URI=redis://localhost:6379" \
             "${ionosphere_docker}" daemon.sh
-        ExecStop=/usr/bin/docker stop ionosphere-tx
-        ExecStopPost=/usr/bin/docker rm ionosphere-tx
+        ExecStop=/usr/bin/docker stop tx-daemon
+        ExecStopPost=/usr/bin/docker rm tx-daemon
 
-  - path: /etc/systemd/system/ionosphere-sse.service
+  - path: /etc/systemd/system/api-server-sse.service
     permissions: 0644
     owner: root
     content: |
         [Unit]
-        Description=Ionosphere Server-Side Events Server
+        Description=Server-Side Events Server
         Wants=gcr-online.target
         After=redis.service
 
@@ -289,12 +285,12 @@ write_files:
         ExecStart=/usr/bin/docker run \
             --network=host \
             --pid=host \
-            --name=ionosphere-sse \
+            --name=sse-server \
             -e "SUB_CHANNELS=transmissions" \
             -e "REDIS_URI=redis://localhost:6379" \
             "${ionosphere_sse_docker}"
-        ExecStop=/usr/bin/docker stop ionosphere-sse
-        ExecStopPost=/usr/bin/docker rm ionosphere-sse
+        ExecStop=/usr/bin/docker stop sse-server
+        ExecStopPost=/usr/bin/docker rm sse-server
 
   - path: /etc/systemd/system/charge.service
     permissions: 0644
@@ -329,9 +325,9 @@ runcmd:
   - systemctl enable --now k8s-autossh.service
   - systemctl enable --now lightning.service
   - systemctl enable --now redis.service
-  - systemctl enable --now ionosphere.service
-  - systemctl enable --now ionosphere-tx.service
-  - systemctl enable --now ionosphere-sse.service
+  - systemctl enable --now api-server.service
+  - systemctl enable --now api-server-tx.service
+  - systemctl enable --now api-server-sse.service
   - systemctl enable --now charge.service
   - systemctl enable --now node-exporter.service
   - systemctl enable --now check-containers.timer

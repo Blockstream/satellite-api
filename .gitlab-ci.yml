@@ -29,6 +29,11 @@ unit_tests:
   image: python:3.9
   tags:
     - k8s
+  except:
+    - cleanup_staging@satellite/ionosphere
+    - /^staging_.*/
+    - /^prod_.*/
+    - /^misc_.*/
   before_script:
     - pip install flake8 yapf pytest pytest-cov
     - pip install -r server/requirements.txt
@@ -47,6 +52,11 @@ docker_build:
     - docker:19-dind
   only:
     - branches@satellite/ionosphere
+  except:
+    - cleanup_staging@satellite/ionosphere
+    - /^staging_.*/
+    - /^prod_.*/
+    - /^misc_.*/
   parallel:
     matrix:
       - IMAGE: $API_IMAGE
@@ -108,7 +118,6 @@ plan_satapi:
     - branches@satellite/ionosphere
   except:
     - cleanup_staging@satellite/ionosphere
-    - build_ci_image@satellite/ionosphere
     - /^staging_.*/
     - /^prod_.*/
     - /^misc_.*/
@@ -142,8 +151,6 @@ plan_misc:
   stage: plan
   tags:
     - k8s
-  only:
-    - /^misc_.*/
   except:
     - /^misc_v.*/
   script:

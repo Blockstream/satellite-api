@@ -70,13 +70,11 @@ docker_push:
   stage: build
   tags:
     - k8s-docker
+  when: manual
   services:
     - docker:19-dind
   only:
-    - master@satellite/ionosphere
-    - /^staging_.*/
-    - /^prod_.*/
-    - /^misc_.*/
+    - branches@satellite/ionosphere
   parallel:
     matrix:
       - IMAGE: $API_IMAGE

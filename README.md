@@ -1,6 +1,6 @@
 # Satellite API
 
-A lightning app (Lapp) based on c-lightning. Presents an API to submit messages for global broadcast over Blockstream Satellite and pay for them with Bitcoin Lightning payments.
+A lightning app (Lapp) based on c-lightning. Presents an API to submit messages for global broadcast over Blockstream Satellite with payments via Bitcoin Lightning.
 
 <!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-generate-toc again -->
 ## Contents
@@ -27,29 +27,21 @@ A lightning app (Lapp) based on c-lightning. Presents an API to submit messages 
 
 ## Setup
 
-The Blockstream Satellite API is dependent on [lightning-charge](https://github.com/ElementsProject/lightning-charge), which itself is dependent on [c-lightning](https://github.com/ElementsProject/lightning) and [bitcoin](https://github.com/bitcoin/bitcoin). To bring up charged, lightningd, and bitcoind, a [handy docker-compose](https://github.com/DeviaVir/blc-docker) script is available.
+The Satellite API comprises a RESTful API server and a transmitter daemon. The API server speaks JSON and is used for creating and managing message transmission orders and for processing lightning-charge payment callbacks. The transmitter daemon continuously dequeues paid messages and coordinates the corresponding satellite transmissions.
 
-The satellite API itself is comprised of a RESTful API server and a transmitter daemon. The API server speaks JSON and is used for creating and managing message transmission orders and for processing lightning-charge payment callbacks. The transmitter daemon dequeues paid orders and writes the uploaded message a named pipe, where they are subsequently processed by the Blockstream Satellite GNU Radio transmitter.
+The Blockstream Satellite API is dependent on [lightning-charge](https://github.com/ElementsProject/lightning-charge), which itself is dependent on [c-lightning](https://github.com/ElementsProject/lightning) and [bitcoin](https://github.com/bitcoin/bitcoin). The Satellite API server communicates with the Bitcoin Lightning Charge (BLC) stack to handle the Bitcoin Lightning payment required for each transmission order.
 
 ## Run ##
 
-The included `Dockerfile` builds a Docker file with the necessary gem dependencies, directory structure, and permissions. The included `docker_entrypoint.sh` runs the API server and transmitter daemon.
+A docker-compose script is available to bring up the Satellite API server, the transmitter daemon, and the other dependencies (BLC and Redis). To launch the container stack, run:
 
-After building a Docker image (`satellite_api` in the example below), decide where you are going to keep your persisted data (`~/docker/data` in the example below) and run it like this:
-
-```bash
-docker run -e CHARGE_ROOT=http://api-token:mySecretToken@localhost:9112 -e CALLBACK_URI_ROOT=http://my.public.ip:9292 -u `id -u` -v ~/docker/data:/data -p 9292:9292 -it satellite_api
 ```
-
-To run in developer mode, set the `RACK_ENV` environment variable like this:
-
-```bash
-docker run -e CHARGE_ROOT=http://api-token:mySecretToken@localhost:9112 -e CALLBACK_URI_ROOT=http://my.public.ip:9292 -e RACK_ENV=development -u `id -u` -v ~/docker/data:/data -p 9292:9292 -it satellite_api
+docker-compose up
 ```
 
 ## Example Applications
 
-Example Python applications are available at the [Blockstream Satellite examples directory](https://github.com/Blockstream/satellite/tree/master/api/examples) as a reference regarding how to implement the interaction with the API. There is one application specifically for sending data to the API, called "API data sender", and another application for reading the API data acquired by the Blockstream Satellite receiver, called "API data reader". Additionally, there is one application that allows testing API data reception directly through the internet, without the actual satellite receiver hardware, called "demo receiver". Refer to the documentation in the given link.
+The Blockstream Satellite command-line interface (CLI) has commands to submit messages to the Satellite API for global broadcasting. It also has commands to receive those messages through an actual satellite receiver or a simulated/demo receiver for testing. Please refer to the [CLI documentation](https://blockstream.github.io/satellite/doc/api.html). Alternatively, if you are interested in implementing the communication with the Satellite API from scratch, the referred CLI can be used as a reference. The source code is available on the [Satellite repository](https://github.com/Blockstream/satellite/tree/master/blocksatcli/api).
 
 ## REST API ##
 
@@ -139,7 +131,7 @@ Error codes that can be returned by this endpoint include: `INVALID_DATE` (113).
 
 ### GET /orders/queued  ###
 
-Retrieve a list of paid, but unsent orders in descending order of bid-per-byte. Both pending orders and the order currently being transmitted are returned. Optionally, accepts a parameter specifying how many queued order to return.
+Retrieve a list of paid but unsent orders in descending order of bid-per-byte. Both pending orders and the order currently being transmitted are returned. Optionally, accepts a parameter specifying how many queued orders to return.
 
 ```bash
 curl $SATELLITE_API/orders/queued
@@ -155,7 +147,7 @@ Error codes that can be returned by this endpoint include: `LIMIT_TOO_LARGE` (10
 
 ### GET /orders/sent  ###
 
-Retrieves a list of up to 20 sent orders in reverse chronological order. For pagination, optionally specify a `before` parameter (in ISO 8601 format) that specifies that the 20 orders immediately prior to the given time be returned.
+Retrieves a list of up to 20 sent orders in reverse chronological order. For pagination, optionally specify a `before` parameter (in ISO 8601 format) that specifies that the 20 orders immediately before the given time be returned.
 
 ```bash
 curl $SATELLITE_API/orders/sent
@@ -191,10 +183,10 @@ Error codes that can be returned by this endpoint include: `CHANNELS_EQUALITY` (
 
 ### Queue Page ###
 
-For debugging and as an example of how to build a web front-end to the satellite API, there is a simple table view of queued, pending, and sent messages at `$SATELLITE_API/queue.html`
+A simple table view of queued, pending and sent messages is available at `$SATELLITE_API/queue.html`. This page can be used for debugging and as an example for building a web front-end to the satellite API.
 
 ## Future Work ##
 
-* Configure `Rack::Attack` or similar to block and throttle abusive requests.
+* Configure `Flask-Limiter` or similar to block and throttle abusive requests.
 * Support bids priced in fiat currencies.
-* Report the top bid_per_byte, queue depth, and estimated time to transmit in the response to `POST /order`.
+* Report the top `bid_per_byte`, queue depth, and estimated time to transmit in the response of `POST /order`.

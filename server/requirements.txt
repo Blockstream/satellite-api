@@ -1,0 +1,11 @@
+alembic==1.5.5
+Flask==1.1.2
+Flask-RESTful==0.3.8
+Flask-SQLAlchemy==2.4.4
+gunicorn[gevent]==20.0.4
+marshmallow==3.10.0
+pysqlite3==0.4.5
+PyYAML==5.4.1
+redis==3.5.3
+requests===2.25.1
+SQLAlchemy==1.3.23

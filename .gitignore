@@ -1,3 +1,5 @@
 .terraform*
-db/messages
-db/*.sqlite3
+**/__pycache__/
+*~
+htmlcov/
+.coverage

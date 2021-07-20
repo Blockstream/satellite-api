@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>Ionosphere Queues</title>
+
+  <!-- Latest compiled and minified CSS -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+  <!-- Optional theme -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+
+  <style>
+    table {
+      width: 100%;
+      table-layout: fixed;
+      margin: 5px;
+    }
+    td {
+      overflow-wrap: break-word;
+      vertical-align: top;
+    }
+    td, th {
+      padding: 10px;
+    }
+  </style>
+
+  <!-- Latest compiled and minified jQuery -->
+  <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+
+  <!-- Latest compiled and minified Bootstrap JavaScript -->
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+  <!-- Latest compiled and minified moment.js JavaScript -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.22.2/moment-with-locales.min.js" crossorigin="anonymous"></script>
+
+</head>
+
+<body id="home">
+
+  <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+    <li class="nav-item active">
+      <a class="nav-link" id="pills-queued-tab" data-toggle="pill" href="#pills-queued" role="tab" aria-controls="pills-queued" aria-selected="true">Queued</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" id="pills-pending-tab" data-toggle="pill" href="#pills-pending" role="tab" aria-controls="pills-pending" aria-selected="false">Pending</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" id="pills-sent-tab" data-toggle="pill" href="#pills-sent" role="tab" aria-controls="pills-sent" aria-selected="false">Sent</a>
+    </li>
+  </ul>
+  <div class="tab-content" id="pills-tabContent">
+    <div class="tab-pane fade active in" id="pills-queued" role="tabpanel" aria-labelledby="pills-queued-tab">
+      <div class="panel panel-default">
+        <table id="queued_table">
+            <thead>
+                <tr>
+                    <th class="created_at">Created</th>
+                    <th class="bid_per_byte">Bid per Byte (millisatoshis)</th>
+                    <th class="message_size">Message Size</th>
+                    <th class="unpaid_bid">Unpaid Bid</th>
+                    <th class="uuid">Order ID</th>
+                    <th class="status">Status</th>
+                    <th class="started_transmission_at">Transmission Started</th>
+                </tr>
+            </thead>
+        </table>
+      </div>
+    </div>
+    <div class="tab-pane fade" id="pills-pending" role="tabpanel" aria-labelledby="pills-pending-tab">
+      <div class="panel panel-default">
+        <table id="pending_table">
+            <thead>
+                <tr>
+                    <th class="created_at">Created</th>
+                    <th class="bid_per_byte">Bid per Byte (millisatoshis)</th>
+                    <th class="message_size">Message Size</th>
+                    <th class="unpaid_bid">Unpaid Bid</th>
+                    <th class="uuid">Order ID</th>
+                    <th class="status">Status</th>
+                </tr>
+            </thead>
+        </table>
+      </div>
+    </div>
+    <div class="tab-pane fade" id="pills-sent" role="tabpanel" aria-labelledby="pills-sent-tab">
+      <div class="panel panel-default">
+        <table id="sent_table">
+            <thead>
+                <tr>
+                    <th class="created_at">Created</th>
+                    <th class="bid_per_byte">Bid per Byte (millisatoshis)</th>
+                    {% if env == "development" %}
+                        <th class="message">Message</th>
+                    {% endif %}
+                    <th class="message_size">Message Size</th>
+                    <th class="unpaid_bid">Unpaid Bid</th>
+                    <th class="uuid">Order ID</th>
+                    <th class="status">Status</th>
+                    <th class="started_transmission_at">Transmission Started</th>
+                    <th class="ended_transmission_at">Transmission Ended</th>
+                </tr>
+            </thead>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script type="text/javascript">
+    $(function() {
+      $.getJSON( "orders/queued", function( data ) {
+        $.each( data, function( key, val ) {
+          var started_transmission_at = moment(moment.utc(val.started_transmission_at).toDate()).local();
+          var created_at = moment(moment.utc(val.created_at).toDate()).local().fromNow();
+          $("#queued_table").append($('<tr>').append(
+                $('<td>').text(created_at),
+                $('<td>').text(Math.round(val.bid_per_byte * 100) / 100),
+                $('<td>').text(val.message_size),
+                $('<td>').text(val.unpaid_bid),
+                $('<td>').text(val.uuid),
+                $('<td>').text(val.status),
+                $('<td>').text(started_transmission_at.isValid() ? started_transmission_at.fromNow() : "")
+          ));
+        });
+      });
+
+      $.getJSON( "orders/pending", function( data ) {
+        $.each( data, function( key, val ) {
+          var created_at = moment(moment.utc(val.created_at).toDate()).local().fromNow();
+          $("#pending_table").append($('<tr>').append(
+                $('<td>').text(created_at),
+			    $('<td>').text(Math.round(val.bid_per_byte * 100) / 100),
+                $('<td>').text(val.message_size),
+                $('<td>').text(val.unpaid_bid),
+                $('<td>').text(val.uuid),
+                $('<td>').text(val.status)
+          ));
+        });
+      });
+
+      $.getJSON( "orders/sent", function( data ) {
+        let env = '{{ env }}';
+        $.each( data, function( key, val ) {
+          var started_transmission_at = moment(moment.utc(val.started_transmission_at).toDate()).local();
+          var ended_transmission_at = moment(moment.utc(val.ended_transmission_at).toDate()).local();
+          var created_at = moment(moment.utc(val.created_at).toDate()).local().fromNow();
+
+          $("#sent_table").append($('<tr>').append(
+                $('<td>').text(created_at),
+			    $('<td>').text(Math.round(val.bid_per_byte * 100) / 100),
+                (env === 'development' ? $('<td>').html('<a href="order/' + val.uuid + '/sent_message">download</a>') : ''),
+                $('<td>').text(val.message_size),
+                $('<td>').text(val.unpaid_bid),
+                $('<td>').text(val.uuid),
+                $('<td>').text(val.status),
+                $('<td>').text(started_transmission_at.isValid() ? started_transmission_at.fromNow() : ""),
+                $('<td>').text(ended_transmission_at.isValid() ? ended_transmission_at.fromNow() : "")
+          ));
+        });
+      });
+
+    });
+  </script>
+
+</body>
+</html>

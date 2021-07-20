@@ -1,53 +1,43 @@
 version: '3'
 services:
   blc:
-    image: "blockstream/lightning-charge"
-    ports:
-      - "9112:9112"
+    image: "shesek/lightning-charge:0.4.23"
     environment:
       - API_TOKEN=mySecretToken
     volumes:
       - blc:/data
-  ionosphere:
-    image: ionosphere
-    build:
-      context: .
-      dockerfile: Dockerfile
+  api-server:
+    build: server
     depends_on:
       - blc
-    ports:
-      - "9292:9292"
     links:
       - blc
     environment:
       - CHARGE_ROOT=http://api-token:mySecretToken@blc:9112
       - CALLBACK_URI_ROOT=http://localhost:9292
-      - RACK_ENV=production
+      - ENV=development
+      - REDIS_URI=redis://redis:6379
     volumes:
-      - ~/docker/data:/data
-  ionosphere-tx:
-    image: ionosphere
+      - data:/data
+  tx-daemon:
+    build: server
     depends_on:
-      - ionosphere
+      - api-server
       - redis
     links:
       - redis
     environment:
       - REDIS_URI=redis://redis:6379
-      - RACK_ENV=production
+      - ENV=development
     volumes:
-      - ~/docker/data:/data
-    command: ./docker_entrypoint_transmitter.sh
-  ionosphere-sse:
-    image: ionosphere-sse
+      - data:/data
+    command: daemon.sh
+  sse-server:
     build:
       context: sse/
-      dockerfile: ../Dockerfile.sse
     depends_on:
+      - api-server
       - redis
-      - ionosphere-tx
-    ports:
-      - "4500:4500"
     links:
       - redis
     environment:
@@ -55,7 +45,15 @@ services:
       - REDIS_URI=redis://redis:6379
   redis:
     image: "redis:latest"
+  proxy_server:
+    image: proxy_server
+    build: nginx
+    depends_on:
+      - api-server
+      - sse-server
     ports:
-      - "6379:6379"
+      - 8080:80
+
 volumes:
   blc:
+  data:

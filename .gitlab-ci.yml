@@ -151,7 +151,7 @@ plan_misc:
   stage: plan
   tags:
     - k8s
-  except:
+  only:
     - /^misc_v.*/
   script:
     - (echo -n "$V3_PK" > terraform/modules/tor/v3.pk)
@@ -177,6 +177,7 @@ plan_misc:
 # This deploys only tags/branches starting with misc_v.* (i.e. tor, prometheus, etc)
 deploy_misc:
   stage: deploy
+  when: manual
   tags:
     - k8s
   only:

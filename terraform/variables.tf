@@ -12,12 +12,6 @@ locals {
       create_testnet = 0
       create_misc    = 0
     }
-    "testnet-staging" = {
-      env            = "staging"
-      create_mainnet = 0
-      create_testnet = 1
-      create_misc    = 0
-    }
     "testnet-prod" = {
       env            = "prod"
       create_mainnet = 0

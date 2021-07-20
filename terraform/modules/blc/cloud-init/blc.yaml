@@ -94,33 +94,6 @@ write_files:
         ExecStopPost=/usr/bin/docker rm node-exporter
         ExecStopPost=/sbin/iptables -D INPUT -m tcp -p tcp --dport 9100 -j ACCEPT
 
-  - path: /etc/systemd/system/postgres.service
-    permissions: 0644
-    owner: root
-    content: |
-        [Unit]
-        Description=PostgreSQL Server
-        Wants=gcr-online.target docker.service
-        After=gcr-online.service docker.service
-
-        [Service]
-        Restart=always
-        RestartSec=3
-        Environment=HOME=/home/bs
-        ExecStartPre=/usr/bin/docker pull ${postgres_docker}
-        ExecStartPre=/sbin/iptables -A INPUT -p tcp -s localhost --dport 5432 -j ACCEPT
-        ExecStart=/usr/bin/docker run \
-            --name=postgres \
-            --network=host \
-            -v /mnt/disks/data/postgres:/var/lib/postgresql/data/pgdata \
-            -e "PGDATA=/var/lib/postgresql/data/pgdata" \
-            -e "POSTGRES_USER=${pguser}" \
-            -e "POSTGRES_PASSWORD=${pgpass}" \
-            "${postgres_docker}" postgres
-        ExecStop=/usr/bin/docker stop postgres
-        ExecStopPost=/usr/bin/docker rm postgres
-        ExecStopPost=/sbin/iptables -D INPUT -p tcp -s localhost --dport 5432 -j ACCEPT
-
   - path: /etc/systemd/system/autossh-key-downloader.service
     permissions: 0644
     owner: root
@@ -355,7 +328,6 @@ runcmd:
   - systemctl enable --now autossh-key-downloader.service
   - systemctl enable --now k8s-autossh.service
   - systemctl enable --now lightning.service
-#  - systemctl enable --now postgres.service
   - systemctl enable --now redis.service
   - systemctl enable --now ionosphere.service
   - systemctl enable --now ionosphere-tx.service

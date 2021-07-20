@@ -7,7 +7,7 @@ terraform {
       source = "hashicorp/google-beta"
     }
   }
-  required_version = ">= 0.13"
+  required_version = ">= 0.14"
 
   backend "gcs" {
     bucket = "terraform-bs-source"
@@ -34,7 +34,6 @@ module "blc-mainnet" {
   ionosphere_docker     = var.ionosphere_docker
   ionosphere_sse_docker = var.ionosphere_sse_docker
   node_exporter_docker  = var.node_exporter_docker
-  postgres_docker       = var.postgres_docker
   autossh_docker        = var.autossh_docker
   certbot_docker        = var.certbot_docker
   net                   = "mainnet"
@@ -53,8 +52,6 @@ module "blc-mainnet" {
   prom_service_acct = var.prom_service_acct
   opsgenie_key      = var.opsgenie_key
   rpcpass           = var.rpcpass
-  pguser            = var.pguser
-  pgpass            = var.pgpass
   charge_token      = var.charge_token
   k8s_autossh_lb    = var.k8s_autossh_lb
   private_bucket    = var.private_bucket
@@ -71,7 +68,6 @@ module "blc-testnet" {
   ionosphere_docker     = var.ionosphere_docker
   ionosphere_sse_docker = var.ionosphere_sse_docker
   node_exporter_docker  = var.node_exporter_docker
-  postgres_docker       = var.postgres_docker
   autossh_docker        = var.autossh_docker
   certbot_docker        = var.certbot_docker
   net                   = "testnet"
@@ -90,8 +86,6 @@ module "blc-testnet" {
   prom_service_acct = var.prom_service_acct
   opsgenie_key      = var.opsgenie_key
   rpcpass           = var.rpcpass
-  pguser            = var.pguser
-  pgpass            = var.pgpass
   charge_token      = var.charge_token
   k8s_autossh_lb    = var.k8s_autossh_lb
   private_bucket    = var.private_bucket

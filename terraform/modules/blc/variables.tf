@@ -60,14 +60,6 @@ variable "lb_svc_acct" {
   type = string
 }
 
-variable "pguser" {
-  type = string
-}
-
-variable "pgpass" {
-  type = string
-}
-
 variable "k8s_autossh_lb" {
   type = string
 }
@@ -105,10 +97,6 @@ variable "ionosphere_sse_docker" {
 }
 
 variable "node_exporter_docker" {
-  type = string
-}
-
-variable "postgres_docker" {
   type = string
 }
 

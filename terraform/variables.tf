@@ -12,6 +12,12 @@ locals {
       create_testnet = 0
       create_misc    = 0
     }
+    "testnet-staging" = {
+      env            = "staging"
+      create_mainnet = 0
+      create_testnet = 1
+      create_misc    = 0
+    }
     "testnet-prod" = {
       env            = "prod"
       create_mainnet = 0
@@ -157,16 +163,6 @@ variable "health_check" {
   default = ""
 }
 
-variable "pguser" {
-  type    = string
-  default = ""
-}
-
-variable "pgpass" {
-  type    = string
-  default = ""
-}
-
 variable "k8s_autossh_lb" {
   type    = string
   default = ""
@@ -258,11 +254,6 @@ variable "gcloud_docker" {
 variable "certbot_docker" {
   type    = string
   default = "blockstream/certbot-gcs@sha256:fc5d7cb31bcf04169f37cbebd74c3bde49651f79e54e1ff3c3eaf6ec47b9f6d0"
-}
-
-variable "postgres_docker" {
-  type    = string
-  default = "postgres@sha256:077793cc0ed31fd0568ce468d85d0843b8dea37c9ef74eb81b4ccf0fe9539e2e"
 }
 
 variable "autossh_docker" {

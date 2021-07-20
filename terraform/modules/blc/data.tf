@@ -21,11 +21,8 @@ data "template_file" "blc" {
     ionosphere_docker     = var.ionosphere_docker
     ionosphere_sse_docker = var.ionosphere_sse_docker
     node_exporter_docker  = var.node_exporter_docker
-    postgres_docker       = var.postgres_docker
     autossh_docker        = var.autossh_docker
     certbot_docker        = var.certbot_docker
-    pguser                = var.pguser
-    pgpass                = var.pgpass
     opsgenie_key          = var.opsgenie_key
     k8s_autossh_lb        = var.k8s_autossh_lb
     rpcpass               = var.rpcpass

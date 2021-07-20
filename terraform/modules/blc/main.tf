@@ -26,7 +26,7 @@ resource "google_compute_instance_group_manager" "blc" {
   }
 
   update_policy {
-    type                  = "OPPORTUNISTIC"
+    type                  = "PROACTIVE"
     minimal_action        = "RESTART"
     replacement_method    = "RECREATE"
     max_surge_fixed       = 0

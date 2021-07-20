@@ -7,6 +7,7 @@ variables:
 
 image: blockstream/gcloud-docker:v0.14.5
 stages:
+  - test
   - build
   - plan
   - deploy
@@ -19,52 +20,24 @@ before_script:
   - gcloud auth list
   - gcloud --version
 
-build_ci_image:
-  stage: build
-  when: manual
-  image: blockstream/satapi-builder
-  tags:
-    - k8s-docker
-  services:
-    - docker:19-dind
-  only:
-    - build_ci_image@satellite/ionosphere
-  before_script:
-    - echo $DOCKERHUB_PW | docker login -u $DOCKERHUB_USER --password-stdin
-  script:
-    - docker pull blockstream/satapi-builder:latest || true
-    - docker build --network=host -t blockstream/satapi-builder:latest -f Dockerfile.ci .
-    - docker push blockstream/satapi-builder:latest
-
 # Run tests
-test_build:
-  stage: build
-  image: blockstream/satapi-builder
+test:
+  stage: test
+  image: python:3.9
   tags:
-    - k8s-docker
-  services:
-    - docker:19-dind
-  only:
-    - branches@satellite/ionosphere
-  except:
-    - master@satellite/ionosphere
-    - cleanup_staging@satellite/ionosphere
+    - k8s
   before_script:
-    - export CHARGE_ROOT=$CHARGE_ROOT_CI
-    - export REDIS_URI=$REDIS_URI_CI
+    - pip install flake8 yapf pytest pytest-cov
+    - pip install -r server/requirements.txt
+    - pip install -r server/test_requirements.txt
   script:
-    - bundle update --bundler
-    - bundle exec rake db:create && bundle exec rake db:schema:load && bundle exec rake db:migrate
-    - bundle exec ruby tests/tests.rb || { echo -e "Tests failed..\n Sleeping for an hour to debug."; sleep 3600; exit 1; }
-    - echo "Tests passed!"
-    - docker pull blockstream/satellite-api:latest
-    - docker build --network=host -t blockstream/satellite-api:latest .
-    - docker rmi blockstream/satellite-api:latest || true
+    - flake8 .
+    - yapf --diff --recursive --verbose server/
+    - cd server/ && python -m pytest --cov=.
 
 # Run tests and build docker images
 build:
   stage: build
-  image: blockstream/satapi-builder
   tags:
     - k8s-docker
   services:
@@ -75,19 +48,12 @@ build:
     - export CHARGE_ROOT=$CHARGE_ROOT_CI
     - export REDIS_URI=$REDIS_URI_CI
   script:
-    - bundle update --bundler
-    - bundle exec rake db:create && bundle exec rake db:schema:load && bundle exec rake db:migrate
-    - bundle exec ruby tests/tests.rb || { echo "Tests failed.."; exit 1; }
+    - cd server/
     - echo $DOCKERHUB_PW | docker login -u $DOCKERHUB_USER --password-stdin
     - docker pull blockstream/satellite-api:latest
-    - docker pull blockstream/satellite-api-sse:latest
     - docker build --network=host -f Dockerfile -t blockstream/satellite-api:latest -t blockstream/satellite-api:$CI_COMMIT_SHA .
     - docker push blockstream/satellite-api:latest
     - docker push blockstream/satellite-api:$CI_COMMIT_SHA
-    - echo "Building Satellite API SSE image"
-    - docker build --network=host -f Dockerfile.sse -t blockstream/satellite-api-sse:latest -t blockstream/satellite-api-sse:$CI_COMMIT_SHA sse/
-    - docker push blockstream/satellite-api-sse:latest
-    - docker push blockstream/satellite-api-sse:$CI_COMMIT_SHA
 
 # Any newly-pushed, WIP branch will be ran through plan (keep in mind docker images are using the latest tag, which may be an older one since the current commit may not match an available image)
 plan_satapi:

@@ -16,9 +16,9 @@ write_files:
         #!/bin/bash
 
         # Save # and names of running containers
-        NUM_RUNNING_CONT=$$(docker ps -q | wc -l)
-        NEEDED_CONT=8
-        RUNNING_CONT="$$(docker ps --format '{{.Names}}' | tr '\n' ', ' | sed -e 's/,$//g')"
+        NUM_RUNNING_CONT=$(docker ps -q | wc -l)
+        NEEDED_CONT=9
+        RUNNING_CONT="$(docker ps --format '{{.Names}}' | tr '\n' ', ' | sed -e 's/,$//g')"
 
         # If less than 8 are running, send alert to opsgenie
         if [ $${NUM_RUNNING_CONT} != $${NEEDED_CONT} ]
@@ -28,7 +28,7 @@ write_files:
                   -H "Authorization: GenieKey ${opsgenie_key}" \
                   -d \
               '{
-                  "message": "Satellite API instance does not have all $${NEEDED_CONT} containers running",
+                  "message": "Satellite API instance does not have all '$${NEEDED_CONT}' containers running",
                   "alias": "satapi-missing-containers",
                   "description":"Currently running '$${NUM_RUNNING_CONT}'/'$${NEEDED_CONT}': '$${RUNNING_CONT}'",
                   "tags": ["SatAPI","Critical"],
@@ -36,7 +36,7 @@ write_files:
                   "priority":"P2"
               }'
           else
-                echo "'$${NUM_RUNNING_CONT}'/'$${NEEDED_CONT}' containers are running"
+                echo "$${NUM_RUNNING_CONT}/$${NEEDED_CONT} containers are running"
         fi
 
   - path: /etc/systemd/system/check-containers.service

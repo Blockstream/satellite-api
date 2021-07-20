@@ -218,6 +218,7 @@ write_files:
         Description=API server daemon
         Wants=gcr-online.target
         Requires=charge.service
+        After=charge.service
 
         [Service]
         Restart=always
@@ -301,6 +302,7 @@ write_files:
         Description=Charge instance
         Wants=gcr-online.target
         Requires=lightning.service
+        After=lightning.service
 
         [Service]
         Restart=always

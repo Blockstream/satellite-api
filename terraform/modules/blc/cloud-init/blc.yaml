@@ -227,7 +227,6 @@ write_files:
         ExecStartPre=/usr/bin/docker-credential-gcr configure-docker
         ExecStartPre=/usr/bin/docker pull ${ionosphere_docker}
         ExecStartPre=/sbin/iptables -A INPUT -p tcp -s 10.138.0.0/16 --dport 9292 -j ACCEPT
-        ExecStartPre=/sbin/iptables -A INPUT -p tcp -s 10.138.0.0/16 --dport 4500 -j ACCEPT
         ExecStart=/usr/bin/docker run \
             --network=host \
             --pid=host \
@@ -244,7 +243,6 @@ write_files:
         ExecStop=/usr/bin/docker stop api-server
         ExecStopPost=/usr/bin/docker rm api-server
         ExecStopPost=/sbin/iptables -D INPUT -p tcp -s 10.138.0.0/16 --dport 9292 -j ACCEPT
-        ExecStopPost=/sbin/iptables -D INPUT -p tcp -s 10.138.0.0/16 --dport 4500 -j ACCEPT
 
   - path: /etc/systemd/system/sse-server.service
     permissions: 0644
@@ -261,6 +259,7 @@ write_files:
         Environment=HOME=/home/bs
         ExecStartPre=/usr/bin/docker-credential-gcr configure-docker
         ExecStartPre=/usr/bin/docker pull ${ionosphere_sse_docker}
+        ExecStartPre=/sbin/iptables -A INPUT -p tcp -s 10.138.0.0/16 --dport 4500 -j ACCEPT
         ExecStart=/usr/bin/docker run \
             --network=host \
             --pid=host \
@@ -270,6 +269,7 @@ write_files:
             "${ionosphere_sse_docker}"
         ExecStop=/usr/bin/docker stop sse-server
         ExecStopPost=/usr/bin/docker rm sse-server
+        ExecStopPost=/sbin/iptables -D INPUT -p tcp -s 10.138.0.0/16 --dport 4500 -j ACCEPT
 
   - path: /etc/systemd/system/tx-server.service
     permissions: 0644

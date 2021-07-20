@@ -237,6 +237,7 @@ write_files:
             -e "ENV=production" \
             -e "CHARGE_ROOT=http://api-token:${charge_token}@localhost:9112" \
             -e "CALLBACK_URI_ROOT=http://localhost:9292" \
+            -e "CHARGE_API_TOKEN=${charge_token}" \
             -e "MIN_PER_BYTE_BID=1" \
             -e "REDIS_URI=redis://localhost:6379" \
             "${ionosphere_docker}"

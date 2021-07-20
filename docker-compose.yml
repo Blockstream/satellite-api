@@ -15,6 +15,7 @@ services:
     environment:
       - CHARGE_ROOT=http://api-token:mySecretToken@blc:9112
       - CALLBACK_URI_ROOT=http://localhost:9292
+      - CHARGE_API_TOKEN=mySecretToken
       - ENV=development
       - REDIS_URI=redis://redis:6379
     volumes:

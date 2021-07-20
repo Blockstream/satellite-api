@@ -1,4 +1,5 @@
 import os
+import uuid
 import yaml
 from enum import Enum
 
@@ -83,7 +84,7 @@ MESSAGE_FILE_RETENTION_TIME_DAYS = 31
 SERVER_PORT = 9292
 CALLBACK_URI_ROOT = os.getenv('CALLBACK_URI_ROOT',
                               "http://localhost:{}".format(SERVER_PORT))
-CHARGE_API_TOKEN = os.getenv('CHARGE_API_TOKEN', 'mySecretToken')
+CHARGE_API_TOKEN = os.getenv('CHARGE_API_TOKEN', str(uuid.uuid4()))
 LIGHTNING_WEBHOOK_KEY = hmac_sha256_digest('charged-token', CHARGE_API_TOKEN)
 
 CHARGE_ROOT = os.getenv('CHARGE_ROOT',

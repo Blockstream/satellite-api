@@ -246,31 +246,7 @@ write_files:
         ExecStopPost=/sbin/iptables -D INPUT -p tcp -s 10.138.0.0/16 --dport 9292 -j ACCEPT
         ExecStopPost=/sbin/iptables -D INPUT -p tcp -s 10.138.0.0/16 --dport 4500 -j ACCEPT
 
-  - path: /etc/systemd/system/api-server-tx.service
-    permissions: 0644
-    owner: root
-    content: |
-        [Unit]
-        Description=Transmitter daemon
-        Wants=gcr-online.target
-        After=ionosphere.service
-
-        [Service]
-        Restart=always
-        RestartSec=3
-        Environment=HOME=/home/bs
-        ExecStart=/usr/bin/docker run \
-            --network=host \
-            --pid=host \
-            --name=tx-daemon \
-            -v /mnt/disks/data/ionosphere:/data \
-            -e ENV="production" \
-            -e "REDIS_URI=redis://localhost:6379" \
-            "${ionosphere_docker}" daemon.sh
-        ExecStop=/usr/bin/docker stop tx-daemon
-        ExecStopPost=/usr/bin/docker rm tx-daemon
-
-  - path: /etc/systemd/system/api-server-sse.service
+  - path: /etc/systemd/system/sse-server.service
     permissions: 0644
     owner: root
     content: |
@@ -283,6 +259,7 @@ write_files:
         Restart=always
         RestartSec=3
         Environment=HOME=/home/bs
+        ExecStartPre=/usr/bin/docker-credential-gcr configure-docker
         ExecStartPre=/usr/bin/docker pull ${ionosphere_sse_docker}
         ExecStart=/usr/bin/docker run \
             --network=host \
@@ -293,6 +270,30 @@ write_files:
             "${ionosphere_sse_docker}"
         ExecStop=/usr/bin/docker stop sse-server
         ExecStopPost=/usr/bin/docker rm sse-server
+
+  - path: /etc/systemd/system/tx-server.service
+    permissions: 0644
+    owner: root
+    content: |
+        [Unit]
+        Description=Transmitter daemon
+        Wants=gcr-online.target
+        After=api-server.service
+
+        [Service]
+        Restart=always
+        RestartSec=3
+        Environment=HOME=/home/bs
+        ExecStart=/usr/bin/docker run \
+            --network=host \
+            --pid=host \
+            --name=tx-server \
+            -v /mnt/disks/data/ionosphere:/data \
+            -e ENV="production" \
+            -e "REDIS_URI=redis://localhost:6379" \
+            "${ionosphere_docker}" daemon.sh
+        ExecStop=/usr/bin/docker stop tx-server
+        ExecStopPost=/usr/bin/docker rm tx-server
 
   - path: /etc/systemd/system/charge.service
     permissions: 0644
@@ -330,7 +331,7 @@ runcmd:
   - systemctl enable --now charge.service
   - systemctl enable --now redis.service
   - systemctl enable --now api-server.service
-  - systemctl enable --now api-server-tx.service
-  - systemctl enable --now api-server-sse.service
+  - systemctl enable --now tx-server.service
+  - systemctl enable --now sse-server.service
   - systemctl enable --now node-exporter.service
   - systemctl enable --now check-containers.timer

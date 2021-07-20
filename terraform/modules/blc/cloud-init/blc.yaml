@@ -168,7 +168,7 @@ write_files:
         Environment=HOME=/home/bs
         ExecStartPre=/usr/bin/docker pull ${lightning_docker}
         ExecStartPre=/sbin/iptables -A INPUT -p tcp --dport ${lightning_port} -j ACCEPT
-        ExecStartPre=/sbin/iptables -A INPUT -m tcp -p tcp --dport 9900 -j ACCEPT
+        ExecStartPre=/sbin/iptables -A INPUT -m tcp -p tcp --dport 9750 -j ACCEPT
         ExecStart=/usr/bin/docker run \
             --network=host \
             --pid=host \
@@ -183,7 +183,7 @@ write_files:
         ExecStopPost=/usr/bin/sleep 3
         ExecStopPost=/usr/bin/docker rm -f lightning
         ExecStopPost=/sbin/iptables -D INPUT -p tcp --dport ${lightning_port} -j ACCEPT
-        ExecStopPost=/sbin/iptables -D INPUT -m tcp -p tcp --dport 9900 -j ACCEPT
+        ExecStopPost=/sbin/iptables -D INPUT -m tcp -p tcp --dport 9750 -j ACCEPT
 
   - path: /etc/systemd/system/redis.service
     permissions: 0644

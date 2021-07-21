@@ -110,6 +110,43 @@ docker_push:
     - docker push $IMAGE:$CI_COMMIT_REF_SLUG
     - if [ $CI_COMMIT_BRANCH == "master" ]; then docker push $IMAGE:latest; fi
 
+# Build and push the Satellite API docker image on deployments
+tag_docker_push:
+  stage: build
+  tags:
+    - k8s-docker
+  services:
+    - docker:19-dind
+  only:
+    - /^staging_.*/
+    - /^prod_.*/
+    - /^testnet_prod_.*/
+  except:
+    - branches@satellite/ionosphere
+  parallel:
+    matrix:
+      - IMAGE: $API_IMAGE
+        DIR: server
+      - IMAGE: $SSE_IMAGE
+        DIR: sse
+  script:
+    - cd $DIR
+    - docker pull $IMAGE:$CI_COMMIT_REF_SLUG || docker pull $IMAGE:latest || true
+    - >
+      docker build
+      -f Dockerfile
+      --network=host
+      --cache-from $IMAGE:$CI_COMMIT_REF_SLUG
+      --cache-from $IMAGE:latest
+      --build-arg BUILDKIT_INLINE_CACHE=1
+      -t $IMAGE:$CI_COMMIT_SHA
+      -t $IMAGE:$CI_COMMIT_REF_SLUG
+      -t $IMAGE:latest
+      .
+    - docker push $IMAGE:$CI_COMMIT_SHA
+    - docker push $IMAGE:$CI_COMMIT_REF_SLUG
+    - if [ $CI_COMMIT_BRANCH == "master" ]; then docker push $IMAGE:latest; fi
+
 # Any newly-pushed, WIP branch will be ran through plan (keep in mind docker images are using the latest tag, which may be an older one since the current commit may not match an available image)
 plan_staging:
   stage: plan

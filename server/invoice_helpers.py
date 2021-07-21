@@ -68,8 +68,8 @@ def new_invoice(order, bid):
         # register the webhook
         charged_auth_token = hmac_sha256_digest(
             constants.LIGHTNING_WEBHOOK_KEY, invoice.lid)
-        callback_url = f"{constants.CALLBACK_URI_ROOT}/callback\
-            /{invoice.lid}/{charged_auth_token}"
+        callback_url = (f"{constants.CALLBACK_URI_ROOT}/callback"
+                        f"/{invoice.lid}/{charged_auth_token}")
 
         webhook_registration_response = requests.post(
             f"{constants.CHARGE_ROOT}/invoice/{invoice.lid}/webhook",

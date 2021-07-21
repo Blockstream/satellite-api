@@ -33,6 +33,7 @@ unit_tests:
     - cleanup_staging@satellite/ionosphere
     - /^staging_.*/
     - /^prod_.*/
+    - /^testnet_prod_.*/
     - /^misc_.*/
   before_script:
     - pip install flake8 yapf pytest pytest-cov

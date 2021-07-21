@@ -44,14 +44,16 @@ def adjust_bids(order):
     db.session.commit()
 
 
-def get_and_authenticate_order(uuid, args):
+def get_and_authenticate_order(uuid, body_args, query_args):
     order = Order.query.filter_by(uuid=uuid).first()
 
     if order is None:
         return False, get_http_error_resp('ORDER_NOT_FOUND', uuid)
 
-    if 'auth_token' in args:
-        in_auth_token = args.get('auth_token')
+    if 'auth_token' in body_args:
+        in_auth_token = body_args.get('auth_token')
+    elif 'auth_token' in query_args:
+        in_auth_token = query_args.get('auth_token')
     elif 'X-Auth-Token' in request.headers:
         in_auth_token = request.headers.get('X-Auth-Token')
     else:

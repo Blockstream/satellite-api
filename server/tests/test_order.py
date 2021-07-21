@@ -186,12 +186,24 @@ def test_get_order(mock_new_invoice, client):
 
 
 @patch('orders.new_invoice')
-def test_get_order_auth_token_as_param(mock_new_invoice, client):
+def test_get_order_auth_token_as_form_param(mock_new_invoice, client):
     json_response = generate_test_order(mock_new_invoice, client)
     uuid = json_response['uuid']
 
     get_rv = client.get(f'/order/{uuid}',
                         data={'auth_token': json_response['auth_token']})
+    get_json_resp = get_rv.get_json()
+    assert get_rv.status_code == HTTPStatus.OK
+    assert get_json_resp['uuid'] == uuid
+
+
+@patch('orders.new_invoice')
+def test_get_order_auth_token_as_query_param(mock_new_invoice, client):
+    json_response = generate_test_order(mock_new_invoice, client)
+    uuid = json_response['uuid']
+
+    auth_token = json_response['auth_token']
+    get_rv = client.get(f'/order/{uuid}?auth_token={auth_token}')
     get_json_resp = get_rv.get_json()
     assert get_rv.status_code == HTTPStatus.OK
     assert get_json_resp['uuid'] == uuid

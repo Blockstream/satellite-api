@@ -36,18 +36,16 @@ def sha256_checksum(filename, block_size=SHA256_BLOCK_SIZE):
 
 class OrderResource(Resource):
     def get(self, uuid):
-        args = request.form
         success, order_or_error = order_helpers.get_and_authenticate_order(
-            uuid, args)
+            uuid, request.form, request.args)
         if not success:
             return order_or_error
         order = order_or_error
         return order_schema.dump(order)
 
     def delete(self, uuid):
-        args = request.form
         success, order_or_error = order_helpers.get_and_authenticate_order(
-            uuid, args)
+            uuid, request.form, request.args)
         if not success:
             return order_or_error
         order = order_or_error
@@ -139,19 +137,20 @@ class OrderUploadResource(Resource):
 
 class BumpOrderResource(Resource):
     def post(self, uuid):
-        args = request.form
-        errors = order_bump_schema.validate(args)
+        query_args = request.args
+        form_args = request.form
+        errors = order_bump_schema.validate(form_args)
 
         if errors:
             return errors, HTTPStatus.BAD_REQUEST
 
         success, order_or_error = order_helpers.get_and_authenticate_order(
-            uuid, args)
+            uuid, form_args, query_args)
         if not success:
             return order_or_error
         order = order_or_error
 
-        success, invoice = new_invoice(order, args['bid_increase'])
+        success, invoice = new_invoice(order, form_args['bid_increase'])
         if not success:
             return invoice
 

@@ -1,5 +1,7 @@
 # Satellite API
 
+[![Tests](https://github.com/Blockstream/satellite-api/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/Blockstream/satellite-api/actions/workflows/test.yml)
+
 A lightning app (Lapp) based on c-lightning. Presents an API to submit messages for global broadcast over Blockstream Satellite with payments via Bitcoin Lightning.
 
 <!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-generate-toc again -->

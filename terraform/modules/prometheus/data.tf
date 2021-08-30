@@ -12,7 +12,6 @@ data "template_file" "prometheus" {
     prom_docker          = var.prom_docker
     node_exporter_docker = var.node_exporter_docker
     retention            = var.retention
-    opsgenie_key         = var.opsgenie_key
   }
 }
 

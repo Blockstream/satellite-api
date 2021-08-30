@@ -7,7 +7,7 @@ terraform {
       source = "hashicorp/google-beta"
     }
   }
-  required_version = ">= 0.14"
+  required_version = ">= 0.15"
 
   backend "gcs" {
     bucket = "terraform-bs-source"
@@ -169,7 +169,6 @@ module "prometheus" {
   zone                   = var.zone
   instance_type          = var.instance_type[1]
   prom_allowed_source_ip = var.prom_allowed_source_ip
-  opsgenie_key           = var.opsgenie_key
   prom_service_acct      = var.prom_service_acct
 }
 

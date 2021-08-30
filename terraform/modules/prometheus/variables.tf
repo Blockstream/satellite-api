@@ -42,11 +42,7 @@ variable "prom_service_acct" {
 }
 
 variable "prom_allowed_source_ip" {
-  type = string
-}
-
-variable "opsgenie_key" {
-  type = string
+  type = list(any)
 }
 
 variable "prom_docker" {
@@ -56,4 +52,3 @@ variable "prom_docker" {
 variable "node_exporter_docker" {
   type = string
 }
-

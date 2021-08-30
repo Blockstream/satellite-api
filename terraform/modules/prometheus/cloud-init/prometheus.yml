@@ -9,42 +9,6 @@ users:
     uid: 2000
 
 write_files:
-  - path: /home/bs/prometheus/alertmanager.yml
-    permissions: 0644
-    owner: root
-    content: |
-        route:
-         group_by: [cluster, alertname]
-         # If an alert isn't caught by a route, send it to the pager.
-         receiver: noc-pager
-         routes:
-          - match:
-              severity: page
-            receiver: noc-pager
-
-        receivers:
-          - name: noc-pager
-            opsgenie_configs:
-            - api_key: ${opsgenie_key}
-              teams: SecOps
-              tags: satellite-api
-
-  - path: /home/bs/prometheus/rules/alerts.yml
-    permissions: 0644
-    owner: root
-    content: |
-        groups:
-          - name: node
-            rules:
-            #- alert: NoHostsInNetwork
-            #  expr: sum by (name) (up{name=~".+"}) == 0
-            #  for: 1m
-            #  labels:
-            #    severity: page
-            #  annotations:
-            #    summary: No hosts in network {{ $labels.name }}, production traffic impacted!
-            #    description: There are currently no hosts up in the network {{ $labels.name }}, verify the instance groups. https://wiki.blockstream.io/OpsPlaybooks/Esplora-Runbooks#NoHostsInNetwork
-
   - path: /home/bs/prometheus/prometheus.yml
     permissions: 0644
     owner: root
@@ -54,16 +18,6 @@ write_files:
           scrape_interval: 15s
           external_labels:
             project: satellite-api
-
-        rule_files:
-          - /config/rules/alerts.yml
-
-        alerting:
-          alertmanagers:
-          - scheme: http
-            static_configs:
-            - targets:
-              - "127.0.0.1:9093"
 
         scrape_configs:
         - job_name: prometheus
@@ -91,7 +45,7 @@ write_files:
               zone: us-west1-c
               port: 9100
 
-        - job_name: satellite-api
+        - job_name: satellite-api-node-exporter
           relabel_configs:
             - source_labels:
               - '__meta_gce_label_network'
@@ -104,40 +58,12 @@ write_files:
               target_label: 'instance_name'
           gce_sd_configs:
             - project: satellite-api
-              filter: (labels.type = "lightning-app")
               zone: us-west1-a
               port: 9100
             - project: satellite-api
-              filter: (labels.type = "lightning-app")
               zone: us-west1-b
               port: 9100
             - project: satellite-api
-              filter: (labels.type = "lightning-app")
-              zone: us-west1-c
-              port: 9100
-
-        - job_name: satellite-api-tor
-          relabel_configs:
-            - source_labels:
-              - '__meta_gce_label_network'
-              target_label: 'network'
-            - source_labels:
-              - '__meta_gce_label_name'
-              target_label: 'name'
-            - source_labels:
-              - '__meta_gce_instance_name'
-              target_label: 'instance_name'
-          gce_sd_configs:
-            - project: satellite-api
-              filter: (labels.type = "tor")
-              zone: us-west1-a
-              port: 9100
-            - project: satellite-api
-              filter: (labels.type = "tor")
-              zone: us-west1-b
-              port: 9100
-            - project: satellite-api
-              filter: (labels.type = "tor")
               zone: us-west1-c
               port: 9100
 
@@ -156,16 +82,15 @@ write_files:
             - project: satellite-api
               filter: (labels.type = "lightning-app-blc")
               zone: us-west1-a
-              port: 9900
+              port: 9750
             - project: satellite-api
               filter: (labels.type = "lightning-app-blc")
               zone: us-west1-b
-              port: 9900
+              port: 9750
             - project: satellite-api
               filter: (labels.type = "lightning-app-blc")
               zone: us-west1-c
-              port: 9900
-
+              port: 9750
 
   - path: /etc/systemd/system/prometheus.service
     permissions: 0644
@@ -180,7 +105,6 @@ write_files:
         Restart=always
         RestartSec=1
         Environment=HOME=/home/bs
-        ExecStartPre=/usr/bin/docker-credential-gcr configure-docker
         ExecStartPre=/usr/bin/docker pull ${prom_docker}
         ExecStartPre=/sbin/iptables -A INPUT -m tcp -p tcp --dport 9090 -j ACCEPT
         ExecStartPre=/sbin/iptables -A INPUT -m tcp -p tcp --dport 80 -j ACCEPT
@@ -193,41 +117,10 @@ write_files:
             --name prometheus \
             "${prom_docker}" --config.file=/config/prometheus.yml --web.enable-lifecycle --web.enable-admin-api --storage.tsdb.path=/data/metrics --storage.tsdb.retention=${retention}
         ExecStop=/usr/bin/docker stop prometheus
-        ExecStopPost=/usr/bin/docker rm prometheus
+        ExecStopPost=-/usr/bin/docker rm prometheus
         ExecStopPost=/sbin/iptables -D INPUT -m tcp -p tcp --dport 9090 -j ACCEPT
         ExecStopPost=/sbin/iptables -D INPUT -m tcp -p tcp --dport 80 -j ACCEPT
         ExecStopPost=/sbin/iptables -D PREROUTING -t nat -p tcp --dport 80 -j REDIRECT --to-port 9090
-
-        [Install]
-        WantedBy=multi-user.target
-
-  - path: /etc/systemd/system/alertmanager.service
-    permissions: 0644
-    owner: root
-    content: |
-        [Unit]
-        Description=alertmanager-server instance
-        Wants=gcr-online.target docker.service
-        After=gcr-online.service docker.service
-
-        [Service]
-        Restart=always
-        RestartSec=1
-        Environment=HOME=/home/bs
-        ExecStartPre=/usr/bin/docker-credential-gcr configure-docker
-        ExecStartPre=/usr/bin/docker pull ${prom_docker}
-        ExecStartPre=/sbin/iptables -A INPUT -m tcp -p tcp --dport 9093 -j ACCEPT
-        ExecStart=/usr/bin/docker run \
-            --network=host \
-            -v /mnt/disks/data:/data:rw \
-            -v /home/bs/prometheus:/config:ro \
-            --read-only \
-            --name alertmanager \
-            --entrypoint=/bin/alertmanager \
-            "${prom_docker}" --config.file=/config/alertmanager.yml
-        ExecStop=/usr/bin/docker stop alertmanager
-        ExecStopPost=/usr/bin/docker rm alertmanager
-        ExecStopPost=/sbin/iptables -D INPUT -m tcp -p tcp --dport 9093 -j ACCEPT
 
         [Install]
         WantedBy=multi-user.target
@@ -245,7 +138,6 @@ write_files:
         Restart=always
         RestartSec=1
         Environment=HOME=/home/bs
-        ExecStartPre=/usr/bin/docker-credential-gcr configure-docker
         ExecStartPre=/usr/bin/docker pull ${node_exporter_docker}
         ExecStartPre=/sbin/iptables -A INPUT -m tcp -p tcp --dport 9100 -j ACCEPT
         ExecStart=/usr/bin/docker run \
@@ -256,9 +148,10 @@ write_files:
             -v /sys:/host/sys:ro \
             -v /:/rootfs:ro \
             -v metrics:/metrics:ro \
-            "${node_exporter_docker}" --path.procfs /host/proc --path.sysfs /host/sys --collector.textfile.directory /metrics --collector.filesystem.ignored-mount-points "^/(sys|proc|dev|host|etc($|/))"
+            -v /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket:ro \
+            "${node_exporter_docker}" --path.procfs /host/proc --path.sysfs /host/sys --collector.textfile.directory /metrics --collector.filesystem.ignored-mount-points "^/(sys|proc|dev|host|etc($|/))" --collector.systemd
         ExecStop=/usr/bin/docker stop node-exporter
-        ExecStopPost=/usr/bin/docker rm node-exporter
+        ExecStopPost=-/usr/bin/docker rm node-exporter
         ExecStopPost=/sbin/iptables -D INPUT -m tcp -p tcp --dport 9100 -j ACCEPT
 
         [Install]
@@ -268,9 +161,5 @@ runcmd:
   - /bin/mkdir -p /mnt/disks/data/metrics
   - /bin/chown nobody:nobody /mnt/disks/data/metrics
   - systemctl daemon-reload
-  - systemctl start prometheus.service
-  - systemctl enable prometheus.service
-  - systemctl start alertmanager.service
-  - systemctl enable alertmanager.service
-  - systemctl start node-exporter.service
-  - systemctl enable node-exporter.service
+  - systemctl enable --now prometheus.service
+  - systemctl enable --now node-exporter.service

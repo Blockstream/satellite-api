@@ -98,8 +98,8 @@ variable "lb_svc_acct" {
 }
 
 variable "prom_allowed_source_ip" {
-  type    = string
-  default = ""
+  type    = list(any)
+  default = []
 }
 
 variable "opsgenie_key" {
@@ -227,17 +227,17 @@ variable "charge_docker" {
 
 variable "tor_docker" {
   type    = string
-  default = "blockstream/tor@sha256:46594b0a84f7503de70078652e7bd94f6152b7976d11779ad9f143f02508284c"
+  default = "blockstream/tor:0.4.3.7"
 }
 
 variable "node_exporter_docker" {
   type    = string
-  default = "prom/node-exporter@sha256:55302581333c43d540db0e144cf9e7735423117a733cdec27716d87254221086"
+  default = "prom/node-exporter:v1.1.2"
 }
 
 variable "prom_docker" {
   type    = string
-  default = "blockstream/prometheus@sha256:cab8c2359ab187aa6c9e9c7fcfcc3060b62742417030a77862c747e091d3c6d6"
+  default = "prom/prometheus:v2.29.1"
 }
 
 variable "gcloud_docker" {

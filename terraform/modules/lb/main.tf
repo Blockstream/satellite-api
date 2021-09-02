@@ -23,6 +23,11 @@ resource "google_compute_region_instance_group_manager" "satapi-lb" {
     max_unavailable_fixed = 3
     min_ready_sec         = 60
   }
+
+  named_port {
+    name = "http81"
+    port = 81
+  }
 }
 
 resource "google_compute_instance_template" "satapi-lb" {

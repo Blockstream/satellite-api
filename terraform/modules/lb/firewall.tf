@@ -6,7 +6,7 @@ resource "google_compute_firewall" "satapi-lb" {
 
   allow {
     protocol = "tcp"
-    ports    = ["80", "443"]
+    ports    = ["80", "81", "443"]
   }
 
   target_service_accounts = [

@@ -16,6 +16,10 @@ output "lb_backend_service" {
   value = module.lb.backend_service
 }
 
+output "lb_backend_service_tor" {
+  value = module.lb.backend_service_tor
+}
+
 output "lb_internal_ip" {
   value = module.lb.internal_ip
 }

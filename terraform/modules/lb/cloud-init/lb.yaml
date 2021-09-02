@@ -17,6 +17,21 @@ write_files:
             error_log /var/log/nginx/error.log;
             root /usr/share/nginx/html/;
 
+            server_name btcspaceda7iejsrb7ihmi5si3hhssxxxdnqvvtyz6prv2m73j7lcoqd.onion;
+            listen 81;
+            server_tokens off;
+            proxy_set_header X-Forwarded-For 0.0.0.0;
+
+            location / {
+                proxy_pass https://api.blockstream.space;
+            }
+        }
+
+        server {
+            access_log /var/log/nginx/access.log withtime;
+            error_log /var/log/nginx/error.log;
+            root /usr/share/nginx/html/;
+
             server_name ${host};
             listen 80;
             server_tokens off;
@@ -374,6 +389,7 @@ write_files:
         RestartSec=3
         Environment=HOME=/home/bs
         ExecStartPre=/sbin/iptables -A INPUT -m tcp -p tcp --dport 80 -j ACCEPT
+        ExecStartPre=/sbin/iptables -A INPUT -m tcp -p tcp --dport 81 -j ACCEPT
         ExecStart=/usr/bin/docker run \
             --network=host \
             --pid=host \
@@ -386,6 +402,7 @@ write_files:
         ExecStop=/usr/bin/docker stop nginx
         ExecStopPost=/usr/bin/docker rm nginx
         ExecStopPost=/sbin/iptables -D INPUT -m tcp -p tcp --dport 80 -j ACCEPT
+        ExecStopPost=/sbin/iptables -D INPUT -m tcp -p tcp --dport 81 -j ACCEPT
 
   - path: /etc/systemd/system/cert-downloader.service
     permissions: 0644

@@ -58,7 +58,6 @@ resource "google_compute_instance_template" "satapi-lb" {
   }
 
   metadata = {
-    google-logging-enabled = "true"
     user-data              = data.template_cloudinit_config.satapi-lb[0].rendered
   }
 

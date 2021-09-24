@@ -78,7 +78,6 @@ resource "google_compute_instance_template" "blc" {
   }
 
   metadata = {
-    google-logging-enabled = "true"
     user-data              = data.template_cloudinit_config.blc[0].rendered
   }
 

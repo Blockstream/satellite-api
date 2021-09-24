@@ -17,7 +17,7 @@ write_files:
 
         # Save # and names of running containers
         NUM_RUNNING_CONT=$(docker ps -q | wc -l)
-        NEEDED_CONT=9
+        NEEDED_CONT=8
         RUNNING_CONT="$(docker ps --format '{{.Names}}' | tr '\n' ', ' | sed -e 's/,$//g')"
 
         # If less than 8 are running, send alert to opsgenie

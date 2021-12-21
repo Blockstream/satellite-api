@@ -14,6 +14,7 @@ class OrderStatus(Enum):
     received = 4
     cancelled = 5
     expired = 6
+    confirming = 7  # confirming Tx (between transmitting and sent)
 
 
 class InvoiceStatus(Enum):
@@ -30,6 +31,7 @@ env = os.getenv('ENV', 'development')
 
 EXPIRE_PENDING_ORDERS_AFTER_DAYS = 1
 MESSAGE_FILE_RETENTION_TIME_DAYS = 31
+TX_CONFIRM_TIMEOUT_SECS = 60
 
 SERVER_PORT = 9292
 CALLBACK_URI_ROOT = os.getenv('CALLBACK_URI_ROOT',

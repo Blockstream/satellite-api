@@ -202,7 +202,9 @@ def test_get_pending_orders_paging(mock_new_invoice, client):
 def test_get_queued_orders(mock_new_invoice, client):
     # Create some orders with different states
     order = {}
-    for state in ['pending', 'transmitting', 'sent', 'received']:
+    for state in [
+            'pending', 'paid', 'transmitting', 'sent', 'received', 'confirming'
+    ]:
         order[state] = generate_test_order(mock_new_invoice,
                                            client,
                                            order_status=OrderStatus[state])
@@ -212,12 +214,15 @@ def test_get_queued_orders(mock_new_invoice, client):
     assert get_rv.status_code == HTTPStatus.OK
     queued_uuids = [order['uuid'] for order in get_rv.get_json()]
 
-    # The expectation is that only pending and transmitting orders are returned
-    assert len(queued_uuids) == 2
+    # The expectation is that only paid, transmitting and confirming
+    # orders are returned
+    assert len(queued_uuids) == 4
     assert order['pending']['uuid'] in queued_uuids
+    assert order['paid']['uuid'] in queued_uuids
     assert order['transmitting']['uuid'] in queued_uuids
     assert order['sent']['uuid'] not in queued_uuids
     assert order['received']['uuid'] not in queued_uuids
+    assert order['confirming']['uuid'] in queued_uuids
 
 
 @patch('orders.new_invoice')

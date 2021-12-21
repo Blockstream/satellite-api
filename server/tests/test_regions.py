@@ -2,14 +2,14 @@ import pytest
 import regions
 
 
-def test_region_list_to_code():
-    assert regions.region_list_to_code([]) == 0x0
-    assert regions.region_list_to_code([0, 1, 2, 3, 4,
-                                        5]) == regions.REGION_MASK_ALL_REGIONS
-    assert regions.region_list_to_code([0, 2, 4]) == 0x15
-    assert regions.region_list_to_code([1, 3, 5]) == 0x2A
+def test_region_number_list_to_code():
+    assert regions.region_number_list_to_code([]) == 0x0
+    assert regions.region_number_list_to_code(
+        [0, 1, 2, 3, 4, 5]) == regions.REGION_MASK_ALL_REGIONS
+    assert regions.region_number_list_to_code([0, 2, 4]) == 0x15
+    assert regions.region_number_list_to_code([1, 3, 5]) == 0x2A
     with pytest.raises(AssertionError):
-        regions.region_list_to_code([1, 6])
+        regions.region_number_list_to_code([1, 6])
 
 
 def test_region_code_to_id_list():

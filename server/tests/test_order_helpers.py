@@ -1,13 +1,15 @@
 import os
 import pytest
 from datetime import datetime, timedelta
+from http import HTTPStatus
 from unittest.mock import patch
 
 from constants import EXPIRE_PENDING_ORDERS_AFTER_DAYS,\
-    InvoiceStatus, MESSAGE_FILE_RETENTION_TIME_DAYS, OrderStatus,\
-    MSG_STORE_PATH
+    InvoiceStatus, MESSAGE_FILE_RETENTION_TIME_DAYS, \
+    OrderStatus, MSG_STORE_PATH
 from database import db
-from models import Order
+from models import Order, TxRetry
+from regions import Regions, region_number_list_to_code, region_number_to_id
 import order_helpers
 import server
 
@@ -153,3 +155,147 @@ def test_maybe_mark_order_as_expired_successfully(mock_new_invoice, client,
     assert order_helpers.maybe_mark_order_as_expired(1) is not None
     db_order = Order.query.filter_by(uuid=uuid).first()
     assert db_order.status == OrderStatus.expired.value
+
+
+@patch('orders.new_invoice')
+def test_upsert_retransmission(mock_new_invoice, client, mockredis):
+    uuid = generate_test_order(mock_new_invoice,
+                               client,
+                               tx_seq_num=1,
+                               order_status=OrderStatus.transmitting,
+                               regions=[
+                                   Regions.g18.value, Regions.e113.value,
+                                   Regions.t11n_afr.value,
+                                   Regions.t11n_eu.value
+                               ])['uuid']
+
+    db_order = Order.query.filter_by(uuid=uuid).first()
+    post_rv = client.post(
+        '/order/tx/1',
+        data={'regions': [[Regions.g18.value, Regions.e113.value]]})
+    assert post_rv.status_code == HTTPStatus.OK
+    db_order = Order.query.filter_by(uuid=uuid).first()
+    order_helpers.upsert_retransmission(db_order)
+    # t11n_afr and t11n_eu confirmations are missing
+    retry_order = TxRetry.query.filter_by(order_id=db_order.id).first()
+    assert retry_order.order_id == db_order.id
+    assert retry_order.region_code == region_number_list_to_code(
+        [Regions.t11n_afr.value, Regions.t11n_eu.value])
+
+    post_rv = client.post('/order/tx/1',
+                          data={'regions': [[Regions.t11n_eu.value]]})
+    assert post_rv.status_code == HTTPStatus.OK
+    db_order = Order.query.filter_by(uuid=uuid).first()
+    order_helpers.upsert_retransmission(db_order)
+    # only t11n_afr confirmations are missing
+    # expectation is that the existing record in TxRetry gets updated
+    retry_order = TxRetry.query.filter_by(order_id=db_order.id).all()
+    assert len(retry_order) == 1
+    assert retry_order[0].order_id == db_order.id
+    assert retry_order[0].region_code == region_number_list_to_code(
+        [Regions.t11n_afr.value])
+
+
+@patch('orders.new_invoice')
+def test_upsert_retransmission_for_order_without_regions(
+        mock_new_invoice, client):
+    uuid = generate_test_order(mock_new_invoice,
+                               client,
+                               tx_seq_num=1,
+                               order_status=OrderStatus.transmitting)['uuid']
+
+    db_order = Order.query.filter_by(uuid=uuid).first()
+    post_rv = client.post(
+        '/order/tx/1',
+        data={'regions': [[Regions.g18.value, Regions.e113.value]]})
+    assert post_rv.status_code == HTTPStatus.OK
+    db_order = Order.query.filter_by(uuid=uuid).first()
+    order_helpers.upsert_retransmission(db_order)
+    # No specific region was provided during order creation, so all regions
+    # should confrim tx
+    retry_order = TxRetry.query.filter_by(order_id=db_order.id).first()
+    assert retry_order.order_id == db_order.id
+    assert retry_order.region_code == region_number_list_to_code([
+        Regions.t11n_afr.value, Regions.t11n_eu.value, Regions.t18v_c.value,
+        Regions.t18v_ku.value
+    ])
+
+
+@patch('orders.new_invoice')
+def test_upsert_retransmission_for_non_transmitting_order(
+        mock_new_invoice, client):
+    uuid = generate_test_order(mock_new_invoice,
+                               client,
+                               order_status=OrderStatus.paid,
+                               regions=[
+                                   Regions.g18.value, Regions.e113.value,
+                                   Regions.t11n_afr.value,
+                                   Regions.t11n_eu.value
+                               ])['uuid']
+    db_order = Order.query.filter_by(uuid=uuid).first()
+    order_helpers.upsert_retransmission(db_order)
+    # There should be no retransmission record for this order yet since it's
+    # not transmitting
+    retry_order = TxRetry.query.filter_by(order_id=db_order.id).first()
+    assert not retry_order
+
+
+@patch('orders.new_invoice')
+def test_get_missing_tx_confirmations(mock_new_invoice, client):
+    selected_regions = [
+        Regions.g18.value, Regions.e113.value, Regions.t11n_afr.value,
+        Regions.t11n_eu.value
+    ]
+    uuid = generate_test_order(mock_new_invoice,
+                               client,
+                               tx_seq_num=1,
+                               order_status=OrderStatus.transmitting,
+                               regions=selected_regions)['uuid']
+    db_order = Order.query.filter_by(uuid=uuid).first()
+
+    # So far, the confirmations from the selected regions should all be missing
+    missing_confirmations = order_helpers.get_missing_tx_confirmations(
+        db_order)
+    assert len(missing_confirmations) == len(selected_regions)
+    assert (all([
+        region_number_to_id(x) in missing_confirmations
+        for x in selected_regions
+    ]))
+
+    # Send some Tx confirmations, including one for a region (T18V Ku) that was
+    # not part of the original region selection
+    post_rv = client.post(
+        '/order/tx/1',
+        data={
+            'regions':
+            [[Regions.g18.value, Regions.e113.value, Regions.t18v_ku.value]]
+        })
+    assert post_rv.status_code == HTTPStatus.OK
+    db_order = Order.query.filter_by(uuid=uuid).first()
+    missing_confirmations = order_helpers.get_missing_tx_confirmations(
+        db_order)
+    # Now, only T11N AFR and T11N EU should be missing
+    assert (all([
+        region_number_to_id(x) in missing_confirmations
+        for x in [Regions.t11n_afr.value, Regions.t11n_eu.value]
+    ]))
+
+
+@patch('orders.new_invoice')
+def test_get_missing_tx_confirmations_for_non_transmitting_order(
+        mock_new_invoice, client):
+    uuid = generate_test_order(mock_new_invoice,
+                               client,
+                               tx_seq_num=1,
+                               order_status=OrderStatus.paid,
+                               regions=[
+                                   Regions.g18.value, Regions.e113.value,
+                                   Regions.t11n_afr.value,
+                                   Regions.t11n_eu.value
+                               ])['uuid']
+    db_order = Order.query.filter_by(uuid=uuid).first()
+    # There should be no missing Tx confirmation record for this order yet
+    # since it's not transmitting
+    missing_confirmations = order_helpers.get_missing_tx_confirmations(
+        db_order)
+    assert len(missing_confirmations) == 0

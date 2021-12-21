@@ -1,7 +1,10 @@
+from constants import OrderStatus
 from error import get_http_error_resp
 from flask_restful import Resource
 from invoice_helpers import get_and_authenticate_invoice,\
     pay_invoice
+from models import Order
+import transmitter
 
 
 class InvoiceResource(Resource):
@@ -18,4 +21,9 @@ class InvoiceResource(Resource):
         error_msg = pay_invoice(invoice)
         if error_msg:
             return error_msg
+
+        order = Order.query.filter_by(id=invoice.order_id).first()
+        if order.status == OrderStatus.paid.value:
+            transmitter.tx_start()
+
         return {'message': f'invoice {invoice.lid} paid'}

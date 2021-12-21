@@ -8,6 +8,7 @@ from http import HTTPStatus
 
 from database import db
 from models import Invoice, Order
+from utils import hmac_sha256_digest
 import bidding
 import constants
 
@@ -30,8 +31,9 @@ def upload_test_file(client, msg, bid, regions=[]):
                        content_type='multipart/form-data')
 
 
-def place_order(client, n_bytes, regions=[]):
-    bid = bidding.get_min_bid(n_bytes)
+def place_order(client, n_bytes, regions=[], bid=None):
+    if bid is None:
+        bid = bidding.get_min_bid(n_bytes)
     msg = rnd_string(n_bytes)
     return upload_test_file(client, msg, bid, regions)
 
@@ -56,6 +58,18 @@ def check_invoice(generated_invoice, order_uuid):
     assert db_invoice is not None
     assert db_invoice.order_id == db_order.id
     assert db_invoice.amount == db_order.unpaid_bid
+
+
+def pay_invoice(invoice, client):
+    charged_auth_token = hmac_sha256_digest(constants.LIGHTNING_WEBHOOK_KEY,
+                                            invoice.lid)
+    rv = client.post(f'/callback/{invoice.lid}/{charged_auth_token}')
+    assert rv.status_code == HTTPStatus.OK
+
+
+def confirm_tx(tx_seq_num, regions, client):
+    tx_rv = client.post(f'/order/tx/{tx_seq_num}', data={'regions': [regions]})
+    assert tx_rv.status_code == HTTPStatus.OK
 
 
 def new_invoice(order_id, invoice_status, amount):
@@ -103,7 +117,9 @@ def generate_test_order(mock_new_invoice,
                         n_bytes=500,
                         bid=None,
                         order_id=1,
-                        regions=[]):
+                        regions=[],
+                        confirmed_tx=[],
+                        started_transmission_at=None):
     """Generate a valid order and add it to the database
 
     This function generates an order with a related invoice with
@@ -141,16 +157,25 @@ def generate_test_order(mock_new_invoice,
     mock_new_invoice.return_value = (True,
                                      new_invoice(order_id, invoice_status,
                                                  bid))
-    post_rv = place_order(client, n_bytes, regions)
+    post_rv = place_order(client, n_bytes, regions, bid)
     assert post_rv.status_code == HTTPStatus.OK
     uuid = post_rv.get_json()['uuid']
     # Set order's sequence number and status
     db_order = Order.query.filter_by(uuid=uuid).first()
+
     if order_status:
         assert (isinstance(order_status, constants.OrderStatus))
         db_order.status = order_status.value
+
     if tx_seq_num:
         db_order.tx_seq_num = tx_seq_num
+
+    if len(confirmed_tx) > 0:
+        assert tx_seq_num is not None
+        confirm_tx(tx_seq_num, confirmed_tx, client)
+
+    if started_transmission_at:
+        db_order.started_transmission_at = started_transmission_at
 
     db.session.commit()
     return post_rv.get_json()

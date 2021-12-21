@@ -9,7 +9,6 @@ from constants import InvoiceStatus, OrderStatus
 from database import db
 from error import assert_error, get_http_error_resp
 from models import Invoice, Order, RxConfirmation, TxConfirmation
-from invoice_helpers import pay_invoice
 from order_helpers import adjust_bids, _paid_invoices_total,\
     _unpaid_invoices_total
 from regions import Regions, SATELLITE_REGIONS
@@ -18,7 +17,7 @@ import bidding
 import constants
 import server
 
-from common import check_invoice, check_upload, new_invoice,\
+from common import check_invoice, pay_invoice, check_upload, new_invoice,\
     place_order, generate_test_order, rnd_string, upload_test_file
 
 
@@ -449,7 +448,7 @@ def test_get_sent_message_by_seq_number_for_paid_order(mock_new_invoice,
                                                        client):
     uuid = generate_test_order(mock_new_invoice, client)['uuid']
     db_order = Order.query.filter_by(uuid=uuid).first()
-    pay_invoice(db_order.invoices[0])
+    pay_invoice(db_order.invoices[0], client)
     db.session.commit()
 
     # Because the invoice was paid, the order should go immediately into
@@ -585,7 +584,7 @@ def test_sent_or_received_criteria_met_inadequate_regions(
         mock_new_invoice, client, tx_regions, rx_regions):
     uuid = generate_test_order(mock_new_invoice,
                                client,
-                               order_status=OrderStatus.sent,
+                               order_status=OrderStatus.transmitting,
                                tx_seq_num=1)['uuid']
 
     # Confirm tx
@@ -597,10 +596,10 @@ def test_sent_or_received_criteria_met_inadequate_regions(
         post_rv = client.post('/order/rx/1', data={'region': region})
         assert post_rv.status_code == HTTPStatus.OK
 
-    # Order status should not change to sent because not enough regions have
-    # confirmed tx/rx
+    # The order status should not change to sent nor received because not
+    # enough regions have confirmed tx/rx
     db_order = Order.query.filter_by(uuid=uuid).first()
-    assert db_order.status == OrderStatus.sent.value
+    assert db_order.status == OrderStatus.confirming.value
 
 
 @patch('orders.new_invoice')
@@ -624,7 +623,6 @@ def test_sent_or_received_criteria_met_for_unsent_order(
     # still cannot change to "received" state, as that requires the order to be
     # in "sent" state before. The test order is still in "pending" state.
     db_order = Order.query.filter_by(uuid=uuid).first()
-    assert db_order.status != OrderStatus.received.value
     assert db_order.status == OrderStatus.pending.value
 
 
@@ -921,12 +919,9 @@ def test_sent_or_received_criteria_met_invalid_tx_subset(
     post_rv = client.post('/order/tx/1', data={'regions': [other_regions]})
     assert post_rv.status_code == HTTPStatus.OK
 
-    # Order's status should not be changed
-    # order expects to receive tx confirmations from g18 and e113.
-    # Receving any number of confirmations from other regions cannot
-    # affect the order status
+    # The order status should change to "confirming"
     db_order = Order.query.filter_by(uuid=uuid).first()
-    assert db_order.status == OrderStatus.transmitting.value
+    assert db_order.status == OrderStatus.confirming.value
 
     # Confirm tx
     post_rv = client.post('/order/tx/1', data={'regions': [selected_regions]})

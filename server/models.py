@@ -55,3 +55,14 @@ class RxConfirmation(db.Model):
                          nullable=False)
     region_id = db.Column(db.Integer, nullable=False)
     presumed = db.Column(db.Boolean, default=False)
+
+
+class TxRetry(db.Model):
+    __tablename__ = 'tx_retries'
+    id = db.Column(db.Integer, primary_key=True)
+    order_id = db.Column(db.Integer, db.ForeignKey('orders.id'))
+    last_attempt = db.Column(db.DateTime)
+    retry_count = db.Column(db.Integer, default=0)
+    region_code = db.Column(db.Integer)
+    pending = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=func.now())

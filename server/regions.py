@@ -72,12 +72,17 @@ def region_id_to_number(region_id):
             return region_number.value
 
 
-def region_list_to_code(order_region_numbers):
+def region_number_list_to_code(order_region_numbers):
     assert (all([x in all_region_numbers for x in order_region_numbers]))
     code = 0
     for region_number in order_region_numbers:
         code |= 1 << region_number
     return code
+
+
+def region_id_list_to_code(order_region_ids):
+    order_region_numbers = [region_id_to_number(x) for x in order_region_ids]
+    return region_number_list_to_code(order_region_numbers)
 
 
 def region_code_to_number_list(code):

@@ -16,13 +16,14 @@ from database import db
 from error import get_http_error_resp
 from invoice_helpers import new_invoice, pay_invoice
 from models import Order, RxConfirmation, TxConfirmation
-from regions import region_list_to_code
+from regions import region_number_list_to_code
 from schemas import order_schema, orders_schema,\
     order_upload_req_schema, order_bump_schema,\
     rx_confirmation_schema, tx_confirmation_schema
 import bidding
 import constants
 import order_helpers
+import transmitter
 
 SHA256_BLOCK_SIZE = 65536
 
@@ -124,14 +125,17 @@ class OrderUploadResource(Resource):
         new_order.invoices.append(invoice)
         if 'regions' in args:
             regions_in_request = json.loads(args['regions'])
-            new_order.region_code = region_list_to_code(regions_in_request)
+            new_order.region_code = region_number_list_to_code(
+                regions_in_request)
 
         db.session.add(new_order)
         db.session.commit()
 
         if constants.FORCE_PAYMENT:
             current_app.logger.info('force payment of the invoice')
+            # Force the sequence of actions executed by the invoice callback
             pay_invoice(invoice)
+            transmitter.tx_start()
 
         return {
             'auth_token': order_helpers.compute_auth_token(uuid),
@@ -199,7 +203,11 @@ class OrdersResource(Resource):
                 Order.status ==
                 OrderStatus.pending.value,
                 Order.status ==
-                OrderStatus.transmitting.value)).\
+                OrderStatus.transmitting.value,
+                Order.status ==
+                OrderStatus.confirming.value,
+                Order.status ==
+                OrderStatus.paid.value)).\
                 filter(db.func.datetime(Order.created_at) < before).\
                 order_by(Order.bid_per_byte.desc()).limit(limit)
         elif state == 'sent':
@@ -219,7 +227,8 @@ class GetMessageResource(Resource):
     def get(self, uuid):
         order = Order.query.filter_by(uuid=uuid).filter(
             or_(Order.status == OrderStatus.sent.value,
-                Order.status == OrderStatus.transmitting.value)).first()
+                Order.status == OrderStatus.transmitting.value,
+                Order.status == OrderStatus.confirming.value)).first()
         if not order:
             return get_http_error_resp('ORDER_NOT_FOUND', uuid)
 
@@ -235,6 +244,7 @@ class GetMessageBySeqNumResource(Resource):
         order = Order.query.filter_by(tx_seq_num=tx_seq_num).filter(
             or_(Order.status == OrderStatus.sent.value,
                 Order.status == OrderStatus.transmitting.value,
+                Order.status == OrderStatus.confirming.value,
                 Order.status == OrderStatus.received.value)).first()
         if not order:
             return get_http_error_resp('SEQUENCE_NUMBER_NOT_FOUND', tx_seq_num)
@@ -254,20 +264,50 @@ class TxConfirmationResource(Resource):
         if errors:
             return errors, HTTPStatus.BAD_REQUEST
 
-        # Find order by sequence number. Note only transmitting/transmitted
-        # orders have a sequence number, whereas still pending or paid orders
-        # do not. Hence, the following query implicitly ensures the order is
-        # already transmitting/transmitted.
+        # Find order by sequence number. Note only orders in the following
+        # states have a sequence number: transmitting, confirming, sent or
+        # received. In contrast, pending or paid orders do not have a sequence
+        # number. Hence, the following query implicitly ensures the order is in
+        # a reasonable state to receive a Tx confirmation, even if it's a
+        # repeated confirmation (e.g., if the order is already received).
         order = Order.query.filter_by(tx_seq_num=tx_seq_num).first()
         if not order:
             return get_http_error_resp('SEQUENCE_NUMBER_NOT_FOUND', tx_seq_num)
+
+        # A Tx confirmation indicates that at least one Tx host finished
+        # transmitting the order. At this point, the other Tx hosts should
+        # complete the order soon. In the meantime, change the order state
+        # from transmitting to confirming so that other pending orders
+        # can be unblocked.
+        last_status = order.status
+        if order.status == OrderStatus.transmitting.value:
+            order.status = OrderStatus.confirming.value
+            db.session.commit()
 
         regions_in_request = json.loads(args['regions'])
         for region_number in regions_in_request:
             order_helpers.add_confirmation_if_not_present(
                 TxConfirmation, order, region_number)
 
-        order_helpers.sent_or_received_criteria_met(order)
+        # Check whether the order is in "sent" or "received" state already. In
+        # the positive case, end the current transmission to start a new one.
+        if order_helpers.sent_or_received_criteria_met(order):
+            transmitter.tx_end(order)
+
+        # If the order status is still "confirming" at this point, it can be
+        # inferred that tx_end() was not called above. Consequently, we have
+        # not released any blocked orders yet. Nevertheless, we can do so now,
+        # since the current order is already being confirmed. Go ahead and call
+        # tx_start to unblock any orders waiting on the present order.
+        #
+        # Also, if the incoming confirmation is not the first for the present
+        # order, the "last_status" value was already "confirming". In this
+        # case, we have already attempted to release blocked orders in a
+        # previous call, so there is no need to call tx_start() again.
+        db.session.refresh(order)
+        if order.status == OrderStatus.confirming.value and \
+                last_status == OrderStatus.transmitting.value:
+            transmitter.tx_start()
 
         return {
             'message': f'transmission confirmed for regions {args["regions"]}'
@@ -290,7 +330,10 @@ class RxConfirmationResource(Resource):
         order_helpers.add_confirmation_if_not_present(RxConfirmation, order,
                                                       region_in_request)
 
-        order_helpers.sent_or_received_criteria_met(order)
+        # Check whether the order is in "sent" or "received" state already. In
+        # the positive case, end the current transmission to start a new one.
+        if order_helpers.sent_or_received_criteria_met(order):
+            transmitter.tx_end(order)
 
         return {
             'message': f'reception confirmed for region {region_in_request}'

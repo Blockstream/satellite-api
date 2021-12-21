@@ -1,4 +1,5 @@
 import logging
+import time
 
 from flask import Flask
 import redis
@@ -8,10 +9,12 @@ import invoice_helpers
 import order_helpers
 import transmitter
 from database import db
+from models import TxRetry
 from worker import Worker
 
 ONE_MINUTE = 60
 CLEANUP_DUTY_CYCLE = 5 * ONE_MINUTE  # five minutes
+ORDER_RETRANSMIT_CYCLE_SECONDS = 10
 
 
 def cleanup_database(app):
@@ -30,14 +33,27 @@ def cleanup_database(app):
                          "{} orders, and removed {} files".format(*work))
 
 
+def retry_transmission(app):
+    with app.app_context():
+        order_helpers.refresh_retransmission_table()
+        any_retry_record = TxRetry.query.first()
+        if any_retry_record:
+            transmitter.tx_start()
+
+
 def start_workers(app):
-    # Workers
     cleanup_worker = Worker(period=CLEANUP_DUTY_CYCLE,
                             fcn=cleanup_database,
                             args=(app, ),
                             name="database cleaner")
 
+    retry_worker = Worker(period=ORDER_RETRANSMIT_CYCLE_SECONDS,
+                          fcn=retry_transmission,
+                          args=(app, ),
+                          name="order retransmission")
+
     cleanup_worker.thread.join()
+    retry_worker.thread.join()
 
 
 def create_app():
@@ -55,9 +71,10 @@ def main():
 
     with app.app_context():
         db.create_all()
-        # In order to avoid running resume/start on each gunicorn worker, these
-        # calls are being made from this module only instead of the main server
-        transmitter.tx_resume()
+        # To avoid calling tx_start on each gunicorn worker, call it here once
+        # instead. Also, wait a bit before calling tx_start so that clients
+        # have enough time to reconnect to the SSE server.
+        time.sleep(3)
         transmitter.tx_start()
         start_workers(app)
 

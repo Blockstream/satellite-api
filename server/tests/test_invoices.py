@@ -169,6 +169,7 @@ def test_pay_multiple_invoices(mock_new_invoice, client):
     db_order = Order.query.filter_by(uuid=uuid).first()
     assert db_invoice.status == InvoiceStatus.paid.value
     assert db_invoice.paid_at is not None
+    assert db_order.status == OrderStatus.transmitting.value
     assert db_order.bid == first_bid
     assert db_order.unpaid_bid == total_bid - first_bid
 
@@ -180,6 +181,7 @@ def test_pay_multiple_invoices(mock_new_invoice, client):
     db_order = Order.query.filter_by(uuid=uuid).first()
     assert db_invoice.status == InvoiceStatus.paid.value
     assert db_invoice.paid_at is not None
+    assert db_order.status == OrderStatus.transmitting.value
     assert db_order.bid == first_bid + second_bid
     assert db_order.unpaid_bid == total_bid - first_bid - second_bid
 

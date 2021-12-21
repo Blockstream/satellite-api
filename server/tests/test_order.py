@@ -345,6 +345,40 @@ def test_bump_order(mock_new_invoice, client):
 
 
 @patch('orders.new_invoice')
+def test_bump_transmitted_order(mock_new_invoice, client):
+    initial_bid = 1000
+    json_response = generate_test_order(mock_new_invoice,
+                                        client,
+                                        bid=initial_bid)
+    uuid = json_response['uuid']
+    auth_token = json_response['auth_token']
+    db_order = Order.query.filter_by(uuid=uuid).first()
+    pay_invoice(db_order.invoices[0], client)
+    db.session.commit()
+
+    get_rv = client.get(f'/order/{uuid}', headers={'X-Auth-Token': auth_token})
+    assert get_rv.status_code == HTTPStatus.OK
+    get_json_resp = get_rv.get_json()
+    assert get_json_resp['unpaid_bid'] == 0
+    assert get_json_resp['bid'] == initial_bid
+    assert get_json_resp['status'] == OrderStatus.transmitting.name
+
+    # Since the order is already in transmitting state, a bump request should
+    # return error
+    bid_increase = 2500
+    mock_new_invoice.return_value = (True,
+                                     new_invoice(1, InvoiceStatus.pending,
+                                                 bid_increase))
+    bump_rv = client.post(f'/order/{uuid}/bump',
+                          data={
+                              'bid_increase': bid_increase,
+                          },
+                          headers={'X-Auth-Token': auth_token})
+    assert bump_rv.status_code == HTTPStatus.BAD_REQUEST
+    assert_error(bump_rv.get_json(), 'ORDER_BUMP_ERROR')
+
+
+@patch('orders.new_invoice')
 def test_cancel_order(mock_new_invoice, client):
     bid = 1000
     json_response = generate_test_order(mock_new_invoice, client, bid=bid)

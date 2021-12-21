@@ -31,6 +31,8 @@ errors = {
                                HTTPStatus.REQUEST_ENTITY_TOO_LARGE),
     'ORDER_CANCELLATION_ERROR': (120, "Cannot cancel order",
                                  "Order already {}", HTTPStatus.BAD_REQUEST),
+    'ORDER_BUMP_ERROR': (121, "Cannot bump order", "Order already {}",
+                         HTTPStatus.BAD_REQUEST),
     'ORPHANED_INVOICE': (122, "Payment problem", "Orphaned invoice",
                          HTTPStatus.NOT_FOUND),
     'INVOICE_ALREADY_PAID': (123, "Payment problem", "Invoice already paid",

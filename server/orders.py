@@ -159,6 +159,11 @@ class BumpOrderResource(Resource):
             return order_or_error
         order = order_or_error
 
+        if order.status != OrderStatus.pending.value and\
+           order.status != OrderStatus.paid.value:
+            return get_http_error_resp('ORDER_BUMP_ERROR',
+                                       OrderStatus(order.status).name)
+
         success, invoice = new_invoice(order, form_args['bid_increase'])
         if not success:
             return invoice

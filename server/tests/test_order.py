@@ -22,7 +22,7 @@ from common import check_invoice, check_upload, new_invoice,\
 
 
 @pytest.fixture
-def client():
+def client(mockredis):
     app = server.create_app(from_test=True)
     app.app_context().push()
     with app.test_client() as client:
@@ -449,14 +449,14 @@ def test_get_sent_message_by_seq_number_for_paid_order(mock_new_invoice,
     uuid = generate_test_order(mock_new_invoice, client)['uuid']
     db_order = Order.query.filter_by(uuid=uuid).first()
     pay_invoice(db_order.invoices[0])
-    db_order.tx_seq_num = 1
     db.session.commit()
 
-    # Try to get sent_message for a paid order by sequence number. sent_message
-    # can only be retrieved for transmitting, sent, or received messages.
+    # Because the invoice was paid, the order should go immediately into
+    # transmitting state and be assigned with sequence number 1.
     rv = client.get('/message/1')
-    assert rv.status_code == HTTPStatus.NOT_FOUND
-    assert_error(rv.get_json(), 'SEQUENCE_NUMBER_NOT_FOUND')
+    assert rv.status_code == HTTPStatus.OK
+    received_message = rv.data
+    check_received_message(uuid, received_message)
 
 
 @patch('orders.new_invoice')
@@ -585,8 +585,8 @@ def test_confirm_rx(mock_new_invoice, client):
          Regions.g18.value, Regions.e113.value, Regions.t18v_c.value,
          Regions.t18v_c.value
      ]])
-def test_received_criteria_met_inadequate_regions(mock_new_invoice, client,
-                                                  tx_regions, rx_regions):
+def test_sent_or_received_criteria_met_inadequate_regions(
+        mock_new_invoice, client, tx_regions, rx_regions):
     uuid = generate_test_order(mock_new_invoice,
                                client,
                                order_status=OrderStatus.sent,
@@ -608,7 +608,8 @@ def test_received_criteria_met_inadequate_regions(mock_new_invoice, client,
 
 
 @patch('orders.new_invoice')
-def test_received_criteria_met_for_unsent_order(mock_new_invoice, client):
+def test_sent_or_received_criteria_met_for_unsent_order(
+        mock_new_invoice, client):
     uuid = generate_test_order(mock_new_invoice, client, tx_seq_num=1)['uuid']
     # Confirm tx for all 6 regions
     post_rv = client.post('/order/tx/1',
@@ -632,17 +633,17 @@ def test_received_criteria_met_for_unsent_order(mock_new_invoice, client):
 
 
 @patch('orders.new_invoice')
-def test_received_criteria_met_successfully(mock_new_invoice, client):
+def test_sent_or_received_criteria_met_successfully(mock_new_invoice, client):
     uuid = generate_test_order(mock_new_invoice,
                                client,
-                               order_status=OrderStatus.sent,
+                               order_status=OrderStatus.transmitting,
                                tx_seq_num=1)['uuid']
 
     # Confirm tx for all 6 regions
     post_rv = client.post('/order/tx/1',
                           data={'regions': [[e.value for e in Regions]]})
     assert post_rv.status_code == HTTPStatus.OK
-    # Order's status should still be sent
+    # Order's status should change to sent
     db_order = Order.query.filter_by(uuid=uuid).first()
     assert db_order.status == OrderStatus.sent.value
 

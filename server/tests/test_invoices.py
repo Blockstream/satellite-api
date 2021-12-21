@@ -3,7 +3,7 @@ from http import HTTPStatus
 from unittest.mock import patch
 
 from database import db
-from constants import InvoiceStatus
+from constants import InvoiceStatus, OrderStatus
 from error import assert_error
 from models import Invoice, Order
 from utils import hmac_sha256_digest
@@ -16,7 +16,7 @@ from common import new_invoice,\
 
 
 @pytest.fixture
-def client():
+def client(mockredis):
     app = server.create_app(from_test=True)
     app.app_context().push()
     with app.test_client() as client:
@@ -109,7 +109,7 @@ def test_paid_invoice_callback_successfully(mock_new_invoice, client):
     db_invoice = Invoice.query.filter_by(lid=invoice.lid).first()
     db_order = Order.query.filter_by(uuid=uuid_order).first()
     assert db_invoice.status == InvoiceStatus.paid.value
-    assert db_order.status == InvoiceStatus.paid.value
+    assert db_order.status == OrderStatus.transmitting.value
     assert db_invoice.paid_at is not None
 
 
@@ -191,7 +191,7 @@ def test_pay_multiple_invoices(mock_new_invoice, client):
     db_order = Order.query.filter_by(uuid=uuid).first()
     assert db_invoice.status == InvoiceStatus.paid.value
     assert db_invoice.paid_at is not None
-    assert db_order.status == InvoiceStatus.paid.value
+    assert db_order.status == OrderStatus.transmitting.value
     assert db_order.bid == total_bid
     assert db_order.unpaid_bid == 0
 

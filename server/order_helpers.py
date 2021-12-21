@@ -10,6 +10,7 @@ from constants import InvoiceStatus, OrderStatus
 from database import db
 from error import get_http_error_resp
 from models import Order, RxConfirmation, TxConfirmation
+import transmitter
 import constants
 from utils import hmac_sha256_digest
 
@@ -75,6 +76,7 @@ def maybe_mark_order_as_paid(order_id):
        validate_bid(order.message_size, order.bid):
         order.status = OrderStatus.paid.value
         db.session.commit()
+        transmitter.tx_start()
 
 
 def expire_order(order):
@@ -116,8 +118,10 @@ def synthesize_presumed_rx_confirmations(order):
                                         presumed)
 
 
-def received_criteria_met(order):
-    if order.status != OrderStatus.sent.value:
+def sent_or_received_criteria_met(order):
+    if order.status not in [
+            OrderStatus.transmitting.value, OrderStatus.sent.value
+    ]:
         return False
 
     order_tx_confirmations = TxConfirmation.query.filter_by(
@@ -133,6 +137,10 @@ def received_criteria_met(order):
     # All regions should confirm Tx
     if len(tx_confirmed_regions) < len(constants.Regions):
         return False
+
+    # Reaching this point means that all tx hosts sent
+    # tx_confirmations and the ongoing transmission can be ended
+    transmitter.tx_end(order)
 
     # Some regions should confirm Rx
     expected_rx_confirmations = set([

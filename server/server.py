@@ -4,6 +4,7 @@ import logging
 
 from flask import Flask
 from flask_restful import Api
+import redis
 
 import constants
 from database import db
@@ -23,7 +24,7 @@ def create_app(from_test=False):
     app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{constants.DB_FILE}'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['TESTING'] = from_test
-    app.config["REDIS_URL"] = constants.REDIS_URI
+    app.config["REDIS_INSTANCE"] = redis.from_url(constants.REDIS_URI)
 
     db.init_app(app)
     with app.app_context():

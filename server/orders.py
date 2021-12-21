@@ -249,6 +249,10 @@ class TxConfirmationResource(Resource):
         if errors:
             return errors, HTTPStatus.BAD_REQUEST
 
+        # Find order by sequence number. Note only transmitting/transmitted
+        # orders have a sequence number, whereas still pending or paid orders
+        # do not. Hence, the following query implicitly ensures the order is
+        # already transmitting/transmitted.
         order = Order.query.filter_by(tx_seq_num=tx_seq_num).first()
         if not order:
             return get_http_error_resp('SEQUENCE_NUMBER_NOT_FOUND', tx_seq_num)
@@ -262,7 +266,7 @@ class TxConfirmationResource(Resource):
             order_helpers.add_confirmation_if_not_present(
                 TxConfirmation, order, region_number)
 
-        order_helpers.received_criteria_met(order)
+        order_helpers.sent_or_received_criteria_met(order)
 
         return {
             'message': f'transmission confirmed for regions {args["regions"]}'
@@ -289,7 +293,7 @@ class RxConfirmationResource(Resource):
         order_helpers.add_confirmation_if_not_present(RxConfirmation, order,
                                                       region_in_request)
 
-        order_helpers.received_criteria_met(order)
+        order_helpers.sent_or_received_criteria_met(order)
 
         return {
             'message': f'reception confirmed for region {region_in_request}'

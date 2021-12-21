@@ -17,7 +17,7 @@ from common import new_invoice, place_order, generate_test_order
 
 
 @pytest.fixture
-def client():
+def client(mockredis):
     app = server.create_app(from_test=True)
     app.app_context().push()
     with app.test_client() as client:
@@ -347,13 +347,23 @@ def test_get_sent_orders_paging(mock_new_invoice, client):
 @patch('constants.FORCE_PAYMENT', True)
 def test_create_order_with_force_payment_enabled(mock_new_invoice, client):
     uuid_order1 = generate_test_order(mock_new_invoice, client)['uuid']
+    uuid_order2 = generate_test_order(mock_new_invoice, client)['uuid']
 
-    db_order = Order.query.filter_by(uuid=uuid_order1).first()
-    db_invoice = db_order.invoices[0]
+    db_order1 = Order.query.filter_by(uuid=uuid_order1).first()
+    db_invoice1 = db_order1.invoices[0]
 
-    # because FORCE_PAYMENT is set and this order had only 1 invoice
-    # the expectation is that both the invoice and the order have the
-    # paid status
-    assert db_order.status == OrderStatus.paid.value
-    assert db_invoice.status == InvoiceStatus.paid.value
-    assert db_invoice.paid_at is not None
+    db_order2 = Order.query.filter_by(uuid=uuid_order2).first()
+    db_invoice2 = db_order2.invoices[0]
+
+    # Since FORCE_PAYMENT is set and both orders have only one invoice, both
+    # orders change their statuses to paid. Furthermore, the payment triggers a
+    # Tx start verification and, since the transmit queue is empty, order1
+    # immediately changes to transmitting state. In contrast, order2 stays in
+    # paid state as it needs to wait until the transmission of order1 finishes.
+    assert db_order1.status == OrderStatus.transmitting.value
+    assert db_invoice1.status == InvoiceStatus.paid.value
+    assert db_invoice1.paid_at is not None
+
+    assert db_order2.status == OrderStatus.paid.value
+    assert db_invoice2.status == InvoiceStatus.paid.value
+    assert db_invoice2.paid_at is not None

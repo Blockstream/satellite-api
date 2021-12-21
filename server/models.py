@@ -18,6 +18,7 @@ class Order(db.Model):
     ended_transmission_at = db.Column(db.DateTime)
     tx_seq_num = db.Column(db.Integer, unique=True)
     unpaid_bid = db.Column(db.Integer, nullable=False)
+    region_code = db.Column(db.Integer)
     invoices = db.relationship('Invoice', backref='order', lazy=True)
 
 

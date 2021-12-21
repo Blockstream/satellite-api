@@ -22,56 +22,6 @@ class InvoiceStatus(Enum):
     expired = 2
 
 
-class Regions(Enum):
-    g18 = 0
-    e113 = 1
-    t11n_afr = 2
-    t11n_eu = 3
-    t18v_c = 4
-    t18v_ku = 5
-
-
-# NOTE: an id field equals to "region.value + 1" is required for
-# backward compatibility with the previous Ruby-based implementation.
-SATELLITE_REGIONS = {
-    Regions.g18: {
-        'id': Regions.g18.value + 1,
-        'satellite_name': 'Galaxy 18',
-        'coverage': 'North America',
-        'has_receiver': True
-    },
-    Regions.e113: {
-        'id': Regions.e113.value + 1,
-        'satellite_name': 'Eutelsat 113',
-        'coverage': 'South America',
-        'has_receiver': True
-    },
-    Regions.t11n_afr: {
-        'id': Regions.t11n_afr.value + 1,
-        'satellite_name': 'Telstar 11N',
-        'coverage': 'Africa',
-        'has_receiver': False
-    },
-    Regions.t11n_eu: {
-        'id': Regions.t11n_eu.value + 1,
-        'satellite_name': 'Telstar 11N',
-        'coverage': 'Europe',
-        'has_receiver': False
-    },
-    Regions.t18v_c: {
-        'id': Regions.t18v_c.value + 1,
-        'satellite_name': 'Telstar 18V C',
-        'coverage': 'Asia Pacific',
-        'has_receiver': True
-    },
-    Regions.t18v_ku: {
-        'id': Regions.t18v_ku.value + 1,
-        'satellite_name': 'Telstar 18V Ku',
-        'coverage': 'Asia Pacific',
-        'has_receiver': True
-    },
-}
-
 db_yaml_path = os.path.join("config", 'database.yml')
 with open(db_yaml_path, 'r') as fd:
     db_conf = yaml.safe_load(fd)

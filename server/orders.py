@@ -11,11 +11,12 @@ from flask_restful import Resource
 from marshmallow import ValidationError
 from sqlalchemy import or_
 
-from constants import OrderStatus, Regions
+from constants import OrderStatus
 from database import db
 from error import get_http_error_resp
 from invoice_helpers import new_invoice, pay_invoice
 from models import Order, RxConfirmation, TxConfirmation
+from regions import region_list_to_code
 from schemas import order_schema, orders_schema,\
     order_upload_req_schema, order_bump_schema,\
     rx_confirmation_schema, tx_confirmation_schema
@@ -121,6 +122,10 @@ class OrderUploadResource(Resource):
             return invoice
 
         new_order.invoices.append(invoice)
+        if 'regions' in args:
+            regions_in_request = json.loads(args['regions'])
+            new_order.region_code = region_list_to_code(regions_in_request)
+
         db.session.add(new_order)
         db.session.commit()
 
@@ -257,12 +262,8 @@ class TxConfirmationResource(Resource):
         if not order:
             return get_http_error_resp('SEQUENCE_NUMBER_NOT_FOUND', tx_seq_num)
 
-        all_region_numbers = set(item.value for item in Regions)
-
         regions_in_request = json.loads(args['regions'])
         for region_number in regions_in_request:
-            if region_number not in all_region_numbers:
-                return get_http_error_resp('REGION_NOT_FOUND', region_number)
             order_helpers.add_confirmation_if_not_present(
                 TxConfirmation, order, region_number)
 
@@ -285,11 +286,7 @@ class RxConfirmationResource(Resource):
         if not order:
             return get_http_error_resp('SEQUENCE_NUMBER_NOT_FOUND', tx_seq_num)
 
-        all_region_numbers = set(item.value for item in Regions)
-
         region_in_request = int(args['region'])
-        if region_in_request not in all_region_numbers:
-            return get_http_error_resp('REGION_NOT_FOUND', region_in_request)
         order_helpers.add_confirmation_if_not_present(RxConfirmation, order,
                                                       region_in_request)
 

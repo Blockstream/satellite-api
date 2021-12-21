@@ -1,8 +1,9 @@
 import json
 from datetime import datetime, timedelta
 
-from marshmallow import fields, Schema, validate, validates, ValidationError
+from marshmallow import fields, Schema, validate, ValidationError
 
+from regions import all_region_numbers, region_code_to_number_list
 import constants
 
 
@@ -20,12 +21,34 @@ class OrderSchema(Schema):
     ended_transmission_at = fields.DateTime()
     tx_seq_num = fields.Integer()
     unpaid_bid = fields.Integer()
+    regions = fields.Function(
+        lambda obj: region_code_to_number_list(obj.region_code))
+
+
+def must_be_region_number(input):
+    if input not in all_region_numbers:
+        raise ValidationError(
+            "Region number not found. The number should be one of "
+            f"{all_region_numbers}.")
+
+
+def must_be_region_number_list(data):
+    try:
+        regions_list = json.loads(data)
+        if not isinstance(regions_list, list) or len(regions_list) < 1:
+            raise ValidationError("Invalid json array.")
+        for region_number in regions_list:
+            must_be_region_number(region_number)
+    except json.JSONDecodeError:
+        raise ValidationError("Invalid json array.")
 
 
 class OrderUploadReqSchema(Schema):
     bid = fields.Int(required=True, validate=validate.Range(min=0))
     message = fields.Str(validate=validate.Length(
         max=constants.MAX_TEXT_MSG_LEN))
+    regions = fields.String(required=False,
+                            validate=must_be_region_number_list)
 
 
 class OrderBumpSchema(Schema):
@@ -46,20 +69,11 @@ class OrdersSchema(Schema):
 
 
 class TxConfirmationSchema(Schema):
-    regions = fields.String(required=True)
-
-    @validates('regions')
-    def must_be_json_array(self, data):
-        try:
-            js = json.loads(data)
-            if not isinstance(js, list) or len(js) < 1:
-                raise ValidationError("Invalid json array.")
-        except json.JSONDecodeError:
-            raise ValidationError("Invalid json array.")
+    regions = fields.String(required=True, validate=must_be_region_number_list)
 
 
 class RxConfirmationSchema(Schema):
-    region = fields.Int(required=True)
+    region = fields.Int(required=True, validate=must_be_region_number)
 
 
 order_schema = OrderSchema()

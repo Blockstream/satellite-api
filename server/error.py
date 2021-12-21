@@ -23,8 +23,6 @@ errors = {
     'SEQUENCE_NUMBER_NOT_FOUND':
     (114, "Sequence number not found",
      "Sent order with sequence number {} not found", HTTPStatus.NOT_FOUND),
-    'REGION_NOT_FOUND': (127, "region not found", "region {} not found",
-                         HTTPStatus.NOT_FOUND),
     'MESSAGE_FILE_TOO_SMALL': (117, "Message too small",
                                "Minimum message size is {} byte",
                                HTTPStatus.BAD_REQUEST),

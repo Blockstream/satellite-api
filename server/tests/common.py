@@ -19,19 +19,21 @@ def rnd_string(n_bytes):
         for _ in range(n_bytes))
 
 
-def upload_test_file(client, msg, bid):
+def upload_test_file(client, msg, bid, regions=[]):
+    post_data = {'bid': bid, 'file': (io.BytesIO(msg.encode()), 'testfile')}
+
+    if len(regions) > 0:
+        post_data['regions'] = [regions]
+
     return client.post('/order',
-                       data={
-                           'bid': bid,
-                           'file': (io.BytesIO(msg.encode()), 'testfile')
-                       },
+                       data=post_data,
                        content_type='multipart/form-data')
 
 
-def place_order(client, n_bytes):
+def place_order(client, n_bytes, regions=[]):
     bid = bidding.get_min_bid(n_bytes)
     msg = rnd_string(n_bytes)
-    return upload_test_file(client, msg, bid)
+    return upload_test_file(client, msg, bid, regions)
 
 
 def check_upload(order_uuid, expected_data):
@@ -100,7 +102,8 @@ def generate_test_order(mock_new_invoice,
                         tx_seq_num=None,
                         n_bytes=500,
                         bid=None,
-                        order_id=1):
+                        order_id=1,
+                        regions=[]):
     """Generate a valid order and add it to the database
 
     This function generates an order with a related invoice with
@@ -122,6 +125,9 @@ def generate_test_order(mock_new_invoice,
              valid value will be set
         order_id: the id to be used when connecting invoice to an
                   order, default value is 1
+        regions: list of regions over which this order should be
+            transmitted. The default value is an empty list implying
+            the order should be sent over all regions.
 
     Returns:
         The json response of the create order endpoint.
@@ -135,7 +141,7 @@ def generate_test_order(mock_new_invoice,
     mock_new_invoice.return_value = (True,
                                      new_invoice(order_id, invoice_status,
                                                  bid))
-    post_rv = place_order(client, n_bytes)
+    post_rv = place_order(client, n_bytes, regions)
     assert post_rv.status_code == HTTPStatus.OK
     uuid = post_rv.get_json()['uuid']
     # Set order's sequence number and status

@@ -10,6 +10,9 @@ from constants import InvoiceStatus, OrderStatus
 from database import db
 from error import get_http_error_resp
 from models import Order, RxConfirmation, TxConfirmation
+from regions import region_number_to_id, monitored_rx_regions,\
+    region_code_to_id_list,\
+    region_code_to_number_list, region_id_to_number, Regions
 import transmitter
 import constants
 from utils import hmac_sha256_digest
@@ -113,9 +116,15 @@ def delete_message_file(order):
 
 def synthesize_presumed_rx_confirmations(order):
     presumed = True
-    for region in [constants.Regions.t11n_afr, constants.Regions.t11n_eu]:
-        add_confirmation_if_not_present(RxConfirmation, order, region,
-                                        presumed)
+    order_region_numbers = region_code_to_number_list(order.region_code)
+
+    # Synthesize rx confirmation:
+    # 1- Only for t11n_afr and t11n_eur regions
+    # 2- If those regions are part of the requested regions by the order
+    for region in [Regions.t11n_afr, Regions.t11n_eu]:
+        if region.value in order_region_numbers:
+            add_confirmation_if_not_present(RxConfirmation, order, region,
+                                            presumed)
 
 
 def sent_or_received_criteria_met(order):
@@ -129,25 +138,35 @@ def sent_or_received_criteria_met(order):
     order_rx_confirmations = RxConfirmation.query.filter_by(
         order_id=order.id).all()
 
-    tx_confirmed_regions = set(item.region_id
+    confirmed_tx_regions = set(item.region_id
                                for item in order_tx_confirmations)
-    rx_confirmed_regions = set(item.region_id
+    confirmed_rx_regions = set(item.region_id
                                for item in order_rx_confirmations)
 
-    # All regions should confirm Tx
-    if len(tx_confirmed_regions) < len(constants.Regions):
+    # set of regions on which this order should have been sent
+    order_regions = set(region_code_to_id_list(order.region_code))
+
+    # All regions in order_regions should confirm Tx
+    if not (confirmed_tx_regions.issuperset(order_regions)):
         return False
 
-    # Reaching this point means that all tx hosts sent
-    # tx_confirmations and the ongoing transmission can be ended
+    if len(confirmed_tx_regions) - len(order_regions) > 0:
+        unexpected_region_numbers = \
+            [region_id_to_number(x)
+             for x in confirmed_tx_regions - order_regions]
+        logging.warning(f"Order {order.uuid} has unexpected Tx confirmations: "
+                        f"{unexpected_region_numbers}")
+
+    # Reaching this point means that all tx hosts in the
+    # order_regions sent tx_confirmations and the ongoing
+    # transmission can be ended
     transmitter.tx_end(order)
 
-    # Some regions should confirm Rx
-    expected_rx_confirmations = set([
-        info['id'] for region, info in constants.SATELLITE_REGIONS.items()
-        if info['has_receiver']
-    ])
-    if not (rx_confirmed_regions.issuperset(expected_rx_confirmations)):
+    # Expect Rx confirmations only from the monitored regions
+    # included in the order's regions list
+    expected_rx_confirmations = list(monitored_rx_regions & order_regions)
+
+    if not (confirmed_rx_regions.issuperset(expected_rx_confirmations)):
         return False
 
     synthesize_presumed_rx_confirmations(order)
@@ -169,8 +188,7 @@ def add_confirmation_if_not_present(confirmations_table,
                                     order,
                                     region_number,
                                     presumed=False):
-    region_id = constants.SATELLITE_REGIONS[constants.Regions(
-        region_number)]['id']
+    region_id = region_number_to_id(region_number)
     if not confirmation_exists(confirmations_table, order.id, region_id):
         new_confirmation = confirmations_table(order_id=order.id,
                                                region_id=region_id,

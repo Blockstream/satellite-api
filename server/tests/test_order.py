@@ -5,13 +5,14 @@ from http import HTTPStatus
 from unittest.mock import patch
 from uuid import uuid4
 
-from constants import InvoiceStatus, OrderStatus, Regions
+from constants import InvoiceStatus, OrderStatus
 from database import db
 from error import assert_error, get_http_error_resp
 from models import Invoice, Order, RxConfirmation, TxConfirmation
 from invoice_helpers import pay_invoice
 from order_helpers import adjust_bids, _paid_invoices_total,\
     _unpaid_invoices_total
+from regions import Regions, SATELLITE_REGIONS
 from utils import hmac_sha256_digest
 import bidding
 import constants
@@ -491,8 +492,7 @@ def test_confirm_tx_missing_or_invalid_param(mock_new_invoice, client):
     # Create a test order but confirm Tx for an invalid region
     generate_test_order(mock_new_invoice, client, tx_seq_num=1)
     post_rv = client.post('/order/tx/1', data={'regions': [[20, 1]]})
-    assert post_rv.status_code == HTTPStatus.NOT_FOUND
-    assert_error(post_rv.get_json(), 'REGION_NOT_FOUND')
+    assert post_rv.status_code == HTTPStatus.BAD_REQUEST
 
 
 @patch('orders.new_invoice')
@@ -501,34 +501,32 @@ def test_confirm_tx(mock_new_invoice, client):
     db_order = Order.query.filter_by(uuid=uuid).first()
 
     # Confirm tx for a single region
-    post_rv = client.post(
-        '/order/tx/1', data={'regions': [[constants.Regions.t11n_afr.value]]})
+    post_rv = client.post('/order/tx/1',
+                          data={'regions': [[Regions.t11n_afr.value]]})
     assert post_rv.status_code == HTTPStatus.OK
     db_tx_confirmation = TxConfirmation.query.filter_by(
         order_id=db_order.id).all()
     assert len(db_tx_confirmation) == 1
-    assert db_tx_confirmation[0].region_id == constants.SATELLITE_REGIONS[
-        constants.Regions.t11n_afr]['id']
+    assert db_tx_confirmation[0].region_id == SATELLITE_REGIONS[
+        Regions.t11n_afr]['id']
 
     # Confirm tx for multiple regions
-    post_rv = client.post('/order/tx/1',
-                          data={
-                              'regions': [[
-                                  constants.Regions.g18.value,
-                                  constants.Regions.e113.value,
-                                  constants.Regions.t11n_afr.value
-                              ]]
-                          })
+    post_rv = client.post(
+        '/order/tx/1',
+        data={
+            'regions':
+            [[Regions.g18.value, Regions.e113.value, Regions.t11n_afr.value]]
+        })
     assert post_rv.status_code == HTTPStatus.OK
     db_tx_confirmation = TxConfirmation.query.filter_by(
         order_id=db_order.id).order_by(TxConfirmation.region_id).all()
     assert len(db_tx_confirmation) == 3
-    assert db_tx_confirmation[0].region_id == constants.SATELLITE_REGIONS[
-        constants.Regions.g18]['id']
-    assert db_tx_confirmation[1].region_id == constants.SATELLITE_REGIONS[
-        constants.Regions.e113]['id']
-    assert db_tx_confirmation[2].region_id == constants.SATELLITE_REGIONS[
-        constants.Regions.t11n_afr]['id']
+    assert db_tx_confirmation[0].region_id == SATELLITE_REGIONS[
+        Regions.g18]['id']
+    assert db_tx_confirmation[1].region_id == SATELLITE_REGIONS[
+        Regions.e113]['id']
+    assert db_tx_confirmation[2].region_id == SATELLITE_REGIONS[
+        Regions.t11n_afr]['id']
 
 
 @patch('orders.new_invoice')
@@ -546,8 +544,7 @@ def test_confirm_rx_missing_or_invalid_param(mock_new_invoice, client):
     # Create a test order but confirm Rx for an invalid region
     generate_test_order(mock_new_invoice, client, tx_seq_num=1)
     post_rv = client.post('/order/rx/1', data={'region': 20})
-    assert post_rv.status_code == HTTPStatus.NOT_FOUND
-    assert_error(post_rv.get_json(), 'REGION_NOT_FOUND')
+    assert post_rv.status_code == HTTPStatus.BAD_REQUEST
 
 
 @patch('orders.new_invoice')
@@ -555,14 +552,13 @@ def test_confirm_rx(mock_new_invoice, client):
     uuid = generate_test_order(mock_new_invoice, client, tx_seq_num=1)['uuid']
     db_order = Order.query.filter_by(uuid=uuid).first()
 
-    post_rv = client.post('/order/rx/1',
-                          data={'region': constants.Regions.g18.value})
+    post_rv = client.post('/order/rx/1', data={'region': Regions.g18.value})
     assert post_rv.status_code == HTTPStatus.OK
     db_rx_confirmation = RxConfirmation.query.filter_by(
         order_id=db_order.id).all()
     assert len(db_rx_confirmation) == 1
-    assert db_rx_confirmation[0].region_id == constants.SATELLITE_REGIONS[
-        constants.Regions.g18]['id']
+    assert db_rx_confirmation[0].region_id == SATELLITE_REGIONS[
+        Regions.g18]['id']
 
 
 @patch('orders.new_invoice')
@@ -663,7 +659,7 @@ def test_sent_or_received_criteria_met_successfully(mock_new_invoice, client):
     for region in [Regions.t11n_afr, Regions.t11n_eu]:
         db_rx_confirmation = RxConfirmation.query.filter_by(
             order_id=db_order.id).filter_by(
-                region_id=constants.SATELLITE_REGIONS[region]['id']).all()
+                region_id=SATELLITE_REGIONS[region]['id']).all()
         assert len(db_rx_confirmation) == 1
         assert db_rx_confirmation[0].presumed
 
@@ -677,30 +673,28 @@ def test_confirm_tx_repeated_regions(mock_new_invoice, client):
     db_order2 = Order.query.filter_by(uuid=uuid).first()
 
     # Confirm tx for a single region
-    post_rv = client.post(
-        '/order/tx/1', data={'regions': [[constants.Regions.t11n_afr.value]]})
+    post_rv = client.post('/order/tx/1',
+                          data={'regions': [[Regions.t11n_afr.value]]})
     assert post_rv.status_code == HTTPStatus.OK
     db_tx_confirmation = TxConfirmation.query.filter_by(
         order_id=db_order1.id).all()
     assert len(db_tx_confirmation) == 1
 
     # Re-Confirm tx for the same region
-    post_rv = client.post(
-        '/order/tx/1', data={'regions': [[constants.Regions.t11n_afr.value]]})
+    post_rv = client.post('/order/tx/1',
+                          data={'regions': [[Regions.t11n_afr.value]]})
     assert post_rv.status_code == HTTPStatus.OK
     db_tx_confirmation = TxConfirmation.query.filter_by(
         order_id=db_order1.id).all()
     assert len(db_tx_confirmation) == 1
 
     # Confirm tx for multiple regions, including t11n_afr again
-    post_rv = client.post('/order/tx/1',
-                          data={
-                              'regions': [[
-                                  constants.Regions.g18.value,
-                                  constants.Regions.t18v_c.value,
-                                  constants.Regions.t11n_afr.value
-                              ]]
-                          })
+    post_rv = client.post(
+        '/order/tx/1',
+        data={
+            'regions':
+            [[Regions.g18.value, Regions.t18v_c.value, Regions.t11n_afr.value]]
+        })
     assert post_rv.status_code == HTTPStatus.OK
     db_tx_confirmation = TxConfirmation.query.filter_by(
         order_id=db_order1.id).all()
@@ -710,9 +704,8 @@ def test_confirm_tx_repeated_regions(mock_new_invoice, client):
     post_rv = client.post('/order/tx/2',
                           data={
                               'regions': [[
-                                  constants.Regions.t11n_eu.value,
-                                  constants.Regions.t18v_ku.value,
-                                  constants.Regions.t18v_ku.value
+                                  Regions.t11n_eu.value, Regions.t18v_ku.value,
+                                  Regions.t18v_ku.value
                               ]]
                           })
     assert post_rv.status_code == HTTPStatus.OK
@@ -730,24 +723,21 @@ def test_confirm_rx_repeated_regions(mock_new_invoice, client):
     db_order2 = Order.query.filter_by(uuid=uuid).first()
 
     # Confirm rx for a region
-    post_rv = client.post('/order/rx/1',
-                          data={'region': constants.Regions.g18.value})
+    post_rv = client.post('/order/rx/1', data={'region': Regions.g18.value})
     assert post_rv.status_code == HTTPStatus.OK
     db_rx_confirmation = RxConfirmation.query.filter_by(
         order_id=db_order1.id).all()
     assert len(db_rx_confirmation) == 1
 
     # Re-Confirm rx for the same region
-    post_rv = client.post('/order/rx/1',
-                          data={'region': constants.Regions.g18.value})
+    post_rv = client.post('/order/rx/1', data={'region': Regions.g18.value})
     assert post_rv.status_code == HTTPStatus.OK
     db_rx_confirmation = RxConfirmation.query.filter_by(
         order_id=db_order1.id).all()
     assert len(db_rx_confirmation) == 1
 
     # Confirm rx for the same region, different order_id
-    post_rv = client.post('/order/rx/2',
-                          data={'region': constants.Regions.g18.value})
+    post_rv = client.post('/order/rx/2', data={'region': Regions.g18.value})
     assert post_rv.status_code == HTTPStatus.OK
     db_rx_confirmation = RxConfirmation.query.filter_by(
         order_id=db_order2.id).all()
@@ -799,3 +789,164 @@ def test_bump_non_existing_order(mock_new_invoice, client):
                           headers={'X-Auth-Token': "non-existing-token"})
     assert bump_rv.status_code == HTTPStatus.NOT_FOUND
     assert_error(bump_rv.get_json(), 'ORDER_NOT_FOUND')
+
+
+@patch('orders.new_invoice')
+def test_create_order_with_invalid_region(mock_new_invoice, client):
+    n_bytes = 500
+    bid = bidding.get_min_bid(n_bytes)
+    msg = rnd_string(n_bytes)
+    mock_new_invoice.return_value = (True,
+                                     new_invoice(1, InvoiceStatus.pending,
+                                                 bid))
+    post_rv = client.post('/order',
+                          data={
+                              'bid': bid,
+                              'message': msg.encode(),
+                              'regions': 'a'
+                          })
+    assert post_rv.status_code == HTTPStatus.BAD_REQUEST
+    post_rv = client.post('/order',
+                          data={
+                              'bid': bid,
+                              'message': msg.encode(),
+                              'regions': 1
+                          })
+    assert post_rv.status_code == HTTPStatus.BAD_REQUEST
+    post_rv = client.post('/order',
+                          data={
+                              'bid': bid,
+                              'message': msg.encode(),
+                              'regions': [[6, 1]]
+                          })
+    assert post_rv.status_code == HTTPStatus.BAD_REQUEST
+
+
+@patch('orders.new_invoice')
+def test_sent_or_received_criteria_met_successfully_for_subset_of_regions(
+        mock_new_invoice, client):
+    selected_regions = [
+        Regions.g18.value, Regions.e113.value, Regions.t11n_afr.value
+    ]
+    uuid = generate_test_order(mock_new_invoice,
+                               client,
+                               tx_seq_num=1,
+                               order_status=OrderStatus.transmitting,
+                               regions=selected_regions)['uuid']
+    db_order = Order.query.filter_by(uuid=uuid).first()
+
+    # Only the selected regions are required to confirm Tx in order for the
+    # order to change into "sent" state.
+    post_rv = client.post('/order/tx/1', data={'regions': [selected_regions]})
+    assert post_rv.status_code == HTTPStatus.OK
+    db_tx_confirmation = TxConfirmation.query.filter_by(
+        order_id=db_order.id).order_by(TxConfirmation.region_id).all()
+    assert len(db_tx_confirmation) == 3
+    assert db_tx_confirmation[0].region_id == SATELLITE_REGIONS[
+        Regions.g18]['id']
+    assert db_tx_confirmation[1].region_id == SATELLITE_REGIONS[
+        Regions.e113]['id']
+    assert db_tx_confirmation[2].region_id == SATELLITE_REGIONS[
+        Regions.t11n_afr]['id']
+    db_order = Order.query.filter_by(uuid=uuid).first()
+    assert db_order.status == OrderStatus.sent.value
+
+    # Confirm rx only for the monitored regions in the order request (i.e.,
+    # excluding t11n_afr)
+    for region in [Regions.g18.value, Regions.e113.value]:
+        post_rv = client.post('/order/rx/1', data={'region': region})
+        assert post_rv.status_code == HTTPStatus.OK
+
+    # The order's status should change to received
+    db_order = Order.query.filter_by(uuid=uuid).first()
+    assert db_order.status == OrderStatus.received.value
+
+    # A synthesized Rx confirmation should be created for t11n_afr
+    db_rx_confirmation = RxConfirmation.query.filter_by(
+        order_id=db_order.id).filter_by(presumed=True).all()
+    assert len(db_rx_confirmation) == 1
+    assert db_rx_confirmation[0].region_id == SATELLITE_REGIONS[
+        Regions.t11n_afr]['id']
+
+
+@patch('orders.new_invoice')
+def test_sent_or_received_criteria_met_for_subset_of_presumed_rx_regions(
+        mock_new_invoice, client):
+    selected_regions = [Regions.t11n_afr.value, Regions.t11n_eu.value]
+    uuid = generate_test_order(mock_new_invoice,
+                               client,
+                               tx_seq_num=1,
+                               order_status=OrderStatus.transmitting,
+                               regions=selected_regions)['uuid']
+    db_order = Order.query.filter_by(uuid=uuid).first()
+
+    # Confirm tx only for the two selected regions
+    post_rv = client.post('/order/tx/1', data={'regions': [selected_regions]})
+    assert post_rv.status_code == HTTPStatus.OK
+
+    # The order status should change to received and NOT sent. The two regions
+    # in the order request were t11n_afr and t11n_eu. None of these regions
+    # send Rx confirmations. As a result, the order should automatically move
+    # from sent to received without any Rx confirmations.
+    db_order = Order.query.filter_by(uuid=uuid).first()
+    assert db_order.status == OrderStatus.received.value
+
+    # The synthesized Rx confirmations for Africa and Europe should be created
+    db_rx_confirmation = RxConfirmation.query.filter_by(
+        order_id=db_order.id).filter_by(presumed=True).all()
+    assert len(db_rx_confirmation) == 2
+    assert db_rx_confirmation[0].region_id == SATELLITE_REGIONS[
+        Regions.t11n_afr]['id']
+    assert db_rx_confirmation[1].region_id == SATELLITE_REGIONS[
+        Regions.t11n_eu]['id']
+
+
+@patch('orders.new_invoice')
+def test_sent_or_received_criteria_met_invalid_tx_subset(
+        mock_new_invoice, client):
+    selected_regions = [Regions.g18.value, Regions.e113.value]
+    other_regions = [
+        Regions.t11n_afr.value, Regions.t11n_eu.value, Regions.t18v_c.value,
+        Regions.t18v_ku.value
+    ]
+    uuid = generate_test_order(mock_new_invoice,
+                               client,
+                               tx_seq_num=1,
+                               order_status=OrderStatus.transmitting,
+                               regions=selected_regions)['uuid']
+    db_order = Order.query.filter_by(uuid=uuid).first()
+
+    # Confirm tx over regions other than those explicitly requested
+    # by the order
+    post_rv = client.post('/order/tx/1', data={'regions': [other_regions]})
+    assert post_rv.status_code == HTTPStatus.OK
+
+    # Order's status should not be changed
+    # order expects to receive tx confirmations from g18 and e113.
+    # Receving any number of confirmations from other regions cannot
+    # affect the order status
+    db_order = Order.query.filter_by(uuid=uuid).first()
+    assert db_order.status == OrderStatus.transmitting.value
+
+    # Confirm tx
+    post_rv = client.post('/order/tx/1', data={'regions': [selected_regions]})
+    assert post_rv.status_code == HTTPStatus.OK
+    # Now the status should get updated to sent
+    db_order = Order.query.filter_by(uuid=uuid).first()
+    assert db_order.status == OrderStatus.sent.value
+
+    # Confirm rx
+    for region in other_regions:
+        post_rv = client.post('/order/rx/1', data={'region': region})
+        assert post_rv.status_code == HTTPStatus.OK
+    # The status should stay as sent so long as rx is not confirmed
+    # by the two regions in the request (g18, e113)
+    db_order = Order.query.filter_by(uuid=uuid).first()
+    assert db_order.status == OrderStatus.sent.value
+
+    for region in [Regions.g18.value, Regions.e113.value]:
+        post_rv = client.post('/order/rx/1', data={'region': region})
+        assert post_rv.status_code == HTTPStatus.OK
+    # Now the status should change to received
+    db_order = Order.query.filter_by(uuid=uuid).first()
+    assert db_order.status == OrderStatus.received.value

@@ -1,4 +1,3 @@
-import json
 import pytest
 from unittest.mock import patch
 
@@ -28,9 +27,8 @@ def client(app):
 
 
 def assert_redis_call(mockredis, order):
-    msg = order_schema.dump(order)
-    mockredis.publish.assert_called_with(channel='transmissions',
-                                         message=f'{json.dumps(msg)}')
+    msg = order_schema.dumps(order)
+    mockredis.publish.assert_called_with(channel='transmissions', message=msg)
 
 
 @patch('orders.new_invoice')

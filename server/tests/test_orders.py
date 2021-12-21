@@ -216,8 +216,8 @@ def test_get_queued_orders(mock_new_invoice, client):
 
     # The expectation is that only paid, transmitting and confirming
     # orders are returned
-    assert len(queued_uuids) == 4
-    assert order['pending']['uuid'] in queued_uuids
+    assert len(queued_uuids) == 3
+    assert order['pending']['uuid'] not in queued_uuids
     assert order['paid']['uuid'] in queued_uuids
     assert order['transmitting']['uuid'] in queued_uuids
     assert order['sent']['uuid'] not in queued_uuids

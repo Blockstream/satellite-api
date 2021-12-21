@@ -201,8 +201,6 @@ class OrdersResource(Resource):
         elif state == 'queued':
             orders = Order.query.filter(or_(
                 Order.status ==
-                OrderStatus.pending.value,
-                Order.status ==
                 OrderStatus.transmitting.value,
                 Order.status ==
                 OrderStatus.confirming.value,

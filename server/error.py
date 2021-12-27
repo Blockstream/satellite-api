@@ -1,5 +1,4 @@
 from http import HTTPStatus
-import json
 
 errors = {
     'PARAM_COERCION':
@@ -53,37 +52,34 @@ errors = {
 }
 
 
-def _err_to_json(key, *args):
-    """Translate an error key to the full JSON error response"""
+def _err_to_dict(key, *args):
+    """Translate an error key to the full error response dictionary"""
     assert (key in errors)
     code = errors[key][0]
     title = errors[key][1]
     detail = errors[key][2].format(*args)
-    return json.dumps({
-        'message':
-        title,
+    return {
+        'message': title,
         'errors': [{
             'title': title,
             'detail': detail,
             'code': code
         }]
-    })
+    }
 
 
 def get_http_error_resp(key, *args):
     """Return the HTTP error response
 
-    Returns: Pair with JSON response and the HTTP error code. The JSON response
-        contains the satellite-specific error code and information.
+    Returns: Pair with error response dictionary and the HTTP error code. The
+        former contains the satellite-specific error code and information.
 
     """
-    json_resp = _err_to_json(key, *args)
-    return json_resp, errors[key][3]
+    return _err_to_dict(key, *args), errors[key][3]
 
 
-def assert_error(json_resp, key):
+def assert_error(err_data, key):
     """Verify that the error response is as expected for the given error key"""
-    err_data = json.loads(json_resp)
     assert 'message' in err_data
     assert 'errors' in err_data
     # Check title and code (but not detail, which is set dynamically)

@@ -7,6 +7,7 @@ import constants
 
 
 class InfoResource(Resource):
+
     def get(self):
         try:
             info_response = requests.get(f"{constants.CHARGE_ROOT}/info",

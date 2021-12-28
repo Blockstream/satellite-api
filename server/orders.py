@@ -37,6 +37,7 @@ def sha256_checksum(filename, block_size=SHA256_BLOCK_SIZE):
 
 
 class OrderResource(Resource):
+
     def get(self, uuid):
         success, order_or_error = order_helpers.get_and_authenticate_order(
             uuid, request.form, request.args)
@@ -67,6 +68,7 @@ class OrderResource(Resource):
 
 
 class OrderUploadResource(Resource):
+
     def post(self):
         args = request.form
         errors = order_upload_req_schema.validate(args)
@@ -145,6 +147,7 @@ class OrderUploadResource(Resource):
 
 
 class BumpOrderResource(Resource):
+
     def post(self, uuid):
         query_args = request.args
         form_args = request.form
@@ -180,6 +183,7 @@ class BumpOrderResource(Resource):
 
 
 class OrdersResource(Resource):
+
     def get(self, state):
         if state not in ['pending', 'queued', 'sent']:
             return {
@@ -227,6 +231,7 @@ class OrdersResource(Resource):
 
 
 class GetMessageResource(Resource):
+
     def get(self, uuid):
         order = Order.query.filter_by(uuid=uuid).filter(
             or_(Order.status == OrderStatus.sent.value,
@@ -243,6 +248,7 @@ class GetMessageResource(Resource):
 
 
 class GetMessageBySeqNumResource(Resource):
+
     def get(self, tx_seq_num):
         order = Order.query.filter_by(tx_seq_num=tx_seq_num).filter(
             or_(Order.status == OrderStatus.sent.value,
@@ -260,6 +266,7 @@ class GetMessageBySeqNumResource(Resource):
 
 
 class TxConfirmationResource(Resource):
+
     def post(self, tx_seq_num):
         args = request.form
         errors = tx_confirmation_schema.validate(args)
@@ -318,6 +325,7 @@ class TxConfirmationResource(Resource):
 
 
 class RxConfirmationResource(Resource):
+
     def post(self, tx_seq_num):
         args = request.form
         errors = rx_confirmation_schema.validate(args)

@@ -15,6 +15,7 @@ class Worker:
         name : Optional worker name.
 
     """
+
     def __init__(self, period, fcn, args, name=""):
         assert (isinstance(args, tuple))
         self.period = period

@@ -272,12 +272,12 @@ write_files:
         ExecStopPost=/usr/bin/docker rm sse-server
         ExecStopPost=/sbin/iptables -D INPUT -p tcp -s 10.138.0.0/16 --dport 4500 -j ACCEPT
 
-  - path: /etc/systemd/system/tx-server.service
+  - path: /etc/systemd/system/api-workers.service
     permissions: 0644
     owner: root
     content: |
         [Unit]
-        Description=Transmitter daemon
+        Description=API Server Workers
         Wants=gcr-online.target
         After=api-server.service
 
@@ -288,13 +288,13 @@ write_files:
         ExecStart=/usr/bin/docker run \
             --network=host \
             --pid=host \
-            --name=tx-server \
+            --name=api-workers \
             -v /mnt/disks/data/ionosphere:/data \
             -e ENV="production" \
             -e "REDIS_URI=redis://localhost:6379" \
-            "${ionosphere_docker}" daemon.sh
-        ExecStop=/usr/bin/docker stop tx-server
-        ExecStopPost=/usr/bin/docker rm tx-server
+            "${ionosphere_docker}" workers.sh
+        ExecStop=/usr/bin/docker stop api-workers
+        ExecStopPost=/usr/bin/docker rm api-workers
 
   - path: /etc/systemd/system/charge.service
     permissions: 0644
@@ -332,7 +332,7 @@ runcmd:
   - systemctl enable --now charge.service
   - systemctl enable --now redis.service
   - systemctl enable --now api-server.service
-  - systemctl enable --now tx-server.service
+  - systemctl enable --now api-workers.service
   - systemctl enable --now sse-server.service
   - systemctl enable --now node-exporter.service
   - systemctl enable --now check-containers.timer

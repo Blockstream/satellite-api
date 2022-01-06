@@ -23,7 +23,7 @@ resource "google_compute_backend_service" "satapi-lb" {
 
 resource "google_compute_backend_service" "satapi-lb-tor" {
   name        = "${var.name}-tor-backend-service-${var.env}"
-  description = "Satellite API"
+  description = "Satellite API Tor"
   protocol    = "HTTP"
   port_name   = "http81"
   project     = var.project

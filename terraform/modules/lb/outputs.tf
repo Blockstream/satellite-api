@@ -7,7 +7,7 @@ output "backend_service" {
 }
 
 output "backend_service_tor" {
-  value = length(google_compute_backend_service.satapi-lb) > 0 ? google_compute_backend_service.satapi-lb[0].self_link : ""
+  value = length(google_compute_backend_service.satapi-lb-tor) > 0 ? google_compute_backend_service.satapi-lb-tor[0].self_link : ""
 }
 
 output "internal_ip" {

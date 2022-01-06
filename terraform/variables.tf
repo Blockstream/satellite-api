@@ -214,20 +214,19 @@ variable "ionosphere_sse_docker" {
 }
 
 # Less frequently updated images
-# v0.9.3
 variable "lightning_docker" {
   type    = string
-  default = "blockstream/lightningd@sha256:8c7a54ff6fbcb9664a8e74b08884d21de203df64f3cc18dc243b79751f586981"
+  default = "blockstream/lightningd:v0.10.2"
 }
 
 variable "charge_docker" {
   type    = string
-  default = "blockstream/charged@sha256:bcc5f91643f03bd97601471d335f133d75455d096054f01c15d332138a55a49c"
+  default = "blockstream/charged:v0.4.23"
 }
 
 variable "tor_docker" {
   type    = string
-  default = "blockstream/tor:0.4.3.7"
+  default = "blockstream/tor:0.4.6.8"
 }
 
 variable "node_exporter_docker" {

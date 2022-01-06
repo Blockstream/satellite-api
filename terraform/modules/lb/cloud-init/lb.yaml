@@ -141,6 +141,7 @@ write_files:
 
             # Proxy to mainnet SSE container
             location /subscribe/ {
+                chunked_transfer_encoding on;
                 proxy_buffering off;
                 proxy_request_buffering off;
                 proxy_cache off;
@@ -171,7 +172,7 @@ write_files:
 
             # Proxy to testnet SSE container
             location /testnet/subscribe/ {
-                chunked_transfer_encoding off;
+                chunked_transfer_encoding on;
                 proxy_buffering off;
                 proxy_request_buffering off;
                 proxy_cache off;
@@ -202,7 +203,7 @@ write_files:
 
             # Proxy to gossip SSE container
             location /gossip/subscribe/ {
-                chunked_transfer_encoding off;
+                chunked_transfer_encoding on;
                 proxy_buffering off;
                 proxy_request_buffering off;
                 proxy_cache off;
@@ -260,7 +261,7 @@ write_files:
 
             # Proxy to auth server's SSE container
             location /auth/subscribe/ {
-                chunked_transfer_encoding off;
+                chunked_transfer_encoding on;
                 proxy_buffering off;
                 proxy_request_buffering off;
                 proxy_cache off;
@@ -299,7 +300,7 @@ write_files:
 
             # Proxy to btc-src's SSE container
             location /btc-src/subscribe/ {
-                chunked_transfer_encoding off;
+                chunked_transfer_encoding on;
                 proxy_buffering off;
                 proxy_request_buffering off;
                 proxy_cache off;

@@ -27,7 +27,7 @@ resource "google_compute_backend_service" "satapi-lb-tor" {
   protocol    = "HTTP"
   port_name   = "http81"
   project     = var.project
-  count       = var.create_resources
+  count       = var.env == "staging" ? 0 : var.create_resources
 
   backend {
     group = google_compute_region_instance_group_manager.satapi-lb[0].instance_group

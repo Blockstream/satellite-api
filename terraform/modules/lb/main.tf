@@ -16,7 +16,7 @@ resource "google_compute_region_instance_group_manager" "satapi-lb" {
   }
 
   update_policy {
-    type                  = "OPPORTUNISTIC"
+    type                  = var.env == "staging" ? "PROACTIVE": "OPPORTUNISTIC"
     minimal_action        = "RESTART"
     replacement_method    = "RECREATE"
     max_surge_fixed       = 0

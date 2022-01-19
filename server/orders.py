@@ -212,7 +212,6 @@ class BumpOrderResource(Resource):
 
         return {
             'auth_token': order_helpers.compute_auth_token(uuid),
-            'uuid': uuid,
             'lightning_invoice': json.loads(invoice.invoice)
         }
 

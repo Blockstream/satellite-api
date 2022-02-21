@@ -1,8 +1,9 @@
 alembic==1.5.5
-Flask==1.1.2
+Flask==1.1.4
 Flask-RESTful==0.3.8
 Flask-SQLAlchemy==2.4.4
 gunicorn[gevent]==20.0.4
+markupsafe==2.0.1
 marshmallow==3.10.0
 pysqlite3==0.4.5
 PyYAML==5.4.1

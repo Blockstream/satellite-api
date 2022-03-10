@@ -50,7 +50,7 @@ docker_build:
   tags:
     - k8s-docker
   services:
-    - docker:19-dind
+    - docker:20.10.12-dind
   only:
     - branches@satellite/ionosphere
   except:
@@ -83,7 +83,7 @@ docker_push:
     - k8s-docker
   when: manual
   services:
-    - docker:19-dind
+    - docker:20.10.12-dind
   only:
     - branches@satellite/ionosphere
   parallel:
@@ -116,7 +116,7 @@ tag_docker_push:
   tags:
     - k8s-docker
   services:
-    - docker:19-dind
+    - docker:20.10.12-dind
   only:
     - /^staging_.*/
     - /^prod_.*/

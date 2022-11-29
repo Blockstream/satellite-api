@@ -194,12 +194,12 @@ variable "letsencrypt_email" {
 }
 
 variable "station1" {
-  type = string
+  type    = string
   default = ""
 }
 
 variable "station2" {
-  type = string
+  type    = string
   default = ""
 }
 

@@ -1,7 +1,7 @@
 resource "google_dns_managed_zone" "blockstream-space" {
   name        = "blockstream-space"
   dns_name    = "blockstream.space."
-  description = "A long time ago, in a galaxy far, far away... P.S. Don't edit directly in Gcloud, but rather in the Satellite API repo (Otherwise, things break and Chase gets really mad)."
+  description = "A long time ago, in a galaxy far, far away... P.S. Don't edit directly in Gcloud, but rather in the satellite/ionosphere repo (Otherwise, things break and Chase gets really mad)."
   project     = var.project
   count       = var.create_resources
 

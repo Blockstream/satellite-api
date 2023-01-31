@@ -147,6 +147,19 @@ write_files:
             }
 
             # Proxy to mainnet SSE container
+            location /admin/subscribe/ {
+                if ($ssl_client_verify != SUCCESS) {
+                  return 403;
+                }
+                chunked_transfer_encoding on;
+                proxy_buffering off;
+                proxy_request_buffering off;
+                proxy_cache off;
+                proxy_http_version 1.1;
+
+                proxy_pass http://${mainnet_ip}:4500/admin/stream?channels=;
+            }
+
             location /subscribe/ {
                 chunked_transfer_encoding on;
                 proxy_buffering off;

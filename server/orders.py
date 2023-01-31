@@ -6,12 +6,11 @@ import os
 from uuid import uuid4
 
 from flask import current_app, request, send_file
-
 from flask_restful import Resource
 from marshmallow import ValidationError
-from sqlalchemy import or_
+from sqlalchemy import and_, or_
 
-from constants import OrderStatus
+from constants import CHANNEL_INFO, OrderStatus
 from database import db
 from error import get_http_error_resp
 from invoice_helpers import new_invoice, pay_invoice
@@ -39,19 +38,34 @@ def sha256_checksum(filename, block_size=SHA256_BLOCK_SIZE):
 class OrderResource(Resource):
 
     def get(self, uuid):
+        admin_mode = request.path.startswith("/admin/")
+
         success, order_or_error = order_helpers.get_and_authenticate_order(
             uuid, request.form, request.args)
         if not success:
             return order_or_error
         order = order_or_error
+
+        if not admin_mode and 'get' not in \
+                constants.CHANNEL_INFO[order.channel].user_permissions:
+            return get_http_error_resp('ORDER_CHANNEL_UNAUTHORIZED_OP',
+                                       order.channel)
+
         return order_schema.dump(order)
 
     def delete(self, uuid):
+        admin_mode = request.path.startswith("/admin/")
+
         success, order_or_error = order_helpers.get_and_authenticate_order(
             uuid, request.form, request.args)
         if not success:
             return order_or_error
         order = order_or_error
+
+        if not admin_mode and 'delete' not in \
+                constants.CHANNEL_INFO[order.channel].user_permissions:
+            return get_http_error_resp('ORDER_CHANNEL_UNAUTHORIZED_OP',
+                                       order.channel)
 
         if order.status != OrderStatus.pending.value and\
            order.status != OrderStatus.paid.value:
@@ -70,14 +84,22 @@ class OrderResource(Resource):
 class OrderUploadResource(Resource):
 
     def post(self):
-        args = request.form
-        errors = order_upload_req_schema.validate(args)
+        admin_mode = request.path.startswith("/admin/")
 
-        if errors:
-            return errors, HTTPStatus.BAD_REQUEST
+        try:
+            args = order_upload_req_schema.load(request.form)
+        except ValidationError as error:
+            return error.messages, HTTPStatus.BAD_REQUEST
 
         has_msg = 'message' in args
         has_file = 'file' in request.files
+
+        channel = args['channel']
+        if not admin_mode and 'post' not in \
+                constants.CHANNEL_INFO[channel].user_permissions:
+            return get_http_error_resp('ORDER_CHANNEL_UNAUTHORIZED_OP',
+                                       channel)
+        requires_payment = CHANNEL_INFO[channel].requires_payment
 
         if (has_msg and has_file):
             return "Choose message or file", HTTPStatus.BAD_REQUEST
@@ -87,7 +109,6 @@ class OrderUploadResource(Resource):
 
         uuid = str(uuid4())
         filepath = os.path.join(constants.MSG_STORE_PATH, uuid)
-        bid = int(args.get('bid'))
 
         if (has_msg):
             with open(filepath, 'w') as fd:
@@ -108,23 +129,28 @@ class OrderUploadResource(Resource):
             return get_http_error_resp('MESSAGE_FILE_TOO_LARGE',
                                        constants.MAX_MESSAGE_SIZE / (2**20))
 
-        if (not bidding.validate_bid(msg_size, bid)):
+        bid = int(args.get('bid')) if requires_payment else 0
+        if (requires_payment and not bidding.validate_bid(msg_size, bid)):
             os.remove(filepath)
             min_bid = bidding.get_min_bid(msg_size)
             return get_http_error_resp('BID_TOO_SMALL', min_bid)
 
         msg_digest = sha256_checksum(filepath)
+        starting_state = OrderStatus.pending.value if requires_payment \
+            else OrderStatus.paid.value
         new_order = Order(uuid=uuid,
                           unpaid_bid=bid,
                           message_size=msg_size,
                           message_digest=msg_digest,
-                          status=OrderStatus.pending.value)
+                          status=starting_state,
+                          channel=channel)
 
-        success, invoice = new_invoice(new_order, bid)
-        if not success:
-            return invoice
+        if requires_payment:
+            success, invoice = new_invoice(new_order, bid)
+            if not success:
+                return invoice
+            new_order.invoices.append(invoice)
 
-        new_order.invoices.append(invoice)
         if 'regions' in args:
             regions_in_request = json.loads(args['regions'])
             new_order.region_code = region_number_list_to_code(
@@ -133,34 +159,42 @@ class OrderUploadResource(Resource):
         db.session.add(new_order)
         db.session.commit()
 
-        if constants.FORCE_PAYMENT:
+        if constants.FORCE_PAYMENT and requires_payment:
             current_app.logger.info('force payment of the invoice')
-            # Force the sequence of actions executed by the invoice callback
             pay_invoice(invoice)
-            transmitter.tx_start()
+            transmitter.tx_start(new_order.channel)
+        elif not requires_payment:
+            transmitter.tx_start(new_order.channel)
 
-        return {
+        # Return the invoice only if the channel requires payment for orders
+        resp = {
             'auth_token': order_helpers.compute_auth_token(uuid),
-            'uuid': uuid,
-            'lightning_invoice': json.loads(invoice.invoice)
+            'uuid': uuid
         }
+        if requires_payment:
+            resp['lightning_invoice'] = json.loads(invoice.invoice)
+
+        return resp
 
 
 class BumpOrderResource(Resource):
 
     def post(self, uuid):
         query_args = request.args
-        form_args = request.form
-        errors = order_bump_schema.validate(form_args)
-
-        if errors:
-            return errors, HTTPStatus.BAD_REQUEST
+        try:
+            form_args = order_bump_schema.load(request.form)
+        except ValidationError as error:
+            return error.messages, HTTPStatus.BAD_REQUEST
 
         success, order_or_error = order_helpers.get_and_authenticate_order(
             uuid, form_args, query_args)
         if not success:
             return order_or_error
         order = order_or_error
+
+        if not CHANNEL_INFO[order.channel].requires_payment:
+            return get_http_error_resp('ORDER_CHANNEL_UNAUTHORIZED_OP',
+                                       order.channel)
 
         if order.status != OrderStatus.pending.value and\
            order.status != OrderStatus.paid.value:
@@ -185,6 +219,7 @@ class BumpOrderResource(Resource):
 class OrdersResource(Resource):
 
     def get(self, state):
+        admin_mode = request.path.startswith("/admin/")
         if state not in ['pending', 'queued', 'sent']:
             return {
                 state: [
@@ -200,29 +235,36 @@ class OrdersResource(Resource):
 
         before = db.func.datetime(args['before'])
         limit = args['limit']
+        channel = args['channel']
+
+        if not admin_mode and 'get' not in \
+                constants.CHANNEL_INFO[channel].user_permissions:
+            return get_http_error_resp('ORDER_CHANNEL_UNAUTHORIZED_OP',
+                                       channel)
 
         if state == 'pending':
-            orders = Order.query.filter_by(
-                status=OrderStatus[state].value).\
+            orders = Order.query.filter(and_(
+                Order.channel == channel,
+                Order.status == OrderStatus[state].value)).\
                 filter(db.func.datetime(Order.created_at) < before).\
                 order_by(Order.created_at.desc()).\
                 limit(limit)
         elif state == 'queued':
-            orders = Order.query.filter(or_(
+            orders = Order.query.filter(and_(Order.channel == channel, or_(
                 Order.status ==
                 OrderStatus.transmitting.value,
                 Order.status ==
                 OrderStatus.confirming.value,
                 Order.status ==
-                OrderStatus.paid.value)).\
+                OrderStatus.paid.value))).\
                 filter(db.func.datetime(Order.created_at) < before).\
                 order_by(Order.bid_per_byte.desc()).limit(limit)
         elif state == 'sent':
-            orders = Order.query.filter(or_(
+            orders = Order.query.filter(and_(Order.channel == channel, or_(
                 Order.status ==
                 OrderStatus.sent.value,
                 Order.status ==
-                OrderStatus.received.value)).\
+                OrderStatus.received.value))).\
                 filter(db.func.datetime(Order.created_at) < before).\
                 order_by(Order.ended_transmission_at.desc()).\
                 limit(limit)
@@ -250,6 +292,8 @@ class GetMessageResource(Resource):
 class GetMessageBySeqNumResource(Resource):
 
     def get(self, tx_seq_num):
+        admin_mode = request.path.startswith("/admin/")
+
         order = Order.query.filter_by(tx_seq_num=tx_seq_num).filter(
             or_(Order.status == OrderStatus.sent.value,
                 Order.status == OrderStatus.transmitting.value,
@@ -257,6 +301,11 @@ class GetMessageBySeqNumResource(Resource):
                 Order.status == OrderStatus.received.value)).first()
         if not order:
             return get_http_error_resp('SEQUENCE_NUMBER_NOT_FOUND', tx_seq_num)
+
+        if not admin_mode and 'get' not in \
+                constants.CHANNEL_INFO[order.channel].user_permissions:
+            return get_http_error_resp('ORDER_CHANNEL_UNAUTHORIZED_OP',
+                                       order.channel)
 
         message_path = os.path.join(constants.MSG_STORE_PATH, order.uuid)
         return send_file(message_path,
@@ -317,7 +366,7 @@ class TxConfirmationResource(Resource):
         db.session.refresh(order)
         if order.status == OrderStatus.confirming.value and \
                 last_status == OrderStatus.transmitting.value:
-            transmitter.tx_start()
+            transmitter.tx_start(order.channel)
 
         return {
             'message': f'transmission confirmed for regions {args["regions"]}'

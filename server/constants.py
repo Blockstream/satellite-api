@@ -68,4 +68,41 @@ TRANSMIT_RATE = int(os.getenv('TRANSMIT_RATE',
 LOGGING_FORMAT = '%(asctime)s %(levelname)s %(name)s : %(message)s'
 REDIS_URI = os.getenv('REDIS_URI', 'redis://127.0.0.1:6379')
 
-SUB_CHANNELS = ['transmissions']
+USER_CHANNEL = 1
+AUTH_CHANNEL = 3
+GOSSIP_CHANNEL = 4
+BTC_SRC_CHANNEL = 5
+
+
+class ChannelInfo:
+
+    def __init__(self, name, user_permissions):
+        """Construct channel information
+
+        Args:
+            name (str): Channel name.
+            user_permissions (list): User permissions. An empty list means the
+                channel messages are only sent over satellite. A list with
+                'get' permission only means the users can only fetch messages
+                but not post them, and only the admin can post messages.
+        """
+        assert isinstance(user_permissions, list)
+        assert len(user_permissions) == 0 or \
+            [x in ['get', 'post'] for x in user_permissions]
+        self.name = name
+        self.user_permissions = user_permissions
+        # Attribute indicating whether the channel messages must be paid by the
+        # user. The channels on which users can post messages necessarily
+        # require payment. The other channels can only have messages posted by
+        # the admin, and these messages are not paid.
+        self.requires_payment = 'post' in user_permissions
+
+
+CHANNEL_INFO = {
+    USER_CHANNEL: ChannelInfo('transmissions', ['get', 'post', 'delete']),
+    AUTH_CHANNEL: ChannelInfo('auth', []),
+    GOSSIP_CHANNEL: ChannelInfo('gossip', ['get']),
+    BTC_SRC_CHANNEL: ChannelInfo('btc-src', ['get']),
+}
+
+CHANNELS = list(CHANNEL_INFO.keys())

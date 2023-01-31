@@ -10,9 +10,15 @@ import constants
 from database import db
 from info import InfoResource
 from invoices import InvoiceResource
-from orders import BumpOrderResource, GetMessageResource,\
-    GetMessageBySeqNumResource, OrderResource, OrdersResource,\
-    OrderUploadResource, RxConfirmationResource, TxConfirmationResource
+from orders import \
+    BumpOrderResource,\
+    GetMessageBySeqNumResource,\
+    GetMessageResource,\
+    OrderResource,\
+    OrdersResource,\
+    OrderUploadResource,\
+    RxConfirmationResource,\
+    TxConfirmationResource
 from queues import QueueResource
 
 
@@ -30,15 +36,17 @@ def create_app(from_test=False):
     with app.app_context():
         db.create_all()
     api = Api(app)
-    api.add_resource(OrderUploadResource, '/order')
-    api.add_resource(OrdersResource, '/orders/<state>')
-    api.add_resource(OrderResource, '/order/<uuid>')
+    api.add_resource(OrderUploadResource, '/order', '/admin/order')
+    api.add_resource(OrdersResource, '/orders/<state>',
+                     '/admin/orders/<state>')
+    api.add_resource(OrderResource, '/order/<uuid>', '/admin/order/<uuid>')
     api.add_resource(BumpOrderResource, '/order/<uuid>/bump')
     api.add_resource(TxConfirmationResource, '/order/tx/<tx_seq_num>')
     api.add_resource(RxConfirmationResource, '/order/rx/<tx_seq_num>')
     api.add_resource(InfoResource, '/info')
     api.add_resource(InvoiceResource, '/callback/<lid>/<charged_auth_token>')
-    api.add_resource(GetMessageBySeqNumResource, '/message/<tx_seq_num>')
+    api.add_resource(GetMessageBySeqNumResource, '/message/<tx_seq_num>',
+                     '/admin/message/<tx_seq_num>')
     api.add_resource(QueueResource, '/queue.html')
 
     if constants.env == 'development' or constants.env == 'test':

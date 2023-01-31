@@ -24,6 +24,6 @@ class InvoiceResource(Resource):
 
         order = Order.query.filter_by(id=invoice.order_id).first()
         if order.status == OrderStatus.paid.value:
-            transmitter.tx_start()
+            transmitter.tx_start(order.channel)
 
         return {'message': f'invoice {invoice.lid} paid'}

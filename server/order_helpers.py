@@ -402,13 +402,14 @@ def refresh_retransmission_table():
         upsert_retransmission(order)
 
 
-def get_next_retransmission():
+def get_next_retransmission(channel):
     """Get the next highest bidding order requiring retransmission"""
     refresh_retransmission_table()
 
     orders_with_retry_info = db.session.query(
-        Order, TxRetry).filter(Order.id == TxRetry.order_id).order_by(
-            Order.bid_per_byte.desc()).all()
+        Order, TxRetry).filter(Order.id == TxRetry.order_id).filter(
+            Order.channel == channel).order_by(
+                Order.bid_per_byte.desc()).all()
 
     for order, retry_info in orders_with_retry_info:
         if retry_info.pending:

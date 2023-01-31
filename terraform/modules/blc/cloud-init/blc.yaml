@@ -265,7 +265,7 @@ write_files:
             --network=host \
             --pid=host \
             --name=sse-server \
-            -e "SUB_CHANNELS=transmissions" \
+            -e "SUB_CHANNELS=transmissions,gossip,btc-src,auth" \
             -e "REDIS_URI=redis://localhost:6379" \
             "${ionosphere_sse_docker}"
         ExecStop=/usr/bin/docker stop sse-server

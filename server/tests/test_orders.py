@@ -14,6 +14,7 @@ import constants
 import server
 
 from common import new_invoice, place_order, generate_test_order
+from error import assert_error
 
 
 @pytest.fixture
@@ -121,7 +122,7 @@ def test_get_orders_limit_parameter(mock_new_invoice, client, state):
             state == 'queued' else OrderStatus[state].value
         db.session.commit()
 
-    # no limit parameter, max PAGE_SIZE should be retunred
+    # no limit parameter, max PAGE_SIZE should be returned
     get_rv = client.get(f'/orders/{state}')
     assert get_rv.status_code == HTTPStatus.OK
     get_json_resp = get_rv.get_json()
@@ -142,6 +143,46 @@ def test_get_orders_limit_parameter(mock_new_invoice, client, state):
     assert get_rv.status_code == HTTPStatus.BAD_REQUEST
     get_rv = client.get(f'/orders/{state}?limit=0')
     assert get_rv.status_code == HTTPStatus.BAD_REQUEST
+
+
+@patch('orders.new_invoice')
+@pytest.mark.parametrize("state", ['pending', 'queued', 'sent'])
+@pytest.mark.parametrize("channel", constants.CHANNELS)
+def test_get_orders_channel_parameter(mock_new_invoice, client, state,
+                                      channel):
+    n_bytes = 500
+    mock_new_invoice.return_value = (True,
+                                     new_invoice(1, InvoiceStatus.pending,
+                                                 bidding.get_min_bid(n_bytes)))
+    # Place all orders as the admin
+    for i in range(constants.MAX_PAGE_SIZE + 1):
+        post_rv = place_order(client, n_bytes, channel=channel, admin=True)
+        assert post_rv.status_code == HTTPStatus.OK
+        uuid = post_rv.get_json()['uuid']
+        db_order = Order.query.filter_by(uuid=uuid).first()
+        db_order.status = OrderStatus.transmitting.value if \
+            state == 'queued' else OrderStatus[state].value
+        db.session.commit()
+
+    # Get the orders of each channel as a regular user
+    for _channel in constants.CHANNELS:
+        get_rv = client.get(f'/orders/{state}?channel={_channel}')
+        if 'get' in constants.CHANNEL_INFO[_channel].user_permissions:
+            assert get_rv.status_code == HTTPStatus.OK
+            get_json_resp = get_rv.get_json()
+            n_expected_res = constants.PAGE_SIZE if _channel == channel else 0
+            assert len(get_json_resp) == n_expected_res
+        else:
+            assert get_rv.status_code == HTTPStatus.UNAUTHORIZED
+            assert_error(get_rv.get_json(), 'ORDER_CHANNEL_UNAUTHORIZED_OP')
+
+    # Get the orders of each channel as an admin user
+    for _channel in constants.CHANNELS:
+        get_rv = client.get(f'/admin/orders/{state}?channel={_channel}')
+        assert get_rv.status_code == HTTPStatus.OK
+        get_json_resp = get_rv.get_json()
+        n_expected_res = constants.PAGE_SIZE if _channel == channel else 0
+        assert len(get_json_resp) == n_expected_res
 
 
 @patch('orders.new_invoice')

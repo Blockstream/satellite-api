@@ -36,9 +36,6 @@ errors = {
                          HTTPStatus.NOT_FOUND),
     'INVOICE_ALREADY_PAID': (123, "Payment problem", "Invoice already paid",
                              HTTPStatus.BAD_REQUEST),
-    'CHANNELS_EQUALITY': (124, "invalid channel",
-                          "channel {} is not a valid channel name",
-                          HTTPStatus.INTERNAL_SERVER_ERROR),
     'MESSAGE_MISSING':
     (126, "Message upload problem",
      "Either a message file or a message parameter is required",
@@ -47,8 +44,12 @@ errors = {
     (128, "Lightning Charge communication error",
      "Failed to fetch information about the Lightning node",
      HTTPStatus.INTERNAL_SERVER_ERROR),
-    'INVOICE_ALREADY_EXPIRED':
-    (129, "Payment problem", "Invoice already expired", HTTPStatus.BAD_REQUEST)
+    'INVOICE_ALREADY_EXPIRED': (129, "Payment problem",
+                                "Invoice already expired",
+                                HTTPStatus.BAD_REQUEST),
+    'ORDER_CHANNEL_UNAUTHORIZED_OP': (130, "Unauthorized channel operation",
+                                      "Operation not supported on channel {}",
+                                      HTTPStatus.UNAUTHORIZED),
 }
 
 

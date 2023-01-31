@@ -99,6 +99,21 @@ def test_uploaded_text_msg_too_large(client):
     assert rv.status_code == HTTPStatus.BAD_REQUEST
 
 
+def test_post_order_invalid_channel(client):
+    n_bytes = 10
+    bid = bidding.get_min_bid(n_bytes)
+    msg = rnd_string(n_bytes)
+    rv = client.post('/order',
+                     data={
+                         'bid': bid,
+                         'message': msg.encode(),
+                         'channel': 10
+                     })
+    assert rv.status_code == HTTPStatus.BAD_REQUEST
+    assert 'channel' in rv.get_json()
+    assert "Must be one of" in rv.get_json()['channel'][0]
+
+
 @patch('orders.new_invoice')
 def test_uploaded_text_msg_max_size(mock_new_invoice, client):
     n_bytes = constants.MAX_TEXT_MSG_LEN
@@ -177,9 +192,9 @@ def test_invoice_generation_failure(mock_new_invoice, client):
 def test_get_order(mock_new_invoice, client):
     json_response = generate_test_order(mock_new_invoice, client)
     uuid = json_response['uuid']
+    auth_token = json_response['auth_token']
 
-    get_rv = client.get(f'/order/{uuid}',
-                        headers={'X-Auth-Token': json_response['auth_token']})
+    get_rv = client.get(f'/order/{uuid}', headers={'X-Auth-Token': auth_token})
     get_json_resp = get_rv.get_json()
     assert get_rv.status_code == HTTPStatus.OK
     assert get_json_resp['uuid'] == uuid
@@ -189,9 +204,9 @@ def test_get_order(mock_new_invoice, client):
 def test_get_order_auth_token_as_form_param(mock_new_invoice, client):
     json_response = generate_test_order(mock_new_invoice, client)
     uuid = json_response['uuid']
+    auth_token = json_response['auth_token']
 
-    get_rv = client.get(f'/order/{uuid}',
-                        data={'auth_token': json_response['auth_token']})
+    get_rv = client.get(f'/order/{uuid}', data={'auth_token': auth_token})
     get_json_resp = get_rv.get_json()
     assert get_rv.status_code == HTTPStatus.OK
     assert get_json_resp['uuid'] == uuid
@@ -201,8 +216,8 @@ def test_get_order_auth_token_as_form_param(mock_new_invoice, client):
 def test_get_order_auth_token_as_query_param(mock_new_invoice, client):
     json_response = generate_test_order(mock_new_invoice, client)
     uuid = json_response['uuid']
-
     auth_token = json_response['auth_token']
+
     get_rv = client.get(f'/order/{uuid}?auth_token={auth_token}')
     get_json_resp = get_rv.get_json()
     assert get_rv.status_code == HTTPStatus.OK
@@ -234,6 +249,29 @@ def test_get_order_missing_auth_token(mock_new_invoice, client):
     get_rv = client.get(f'/order/{uuid}')
     assert_error(get_rv.get_json(), 'INVALID_AUTH_TOKEN')
     assert get_rv.status_code == HTTPStatus.UNAUTHORIZED
+
+
+@patch('orders.new_invoice')
+def test_get_admin_order(mock_new_invoice, client):
+    # Post order on a channel that forbids users from fetching messages
+    json_response = generate_test_order(mock_new_invoice,
+                                        client,
+                                        channel=constants.AUTH_CHANNEL,
+                                        admin=True)
+    uuid = json_response['uuid']
+    auth_token = json_response['auth_token']
+
+    # Getting through the normal route should fail
+    get_rv = client.get(f'/order/{uuid}', headers={'X-Auth-Token': auth_token})
+    assert get_rv.status_code == HTTPStatus.UNAUTHORIZED
+    assert_error(get_rv.get_json(), 'ORDER_CHANNEL_UNAUTHORIZED_OP')
+
+    # Getting through the admin route should work
+    get_rv = client.get(f'/admin/order/{uuid}',
+                        headers={'X-Auth-Token': auth_token})
+    get_json_resp = get_rv.get_json()
+    assert get_rv.status_code == HTTPStatus.OK
+    assert get_json_resp['uuid'] == uuid
 
 
 def test_adjust_bids(client):
@@ -379,6 +417,29 @@ def test_bump_transmitted_order(mock_new_invoice, client):
 
 
 @patch('orders.new_invoice')
+def test_bump_non_paid_order(mock_new_invoice, client):
+    # Send order over the gossip channel, which is not paid.
+    initial_bid = 1000
+    json_response = generate_test_order(mock_new_invoice,
+                                        client,
+                                        bid=initial_bid,
+                                        channel=constants.GOSSIP_CHANNEL,
+                                        admin=True)
+    uuid = json_response['uuid']
+    auth_token = json_response['auth_token']
+
+    # Since the order is not paid, a bump request should not be authorized
+    bid_increase = 2500
+    bump_rv = client.post(f'/order/{uuid}/bump',
+                          data={
+                              'bid_increase': bid_increase,
+                          },
+                          headers={'X-Auth-Token': auth_token})
+    assert bump_rv.status_code == HTTPStatus.UNAUTHORIZED
+    assert_error(bump_rv.get_json(), 'ORDER_CHANNEL_UNAUTHORIZED_OP')
+
+
+@patch('orders.new_invoice')
 def test_cancel_order(mock_new_invoice, client):
     bid = 1000
     json_response = generate_test_order(mock_new_invoice, client, bid=bid)
@@ -438,6 +499,37 @@ def test_cancel_non_existing_order(client):
                               headers={'X-Auth-Token': 'token'})
     assert delete_rv.status_code == HTTPStatus.NOT_FOUND
     assert_error(delete_rv.get_json(), 'ORDER_NOT_FOUND')
+
+
+@patch('orders.new_invoice')
+def test_cancel_order_unauthorized_channel_op(mock_new_invoice, client):
+    # Place order on a channel that forbids uses from deleting orders.
+    bid = 1000
+    json_response = generate_test_order(mock_new_invoice,
+                                        client,
+                                        bid=bid,
+                                        channel=constants.GOSSIP_CHANNEL,
+                                        admin=True)
+    uuid = json_response['uuid']
+    auth_token = json_response['auth_token']
+
+    # Deleting through the regular user endpoint should fail
+    delete_rv = client.delete(f'/order/{uuid}',
+                              headers={'X-Auth-Token': auth_token})
+    assert delete_rv.status_code == HTTPStatus.UNAUTHORIZED
+    assert_error(delete_rv.get_json(), 'ORDER_CHANNEL_UNAUTHORIZED_OP')
+
+    # Deleting through the admin endpoint should work (i.e., won't return
+    # unauthorized operation)
+    delete_rv = client.delete(f'/admin/order/{uuid}',
+                              headers={'X-Auth-Token': auth_token})
+    # In this case, it hits a cancellation error because the order is already
+    # in transmitting state, given that the gossip channel is auto-paid.
+    assert delete_rv.status_code == HTTPStatus.BAD_REQUEST
+    assert_error(delete_rv.get_json(), 'ORDER_CANCELLATION_ERROR')
+    db_order = Order.query.filter_by(uuid=uuid).first()
+    assert db_order.status == OrderStatus.transmitting.value
+    assert db_order.cancelled_at is None
 
 
 def test_get_sent_message_for_nonexisting_uuid(client):
@@ -508,6 +600,90 @@ def test_get_sent_message_by_seq_number(mock_new_invoice, client, status):
     assert rv.status_code == HTTPStatus.OK
     received_message = rv.data
     check_received_message(uuid, received_message)
+
+
+@patch('orders.new_invoice')
+def test_get_sent_message_by_seq_number_unauthorized_channel_op(
+        mock_new_invoice, client):
+    # Create an order on the auth channel, which forbids GET requests from
+    # users. Make sure those requests fail. And use the /admin/order endpoint
+    # when POSTing the order.
+    uuid = generate_test_order(mock_new_invoice,
+                               client,
+                               order_status=OrderStatus.sent,
+                               tx_seq_num=1,
+                               channel=constants.AUTH_CHANNEL,
+                               admin=True)['uuid']
+
+    # Reading by sequence number via the regular route should fail
+    rv = client.get('/message/1')
+    assert rv.status_code == HTTPStatus.UNAUTHORIZED
+    assert_error(rv.get_json(), 'ORDER_CHANNEL_UNAUTHORIZED_OP')
+
+    # Reading by sequence number via the admin route should fail
+    rv = client.get('/admin/message/1')
+    assert rv.status_code == HTTPStatus.OK
+    received_message = rv.data
+    check_received_message(uuid, received_message)
+
+
+@patch('orders.new_invoice')
+@pytest.mark.parametrize("channel", constants.CHANNELS)
+def test_get_sent_message_admin(mock_new_invoice, client, channel):
+    # the admin should be able to get messages from any channel
+    uuid = generate_test_order(mock_new_invoice,
+                               client,
+                               order_status=OrderStatus.sent,
+                               tx_seq_num=1,
+                               channel=channel,
+                               admin=True)['uuid']
+
+    rv = client.get(f'/admin/message/1?channel={channel}')
+    assert rv.status_code == HTTPStatus.OK
+    received_message = rv.data
+    check_received_message(uuid, received_message)
+
+
+@patch('orders.new_invoice')
+@pytest.mark.parametrize("channel", [
+    constants.GOSSIP_CHANNEL, constants.BTC_SRC_CHANNEL, constants.AUTH_CHANNEL
+])
+def test_post_order_unauthorized_channel(mock_new_invoice, client, channel):
+    # users are not authorized to post to some channels
+    n_bytes = 500
+    bid = bidding.get_min_bid(n_bytes)
+    msg = rnd_string(n_bytes)
+    mock_new_invoice.return_value = (True,
+                                     new_invoice(1, InvoiceStatus.pending,
+                                                 bid))
+    rv = client.post('/order',
+                     data={
+                         'bid': bid,
+                         'message': msg.encode(),
+                         'channel': channel
+                     })
+    assert rv.status_code == HTTPStatus.UNAUTHORIZED
+    assert_error(rv.get_json(), 'ORDER_CHANNEL_UNAUTHORIZED_OP')
+
+
+@patch('orders.new_invoice')
+@pytest.mark.parametrize("channel", constants.CHANNELS)
+def test_post_order_admin(mock_new_invoice, client, channel):
+    # the admin should be allowed to POST messages to any channel
+    n_bytes = 500
+    bid = bidding.get_min_bid(n_bytes)
+    msg = rnd_string(n_bytes)
+    mock_new_invoice.return_value = (True,
+                                     new_invoice(1, InvoiceStatus.pending,
+                                                 bid))
+    rv = client.post('/admin/order',
+                     data={
+                         'bid': bid,
+                         'message': msg.encode(),
+                         'channel': channel
+                     })
+    assert rv.status_code == HTTPStatus.OK
+    check_upload(rv.get_json()['uuid'], msg)
 
 
 @patch('orders.new_invoice')
@@ -798,9 +974,9 @@ def test_try_to_pay_a_non_pending_order(mock_new_invoice, client, status):
     rv = client.post(f'/callback/{invoice.lid}/{charged_auth_token}')
     assert rv.status_code == HTTPStatus.OK
 
-    # refetch the order and the invoice from the database
-    # expecation is that invoice changes its status to paid becasue
-    # it had the pending status, but order keeps its current status
+    # Refetch the order and the invoice from the database.
+    # The expectation is that invoice changes its status to paid because
+    # it had the pending status, but order keeps its current status.
     db_invoice = Invoice.query.filter_by(lid=invoice.lid).first()
     db_order = Order.query.filter_by(uuid=uuid_order).first()
     assert db_invoice.status == InvoiceStatus.paid.value

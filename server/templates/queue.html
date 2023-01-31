@@ -108,7 +108,13 @@
 
   <script type="text/javascript">
     $(function() {
-      $.getJSON( "orders/queued", function( data ) {
+      const urlParams = new URLSearchParams(window.location.search);
+      channel = urlParams.get('channel');
+      if (!channel) {
+        channel = 1;
+      }
+
+      $.getJSON( "orders/queued", {'channel': channel}, function( data ) {
         $.each( data, function( key, val ) {
           var started_transmission_at = moment(moment.utc(val.started_transmission_at).toDate()).local();
           var created_at = moment(moment.utc(val.created_at).toDate()).local().fromNow();
@@ -124,7 +130,7 @@
         });
       });
 
-      $.getJSON( "orders/pending", function( data ) {
+      $.getJSON( "orders/pending", {'channel': channel}, function( data ) {
         $.each( data, function( key, val ) {
           var created_at = moment(moment.utc(val.created_at).toDate()).local().fromNow();
           $("#pending_table").append($('<tr>').append(
@@ -138,7 +144,7 @@
         });
       });
 
-      $.getJSON( "orders/sent", function( data ) {
+      $.getJSON( "orders/sent", {'channel': channel}, function( data ) {
         let env = '{{ env }}';
         $.each( data, function( key, val ) {
           var started_transmission_at = moment(moment.utc(val.started_transmission_at).toDate()).local();

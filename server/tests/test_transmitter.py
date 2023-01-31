@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from unittest.mock import patch
 
 from common import generate_test_order, pay_invoice, confirm_tx
-from constants import InvoiceStatus, OrderStatus
+from constants import InvoiceStatus, OrderStatus, USER_CHANNEL
 import transmitter
 from database import db
 from schemas import order_schema
@@ -150,7 +150,9 @@ def test_startup_sequence(mock_new_invoice, client, mockredis):
         mock_new_invoice,
         client,
         invoice_status=InvoiceStatus.paid,
-        order_status=OrderStatus.transmitting)['uuid']
+        order_status=OrderStatus.transmitting,
+        started_transmission_at=datetime.utcnow() -
+        timedelta(minutes=5))['uuid']
 
     # create two paid orders
     first_sendable_order_uuid = generate_test_order(mock_new_invoice,
@@ -275,7 +277,7 @@ def test_retransmission(mock_new_invoice, client, mockredis):
 
     # Check the next order for retransmission, which should be the highest
     # bidder among the two with pending retransmission (the second order)
-    order, retry_info = get_next_retransmission()
+    order, retry_info = get_next_retransmission(USER_CHANNEL)
     assert order and retry_info
     assert order.id == second_order.id
     assert retry_info.order_id == second_order.id
@@ -360,3 +362,160 @@ def test_retransmission(mock_new_invoice, client, mockredis):
     assert len(retry_order) == 1
     assert retry_order[0].order_id == first_order.id
     assert retry_order[0].retry_count == 3
+
+
+@patch('orders.new_invoice')
+def test_multichannel_transmission(mock_new_invoice, client, mockredis):
+    # Post orders on the gossip and btc-src channels via the admin endpoint
+    gossip_order_uuid1 = generate_test_order(mock_new_invoice,
+                                             client,
+                                             order_id=1,
+                                             bid=1000,
+                                             channel=constants.GOSSIP_CHANNEL,
+                                             admin=True)['uuid']
+    gossip_order_uuid2 = generate_test_order(mock_new_invoice,
+                                             client,
+                                             order_id=2,
+                                             bid=1000,
+                                             channel=constants.GOSSIP_CHANNEL,
+                                             admin=True)['uuid']
+    btc_order_uuid1 = generate_test_order(mock_new_invoice,
+                                          client,
+                                          order_id=3,
+                                          bid=2000,
+                                          channel=constants.BTC_SRC_CHANNEL,
+                                          admin=True)['uuid']
+
+    btc_order_uuid2 = generate_test_order(mock_new_invoice,
+                                          client,
+                                          order_id=4,
+                                          bid=2000,
+                                          channel=constants.BTC_SRC_CHANNEL,
+                                          admin=True)['uuid']
+
+    # Post regular user-channel orders (requiring payment)
+    user_order_uuid1 = generate_test_order(mock_new_invoice,
+                                           client,
+                                           order_id=5,
+                                           bid=1000)['uuid']
+    user_order_uuid2 = generate_test_order(mock_new_invoice,
+                                           client,
+                                           order_id=6,
+                                           bid=2000)['uuid']
+
+    gossip_db_order1 = \
+        Order.query.filter_by(uuid=gossip_order_uuid1).first()
+    btc_db_order1 = \
+        Order.query.filter_by(uuid=btc_order_uuid1).first()
+    user_db_order1 = \
+        Order.query.filter_by(uuid=user_order_uuid1).first()
+
+    # The first admin orders should immediately move to the transmitting state.
+    # The second admin orders are in paid state (auto/forcedly paid) and
+    # waiting. The user orders are both in pending state until payment.
+    assert_order_state(gossip_order_uuid1, 'transmitting')
+    assert_order_state(gossip_order_uuid2, 'paid')
+    assert_order_state(btc_order_uuid1, 'transmitting')
+    assert_order_state(btc_order_uuid2, 'paid')
+    assert_order_state(user_order_uuid1, 'pending')
+    assert_order_state(user_order_uuid2, 'pending')
+
+    # Pay for the first user-channel order and ensure it moves to the
+    # transmitting state while the ongoing transmissions in other channels
+    # remain in progress simultaneously
+    pay_invoice(user_db_order1.invoices[0], client)
+    assert_order_state(user_order_uuid1, 'transmitting')
+    assert_order_state(gossip_order_uuid1, 'transmitting')
+    assert_order_state(btc_order_uuid1, 'transmitting')
+
+    # Calling tx_start should have no impact on the state
+    transmitter.tx_start()
+    transmitter.tx_start(constants.GOSSIP_CHANNEL)
+    transmitter.tx_start(constants.BTC_SRC_CHANNEL)
+    assert_order_state(gossip_order_uuid1, 'transmitting')
+    assert_order_state(gossip_order_uuid2, 'paid')
+    assert_order_state(btc_order_uuid1, 'transmitting')
+    assert_order_state(btc_order_uuid2, 'paid')
+    assert_order_state(user_order_uuid1, 'transmitting')
+    assert_order_state(user_order_uuid2, 'pending')
+
+    # Next, assume the Tx hosts send Tx confirmations
+    confirm_tx(gossip_db_order1.tx_seq_num, all_region_numbers, client)
+    confirm_tx(btc_db_order1.tx_seq_num, all_region_numbers, client)
+    confirm_tx(user_db_order1.tx_seq_num, all_region_numbers, client)
+
+    # Once confirmed, the next admin orders should start automatically. The
+    # next user order does not start because the payment is still missing.
+    assert_order_state(gossip_order_uuid1, 'sent')
+    assert_order_state(gossip_order_uuid2, 'transmitting')
+    assert_order_state(btc_order_uuid1, 'sent')
+    assert_order_state(btc_order_uuid2, 'transmitting')
+    assert_order_state(user_order_uuid1, 'sent')
+    assert_order_state(user_order_uuid2, 'pending')
+
+
+def generate_paid_test_orders():
+    user_channel_order_1 = Order(uuid='uuid_user',
+                                 unpaid_bid=2000,
+                                 message_size=10,
+                                 message_digest='some digest',
+                                 status=OrderStatus.paid.value)
+    gossip_order = Order(uuid='uuid_gossip',
+                         unpaid_bid=2000,
+                         message_size=10,
+                         message_digest='some digest',
+                         status=OrderStatus.paid.value,
+                         channel=constants.GOSSIP_CHANNEL)
+    btc_order = Order(uuid='uuid_btc',
+                      unpaid_bid=2000,
+                      message_size=10,
+                      message_digest='some digest',
+                      status=OrderStatus.paid.value,
+                      channel=constants.BTC_SRC_CHANNEL)
+    auth_order = Order(uuid='uuid_auth',
+                       unpaid_bid=2000,
+                       message_size=10,
+                       message_digest='some digest',
+                       status=OrderStatus.paid.value,
+                       channel=constants.AUTH_CHANNEL)
+    db.session.add(user_channel_order_1)
+    db.session.add(gossip_order)
+    db.session.add(btc_order)
+    db.session.add(auth_order)
+    db.session.commit()
+
+
+def test_tx_start_with_single_channel(client):
+    generate_paid_test_orders()
+    transmitter.tx_start(constants.USER_CHANNEL)
+    assert_order_state('uuid_user', 'transmitting')
+    assert_order_state('uuid_gossip', 'paid')
+    assert_order_state('uuid_btc', 'paid')
+    assert_order_state('uuid_auth', 'paid')
+
+    transmitter.tx_start(constants.GOSSIP_CHANNEL)
+    assert_order_state('uuid_user', 'transmitting')
+    assert_order_state('uuid_gossip', 'transmitting')
+    assert_order_state('uuid_btc', 'paid')
+    assert_order_state('uuid_auth', 'paid')
+
+    transmitter.tx_start(constants.BTC_SRC_CHANNEL)
+    assert_order_state('uuid_user', 'transmitting')
+    assert_order_state('uuid_gossip', 'transmitting')
+    assert_order_state('uuid_btc', 'transmitting')
+    assert_order_state('uuid_auth', 'paid')
+
+    transmitter.tx_start(constants.AUTH_CHANNEL)
+    assert_order_state('uuid_user', 'transmitting')
+    assert_order_state('uuid_gossip', 'transmitting')
+    assert_order_state('uuid_btc', 'transmitting')
+    assert_order_state('uuid_auth', 'transmitting')
+
+
+def test_tx_start_without_channel(client):
+    generate_paid_test_orders()
+    transmitter.tx_start()
+    assert_order_state('uuid_user', 'transmitting')
+    assert_order_state('uuid_gossip', 'transmitting')
+    assert_order_state('uuid_btc', 'transmitting')
+    assert_order_state('uuid_auth', 'transmitting')

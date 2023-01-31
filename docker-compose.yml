@@ -42,7 +42,7 @@ services:
     links:
       - redis
     environment:
-      - SUB_CHANNELS=transmissions
+      - SUB_CHANNELS=transmissions,gossip,btc-src,auth
       - REDIS_URI=redis://redis:6379
   redis:
     image: "redis:latest"

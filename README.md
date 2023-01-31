@@ -5,25 +5,24 @@
 A lightning app (Lapp) based on c-lightning. Presents an API to submit messages for global broadcast over Blockstream Satellite with payments via Bitcoin Lightning.
 
 <!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-generate-toc again -->
-## Contents
 
-- [Setup](#setup)
-- [Run](#run)
-- [Example Applications](#example-applications)
-- [REST API](#rest-api)
+- [Satellite API](#satellite-api)
+  - [Setup](#setup)
+  - [Run](#run)
+  - [Example Applications](#example-applications)
+  - [REST API](#rest-api)
     - [POST /order](#post-order)
     - [POST /order/:uuid/bump](#post-orderuuidbump)
     - [GET /order/:uuid](#get-orderuuid)
-    - [GET /order/:uuid/sent_message](#get-orderuuidsentmessage)
     - [DELETE /order/:uuid](#delete-orderuuid)
     - [GET /orders/pending](#get-orderspending)
     - [GET /orders/queued](#get-ordersqueued)
     - [GET /orders/sent](#get-orderssent)
+    - [GET /message/:seq\_num](#get-messageseq_num)
     - [GET /info](#get-info)
     - [GET /subscribe/:channels](#get-subscribechannels)
-- [Debugging](#debugging)
     - [Queue Page](#queue-page)
-- [Future Work](#future-work)
+  - [Future Work](#future-work)
 
 <!-- markdown-toc end -->
 
@@ -73,7 +72,7 @@ If successful, the response includes the JSON Lightning invoice as returned by L
 {"auth_token":"d784e322dad7ec2671086ce3ad94e05108f2501180d8228577fbec4115774750","uuid":"409348bc-6af0-4999-b715-4136753979df","lightning_invoice":{"id":"N0LOTYc9j0gWtQVjVW7pK","msatoshi":"514200","description":"BSS Test","rhash":"5e5c9d111bc76ce4bf9b211f12ca2d9b66b81ae9839b4e530b16cedbef653a3a","payreq":"lntb5142n1pd78922pp5tewf6ygmcakwf0umyy039j3dndntsxhfswd5u5ctzm8dhmm98gaqdqdgff4xgz5v4ehgxqzjccqp286gfgrcpvzl04sdg2f9sany7ptc5aracnd6kvr2nr0e0x5ajpmfhsjkqzw679ytqgnt6w4490jjrgcvuemz790salqyz9far68cpqtgq3q23el","expires_at":1541642146,"created_at":1541641546,"metadata":{"sha256_message_digest":"0e2bddf3bba1893b5eef660295ef12d6fc72870da539c328cf24e9e6dbb00f00","uuid":"409348bc-6af0-4999-b715-4136753979df"},"status":"unpaid"}}
 ```
 
-Error codes that can be returned by this endpoint include: `BID_TOO_SMALL` (102), `MESSAGE_FILE_TOO_SMALL` (117), `MESSAGE_FILE_TOO_LARGE` (118), `MESSAGE_MISSING` (126).
+The error codes that can be returned by this endpoint include `BID_TOO_SMALL` (102), `MESSAGE_FILE_TOO_SMALL` (117), `MESSAGE_FILE_TOO_LARGE` (118), `MESSAGE_MISSING` (126), and `ORDER_CHANNEL_UNAUTHORIZED_OP` (130).
 
 ### POST /order/:uuid/bump ###
 
@@ -87,7 +86,7 @@ Response object is in the same format as for `POST /order`.
 
 As shown below for DELETE, the `auth_token` may alternatively be provided using the `X-Auth-Token` HTTP header.
 
-Error codes that can be returned by this endpoint include: `INVALID_AUTH_TOKEN` (109), `ORDER_NOT_FOUND` (104).
+The error codes that can be returned by this endpoint include `INVALID_AUTH_TOKEN` (109), `ORDER_NOT_FOUND` (104), and `ORDER_CHANNEL_UNAUTHORIZED_OP` (130).
 
 ### GET /order/:uuid ###
 
@@ -97,7 +96,7 @@ Retrieve an order by UUID. Must provide the corresponding auth token to prove th
 curl -v -H "X-Auth-Token: 5248b13a722cd9b2e17ed3a2da8f7ac6bd9a8fe7130357615e074596e3d5872f" $SATELLITE_API/order/409348bc-6af0-4999-b715-4136753979df
 ```
 
-Error codes that can be returned by this endpoint include: `INVALID_AUTH_TOKEN` (109), `ORDER_NOT_FOUND` (104).
+The error codes that can be returned by this endpoint include `INVALID_AUTH_TOKEN` (109), `ORDER_NOT_FOUND` (104), and `ORDER_CHANNEL_UNAUTHORIZED_OP` (130).
 
 ### DELETE /order/:uuid ###
 
@@ -160,6 +159,16 @@ curl $SATELLITE_API/orders/sent?before=2019-01-16T18:13:46-08:00
 The response is a JSON array of records (one for each queued message). The revealed fields for each record include: `uuid`, `bid`, `bid_per_byte`, `message_size`, `message_digest`, `status`, `created_at`, `started_transmission_at`, and `ended_transmission_at`.
 
 
+### GET /message/:seq_num
+
+Retrieve a transmitted message by its unique sequence number. For example:
+
+```bash
+curl -v $SATELLITE_API/message/3
+```
+
+The error codes that can be returned by this endpoint include `SEQUENCE_NUMBER_NOT_FOUND` (114) and `ORDER_CHANNEL_UNAUTHORIZED_OP` (130).
+
 ### GET /info
 
 Returns information about the c-lightning node where satellite API payments are terminated. The response is a JSON object consisting of the node ID, port, IP addresses, and other information useful for opening payment channels. For example:
@@ -170,15 +179,11 @@ Returns information about the c-lightning node where satellite API payments are 
 
 ### GET /subscribe/:channels
 
-Subscribe to one or more [server-sent events](https://en.wikipedia.org/wiki/Server-sent_events) channels. The `channels` parameter is a comma-separated list of event channels. Currently, only one channel is available: `transmissions`, to which an event is pushed each time a message transmission begins and ends. Event data includes a JSON representation of the order, including its current status.
+Subscribe to one or more [server-sent events](https://en.wikipedia.org/wiki/Server-sent_events) channels. The `channels` parameter is a comma-separated list of event channels. Currently, the following channels are available: `transmissions`, `auth`, `gossip`, and `btc-src`. An event is broadcast on a channel each time a message transmission begins and ends on that channel. The event data consists of the order's JSON representation, including its current status.
 
 ```bash
 curl $SATELLITE_API/subscribe/:channels
 ```
-
-Error codes that can be returned by this endpoint include: `CHANNELS_EQUALITY` (124).
-
-## Debugging ##
 
 ### Queue Page ###
 

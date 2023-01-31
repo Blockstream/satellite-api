@@ -20,22 +20,30 @@ def rnd_string(n_bytes):
         for _ in range(n_bytes))
 
 
-def upload_test_file(client, msg, bid, regions=[]):
+def upload_test_file(client, msg, bid, regions=[], channel=None, admin=False):
     post_data = {'bid': bid, 'file': (io.BytesIO(msg.encode()), 'testfile')}
 
     if len(regions) > 0:
         post_data['regions'] = [regions]
+    if channel:
+        post_data['channel'] = channel
+    endpoint = '/admin/order' if admin else '/order'
 
-    return client.post('/order',
+    return client.post(endpoint,
                        data=post_data,
                        content_type='multipart/form-data')
 
 
-def place_order(client, n_bytes, regions=[], bid=None):
+def place_order(client,
+                n_bytes,
+                regions=[],
+                bid=None,
+                channel=None,
+                admin=False):
     if bid is None:
         bid = bidding.get_min_bid(n_bytes)
     msg = rnd_string(n_bytes)
-    return upload_test_file(client, msg, bid, regions)
+    return upload_test_file(client, msg, bid, regions, channel, admin)
 
 
 def check_upload(order_uuid, expected_data):
@@ -119,7 +127,9 @@ def generate_test_order(mock_new_invoice,
                         order_id=1,
                         regions=[],
                         confirmed_tx=[],
-                        started_transmission_at=None):
+                        started_transmission_at=None,
+                        channel=None,
+                        admin=False):
     """Generate a valid order and add it to the database
 
     This function generates an order with a related invoice with
@@ -144,6 +154,8 @@ def generate_test_order(mock_new_invoice,
         regions: list of regions over which this order should be
             transmitted. The default value is an empty list implying
             the order should be sent over all regions.
+        channel: Logical channel on which to transmit the order.
+        admin: Whether to post the order via the /admin/order route.
 
     Returns:
         The json response of the create order endpoint.
@@ -157,7 +169,7 @@ def generate_test_order(mock_new_invoice,
     mock_new_invoice.return_value = (True,
                                      new_invoice(order_id, invoice_status,
                                                  bid))
-    post_rv = place_order(client, n_bytes, regions, bid)
+    post_rv = place_order(client, n_bytes, regions, bid, channel, admin)
     assert post_rv.status_code == HTTPStatus.OK
     uuid = post_rv.get_json()['uuid']
     # Set order's sequence number and status

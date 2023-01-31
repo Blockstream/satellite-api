@@ -44,11 +44,13 @@ def must_be_region_number_list(data):
 
 
 class OrderUploadReqSchema(Schema):
-    bid = fields.Int(required=True, validate=validate.Range(min=0))
+    bid = fields.Int(missing=0, validate=validate.Range(min=0))
     message = fields.Str(validate=validate.Length(
         max=constants.MAX_TEXT_MSG_LEN))
     regions = fields.String(required=False,
                             validate=must_be_region_number_list)
+    channel = fields.Int(missing=constants.USER_CHANNEL,
+                         validate=validate.OneOf(constants.CHANNELS))
 
 
 class OrderBumpSchema(Schema):
@@ -66,6 +68,8 @@ class OrdersSchema(Schema):
     limit = fields.Int(missing=lambda: constants.PAGE_SIZE,
                        validate=validate.Range(min=1,
                                                max=constants.MAX_PAGE_SIZE))
+    channel = fields.Int(missing=constants.USER_CHANNEL,
+                         validate=validate.OneOf(constants.CHANNELS))
 
 
 class TxConfirmationSchema(Schema):

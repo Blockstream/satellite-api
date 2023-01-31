@@ -40,7 +40,7 @@ write_files:
             location / {
                 rewrite ^ https://$http_host$request_uri? permanent;
             }
-            
+
             location ~ ^/auth/order($|/.*)$ {
                 # Restrict auth/order server endpoints to local subnets only
                 allow 127.0.0.1;
@@ -117,6 +117,13 @@ write_files:
                   return 403;
                 }
                 proxy_pass http://${mainnet_ip}:9292/order/rx/;
+            }
+
+            location /admin/ {
+                if ($ssl_client_verify != SUCCESS) {
+                  return 403;
+                }
+                proxy_pass http://${mainnet_ip}:9292/admin/;
             }
 
             # Proxy to mainnet Satellite API

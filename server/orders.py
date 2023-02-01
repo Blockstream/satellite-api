@@ -16,7 +16,7 @@ from error import get_http_error_resp
 from invoice_helpers import new_invoice, pay_invoice
 from models import Order, RxConfirmation, TxConfirmation
 from regions import region_number_list_to_code
-from schemas import order_schema, orders_schema,\
+from schemas import admin_order_schema, order_schema, orders_schema,\
     order_upload_req_schema, order_bump_schema,\
     rx_confirmation_schema, tx_confirmation_schema
 import bidding
@@ -50,8 +50,8 @@ class OrderResource(Resource):
                 constants.CHANNEL_INFO[order.channel].user_permissions:
             return get_http_error_resp('ORDER_CHANNEL_UNAUTHORIZED_OP',
                                        order.channel)
-
-        return order_schema.dump(order)
+        schema = admin_order_schema if admin_mode else order_schema
+        return schema.dump(order)
 
     def delete(self, uuid):
         admin_mode = request.path.startswith("/admin/")

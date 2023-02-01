@@ -21,6 +21,12 @@ class Order(db.Model):
     region_code = db.Column(db.Integer)
     channel = db.Column(db.Integer, default=1)
     invoices = db.relationship('Invoice', backref='order', lazy=True)
+    tx_confirmations = db.relationship('TxConfirmation',
+                                       backref='order',
+                                       lazy=True)
+    rx_confirmations = db.relationship('RxConfirmation',
+                                       backref='order',
+                                       lazy=True)
 
 
 class Invoice(db.Model):

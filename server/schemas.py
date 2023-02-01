@@ -3,7 +3,8 @@ from datetime import datetime, timedelta
 
 from marshmallow import fields, Schema, validate, ValidationError
 
-from regions import all_region_numbers, region_code_to_number_list
+from regions import all_region_numbers, region_code_to_number_list, \
+    region_id_to_number
 import constants
 
 
@@ -23,6 +24,16 @@ class OrderSchema(Schema):
     unpaid_bid = fields.Integer()
     regions = fields.Function(
         lambda obj: region_code_to_number_list(obj.region_code))
+
+
+class AdminOrderSchema(OrderSchema):
+    channel = fields.Integer()
+    tx_confirmations = fields.Function(
+        lambda obj:
+        [region_id_to_number(x.region_id) for x in obj.tx_confirmations])
+    rx_confirmations = fields.Function(
+        lambda obj:
+        [region_id_to_number(x.region_id) for x in obj.rx_confirmations])
 
 
 def must_be_region_number(input):
@@ -81,6 +92,7 @@ class RxConfirmationSchema(Schema):
 
 
 order_schema = OrderSchema()
+admin_order_schema = AdminOrderSchema()
 order_upload_req_schema = OrderUploadReqSchema()
 order_bump_schema = OrderBumpSchema()
 orders_schema = OrdersSchema()

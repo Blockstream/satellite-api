@@ -61,10 +61,6 @@ RESPONSE_TIMEOUT = 2
 
 FORCE_PAYMENT = os.getenv('FORCE_PAYMENT', False)
 
-DEFAULT_TX_RATE = 1000  # bytes per second
-TRANSMIT_RATE = int(os.getenv('TRANSMIT_RATE',
-                              DEFAULT_TX_RATE))  # bytes per second
-
 LOGGING_FORMAT = '%(asctime)s %(levelname)s %(name)s : %(message)s'
 REDIS_URI = os.getenv('REDIS_URI', 'redis://127.0.0.1:6379')
 
@@ -76,7 +72,7 @@ BTC_SRC_CHANNEL = 5
 
 class ChannelInfo:
 
-    def __init__(self, name, user_permissions):
+    def __init__(self, name, user_permissions, tx_rate):
         """Construct channel information
 
         Args:
@@ -85,6 +81,8 @@ class ChannelInfo:
                 channel messages are only sent over satellite. A list with
                 'get' permission only means the users can only fetch messages
                 but not post them, and only the admin can post messages.
+            tx_rate (float): Transmit rate in bytes/sec. Used to handle the
+                retransmission timeout intervals independently on each channel.
         """
         assert isinstance(user_permissions, list)
         assert len(user_permissions) == 0 or \
@@ -96,13 +94,15 @@ class ChannelInfo:
         # require payment. The other channels can only have messages posted by
         # the admin, and these messages are not paid.
         self.requires_payment = 'post' in user_permissions
+        self.tx_rate = tx_rate
 
 
 CHANNEL_INFO = {
-    USER_CHANNEL: ChannelInfo('transmissions', ['get', 'post', 'delete']),
-    AUTH_CHANNEL: ChannelInfo('auth', []),
-    GOSSIP_CHANNEL: ChannelInfo('gossip', ['get']),
-    BTC_SRC_CHANNEL: ChannelInfo('btc-src', ['get']),
+    USER_CHANNEL: ChannelInfo('transmissions', ['get', 'post', 'delete'],
+                              1000),
+    AUTH_CHANNEL: ChannelInfo('auth', [], 125),
+    GOSSIP_CHANNEL: ChannelInfo('gossip', ['get'], 500),
+    BTC_SRC_CHANNEL: ChannelInfo('btc-src', ['get'], 500),
 }
 
 CHANNELS = list(CHANNEL_INFO.keys())

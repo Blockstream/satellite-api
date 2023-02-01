@@ -355,10 +355,8 @@ def refresh_retransmission_table():
 
     orders_to_retry = []
     for order in orders:
-        tx_delay = int(
-            ceil(
-                calc_ota_msg_len(order.message_size) /
-                constants.TRANSMIT_RATE))
+        tx_rate = constants.CHANNEL_INFO[order.channel].tx_rate
+        tx_delay = int(ceil(calc_ota_msg_len(order.message_size) / tx_rate))
         timeout_interval = tx_delay + constants.TX_CONFIRM_TIMEOUT_SECS
 
         last_tx_confirmation = TxConfirmation.query.filter_by(

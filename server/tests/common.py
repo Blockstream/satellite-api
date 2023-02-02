@@ -126,7 +126,6 @@ def generate_test_order(mock_new_invoice,
                         bid=None,
                         order_id=1,
                         regions=[],
-                        confirmed_tx=[],
                         started_transmission_at=None,
                         channel=None,
                         admin=False):
@@ -181,10 +180,6 @@ def generate_test_order(mock_new_invoice,
 
     if tx_seq_num:
         db_order.tx_seq_num = tx_seq_num
-
-    if len(confirmed_tx) > 0:
-        assert tx_seq_num is not None
-        confirm_tx(tx_seq_num, confirmed_tx, client)
 
     if started_transmission_at:
         db_order.started_transmission_at = started_transmission_at

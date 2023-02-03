@@ -55,18 +55,6 @@ variable "internal_ip_testnet" {
   type = string
 }
 
-variable "internal_ip_gossip" {
-  type    = string
-}
-
-variable "internal_ip_auth" {
-  type    = string
-}
-
-variable "internal_ip_btc_src" {
-  type    = string
-}
-
 variable "health_check" {
   type = string
 }

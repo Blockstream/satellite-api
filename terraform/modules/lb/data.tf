@@ -10,9 +10,6 @@ data "template_file" "satapi-lb" {
   vars = {
     mainnet_ip           = var.internal_ip_mainnet
     testnet_ip           = var.internal_ip_testnet
-    gossip_ip            = var.internal_ip_gossip
-    auth_ip              = var.internal_ip_auth
-    btc_src_ip           = var.internal_ip_btc_src
     certbot_docker       = var.certbot_docker
     node_exporter_docker = var.node_exporter_docker
     host                 = var.host

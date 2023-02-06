@@ -120,6 +120,7 @@ write_files:
             }
 
             location /admin/ {
+                client_max_body_size 16M;
                 if ($ssl_client_verify != SUCCESS) {
                   return 403;
                 }

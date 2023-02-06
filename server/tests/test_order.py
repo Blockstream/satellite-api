@@ -75,7 +75,21 @@ def test_uploaded_file_too_small(client):
 
 
 def test_uploaded_file_too_large(client):
-    n_bytes = constants.MAX_MESSAGE_SIZE + 1
+    n_bytes = constants.DEFAULT_MAX_MESSAGE_SIZE + 1
+    rv = place_order(client, n_bytes)
+    assert_error(rv.get_json(), 'MESSAGE_FILE_TOO_LARGE')
+    assert rv.status_code == HTTPStatus.REQUEST_ENTITY_TOO_LARGE
+
+    # The limit is different per channel. For instance, the default size would
+    # work on the btc-src channel.
+    rv = place_order(client,
+                     n_bytes,
+                     channel=constants.BTC_SRC_CHANNEL,
+                     admin=True)
+    assert rv.status_code == HTTPStatus.OK
+
+    n_bytes = constants.CHANNEL_INFO[
+        constants.BTC_SRC_CHANNEL].max_msg_size + 1
     rv = place_order(client, n_bytes)
     assert_error(rv.get_json(), 'MESSAGE_FILE_TOO_LARGE')
     assert rv.status_code == HTTPStatus.REQUEST_ENTITY_TOO_LARGE
@@ -83,7 +97,7 @@ def test_uploaded_file_too_large(client):
 
 @patch('orders.new_invoice')
 def test_uploaded_file_max_size(mock_new_invoice, client):
-    n_bytes = constants.MAX_MESSAGE_SIZE
+    n_bytes = constants.DEFAULT_MAX_MESSAGE_SIZE
     mock_new_invoice.return_value = (True,
                                      new_invoice(1, InvoiceStatus.pending,
                                                  bidding.get_min_bid(n_bytes)))

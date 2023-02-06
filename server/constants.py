@@ -48,7 +48,7 @@ LN_INVOICE_EXPIRY = 60 * 60  # one hour
 LN_INVOICE_DESCRIPTION = 'Blockstream Satellite Transmission' if os.getenv(
     'ENV') == 'production' else 'BSS Test'
 
-MAX_MESSAGE_SIZE = 2**20
+DEFAULT_MAX_MESSAGE_SIZE = 2**20
 MAX_TEXT_MSG_LEN = 1024  # valid for message (not file)
 
 MIN_BID = int(os.getenv('MIN_BID', 1000))
@@ -72,7 +72,7 @@ BTC_SRC_CHANNEL = 5
 
 class ChannelInfo:
 
-    def __init__(self, name, user_permissions, tx_rate):
+    def __init__(self, name, user_permissions, tx_rate, max_msg_size):
         """Construct channel information
 
         Args:
@@ -83,6 +83,7 @@ class ChannelInfo:
                 but not post them, and only the admin can post messages.
             tx_rate (float): Transmit rate in bytes/sec. Used to handle the
                 retransmission timeout intervals independently on each channel.
+            max_msg_size (int): Maximum message size on this channel.
         """
         assert isinstance(user_permissions, list)
         assert len(user_permissions) == 0 or \
@@ -95,14 +96,21 @@ class ChannelInfo:
         # the admin, and these messages are not paid.
         self.requires_payment = 'post' in user_permissions
         self.tx_rate = tx_rate
+        self.max_msg_size = max_msg_size
 
 
 CHANNEL_INFO = {
-    USER_CHANNEL: ChannelInfo('transmissions', ['get', 'post', 'delete'],
-                              1000),
-    AUTH_CHANNEL: ChannelInfo('auth', [], 125),
-    GOSSIP_CHANNEL: ChannelInfo('gossip', ['get'], 500),
-    BTC_SRC_CHANNEL: ChannelInfo('btc-src', ['get'], 500),
+    USER_CHANNEL:
+    ChannelInfo('transmissions', ['get', 'post', 'delete'], 1000,
+                DEFAULT_MAX_MESSAGE_SIZE),
+    AUTH_CHANNEL:
+    ChannelInfo('auth', [], 125, DEFAULT_MAX_MESSAGE_SIZE),
+    GOSSIP_CHANNEL:
+    ChannelInfo('gossip', ['get'], 500,
+                1800000),  # tx over 1h at 500 bytes/sec
+    BTC_SRC_CHANNEL:
+    ChannelInfo('btc-src', ['get'], 500,
+                16200000),  # tx over 9h at 500 bytes/sec
 }
 
 CHANNELS = list(CHANNEL_INFO.keys())

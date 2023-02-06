@@ -26,7 +26,7 @@ errors = {
                                "Minimum message size is {} byte",
                                HTTPStatus.BAD_REQUEST),
     'MESSAGE_FILE_TOO_LARGE': (118, "Message too large",
-                               "Message size exceeds max size of {} MB",
+                               "Message size exceeds max size of {:.2f} MB",
                                HTTPStatus.REQUEST_ENTITY_TOO_LARGE),
     'ORDER_CANCELLATION_ERROR': (120, "Cannot cancel order",
                                  "Order already {}", HTTPStatus.BAD_REQUEST),

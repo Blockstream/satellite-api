@@ -124,10 +124,11 @@ class OrderUploadResource(Resource):
             return get_http_error_resp('MESSAGE_FILE_TOO_SMALL',
                                        constants.MIN_MESSAGE_SIZE)
 
-        if (msg_size > constants.MAX_MESSAGE_SIZE):
+        if (msg_size > constants.CHANNEL_INFO[channel].max_msg_size):
             os.remove(filepath)
-            return get_http_error_resp('MESSAGE_FILE_TOO_LARGE',
-                                       constants.MAX_MESSAGE_SIZE / (2**20))
+            return get_http_error_resp(
+                'MESSAGE_FILE_TOO_LARGE',
+                constants.CHANNEL_INFO[channel].max_msg_size / (2**20))
 
         bid = int(args.get('bid')) if requires_payment else 0
         if (requires_payment and not bidding.validate_bid(msg_size, bid)):

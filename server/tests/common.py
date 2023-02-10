@@ -84,7 +84,7 @@ def new_invoice(order_id, invoice_status, amount):
     assert (isinstance(invoice_status, constants.InvoiceStatus))
     lid = rnd_string(50)
     return Invoice(
-        id=random.randint(1, 10000),
+        id=random.randint(1, 1000000),
         lid=lid,
         invoice=json.dumps({
             "id":
@@ -139,7 +139,7 @@ def generate_test_order(mock_new_invoice,
                            orders.new_invoice function
         client: Flask client used to send api calls
         order_status: status to be set for the generated order,
-                      default input valie is None but in the
+                      default input value is None but in the
                       database it will be set to pending
         invoice_status: status to be set for the generated invoice,
                         default is pending

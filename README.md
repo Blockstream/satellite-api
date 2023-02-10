@@ -15,9 +15,7 @@ A lightning app (Lapp) based on c-lightning. Presents an API to submit messages 
     - [POST /order/:uuid/bump](#post-orderuuidbump)
     - [GET /order/:uuid](#get-orderuuid)
     - [DELETE /order/:uuid](#delete-orderuuid)
-    - [GET /orders/pending](#get-orderspending)
-    - [GET /orders/queued](#get-ordersqueued)
-    - [GET /orders/sent](#get-orderssent)
+    - [GET /orders/:state](#get-ordersstate)
     - [GET /message/:seq\_num](#get-messageseq_num)
     - [GET /info](#get-info)
     - [GET /subscribe/:channels](#get-subscribechannels)
@@ -114,15 +112,28 @@ curl -v -X DELETE -H "X-Auth-Token: 5248b13a722cd9b2e17ed3a2da8f7ac6bd9a8fe71303
 
 Error codes that can be returned by this endpoint include: `INVALID_AUTH_TOKEN` (109), `ORDER_NOT_FOUND` (104), `ORDER_CANCELLATION_ERROR` (120).
 
-### GET /orders/pending  ###
+### GET /orders/:state  ###
 
-Retrieve a list of 20 orders awaiting payment sorted by creation time.
+Retrieve a list of up to 20 orders in a given state. The following states are supported:
 
+| State            | Description                                                                                                     |
+| ---------------- | --------------------------------------------------------------------------------------------------------------- |
+| `pending`        | Orders waiting for payment. Sorted by creation time.                                                            |
+| `paid`           | Orders already paid and waiting for transmission. Sorted by creation time.                                      |
+| `transmitting`   | Orders being transmitted over satellite. Sorted by the transmission start time.                                 |
+| `confirming`     | Orders whose transmissions are being confirmed (almost finished). Sorted by the transmission start time.        |
+| `queued`         | Combination of orders in `paid`, `transmitting`, and `confirming` state. Sorted by the order creation time      |
+| `sent`           | Orders already transmitted. Sorted by the transmission end time.                                                |
+| `rx-pending`     | Orders already transmitted but with pending Rx confirmations. Sorted by the transmission end time.              |
+| `retransmitting` | Orders scheduled for retransmission in one or more regions. Sorted by the start time of the first transmission. |
+| `received`       | Orders completely transmitted and received in all targeted regions. Sorted by the transmission end time.        |
+
+For example:
 ```bash
 curl $SATELLITE_API/orders/pending
 ```
 
-For pagination or time filtering, optionally specify the `before` and/or `after` parameters (in ISO 8601 format) so that only orders created in that time range are returned.
+For pagination or time filtering, optionally specify the `before` and/or `after` parameters (in ISO 8601 format) so that only orders in that time range are returned.
 
 ```bash
 curl $SATELLITE_API/orders/pending\?after=2023-02-10T00:00:00\&before=2023-02-10T23:59:59
@@ -135,45 +146,6 @@ curl $SATELLITE_API/orders/pending\?after_delta=120\&before_delta=60
 ```
 
 The response is a JSON array of records (one for each queued message). The revealed fields for each record include: `uuid`, `bid`, `bid_per_byte`, `message_size`, `message_digest`, `status`, `created_at`, `started_transmission_at`, and `ended_transmission_at`.
-
-
-### GET /orders/queued  ###
-
-Retrieve a list of paid but unsent orders in descending order of bid-per-byte. Both pending orders and the order currently being transmitted are returned. Optionally, accepts a parameter specifying how many queued orders to return.
-
-```bash
-curl $SATELLITE_API/orders/queued
-```
-
-```bash
-curl $SATELLITE_API/orders/queued?limit=18
-```
-
-The response is a JSON array of records (one for each queued message). The revealed fields for each record include: `uuid`, `bid`, `bid_per_byte`, `message_size`, `message_digest`, `status`, `created_at`, `started_transmission_at`, and `ended_transmission_at`.
-
-
-### GET /orders/sent  ###
-
-Retrieves a list of up to 20 sent orders in reverse chronological order.
-
-```bash
-curl $SATELLITE_API/orders/sent
-```
-
-For pagination or time filtering, optionally specify the `before` and/or `after` parameters (in ISO 8601 format) so that only orders sent in that time range are returned.
-
-```bash
-curl $SATELLITE_API/orders/sent\?after=2023-02-10T00:00:00\&before=2023-02-10T23:59:59
-```
-
-Alternatively, specify the time range based on deltas in seconds relative to the current time. For instance, the following example returns the orders sent within a window that starts two minutes ago and ends one minute ago.
-
-```bash
-curl $SATELLITE_API/orders/sent\?after_delta=120\&before_delta=60
-```
-
-The response is a JSON array of records (one for each queued message). The revealed fields for each record include: `uuid`, `bid`, `bid_per_byte`, `message_size`, `message_digest`, `status`, `created_at`, `started_transmission_at`, and `ended_transmission_at`.
-
 
 ### GET /message/:seq_num
 

@@ -10,11 +10,11 @@ from flask_restful import Resource
 from marshmallow import ValidationError
 from sqlalchemy import and_, or_
 
-from constants import CHANNEL_INFO, OrderStatus
+from constants import CHANNEL_INFO, ORDER_FETCH_STATES, OrderStatus
 from database import db
 from error import get_http_error_resp
 from invoice_helpers import new_invoice, pay_invoice
-from models import Order, RxConfirmation, TxConfirmation
+from models import Order, RxConfirmation, TxConfirmation, TxRetry
 from regions import region_number_list_to_code
 from schemas import admin_order_schema, order_schema, orders_schema,\
     order_upload_req_schema, order_bump_schema,\
@@ -220,7 +220,7 @@ class OrdersResource(Resource):
 
     def get(self, state):
         admin_mode = request.path.startswith("/admin/")
-        if state not in ['pending', 'queued', 'sent']:
+        if state not in ORDER_FETCH_STATES:
             return {
                 state: [
                     f'The requested queue of {state} orders\
@@ -261,34 +261,58 @@ class OrdersResource(Resource):
             return get_http_error_resp('ORDER_CHANNEL_UNAUTHORIZED_OP',
                                        channel)
 
-        if state == 'pending':
-            orders = Order.query.filter(and_(
-                Order.channel == channel,
-                Order.status == OrderStatus[state].value)).\
-                filter(and_(db.func.datetime(Order.created_at) < before,
-                            db.func.datetime(Order.created_at) > after)).\
-                order_by(Order.created_at.desc()).\
-                limit(limit)
+        if state in ['pending', 'paid']:
+            condition = Order.status == OrderStatus[state].value
+            time_field = Order.created_at
+            sort_field = Order.created_at
+        elif state in ['transmitting', 'confirming']:
+            condition = Order.status == OrderStatus[state].value
+            time_field = Order.started_transmission_at
+            sort_field = Order.started_transmission_at
         elif state == 'queued':
-            orders = Order.query.filter(and_(Order.channel == channel, or_(
-                Order.status ==
-                OrderStatus.transmitting.value,
-                Order.status ==
-                OrderStatus.confirming.value,
-                Order.status ==
-                OrderStatus.paid.value))).\
-                filter(and_(db.func.datetime(Order.created_at) < before,
-                            db.func.datetime(Order.created_at) > after)).\
-                order_by(Order.bid_per_byte.desc()).limit(limit)
+            condition = or_(Order.status == OrderStatus.transmitting.value,
+                            Order.status == OrderStatus.confirming.value,
+                            Order.status == OrderStatus.paid.value)
+            time_field = Order.created_at
+            sort_field = Order.bid_per_byte
         elif state == 'sent':
-            orders = Order.query.filter(and_(Order.channel == channel, or_(
-                Order.status ==
-                OrderStatus.sent.value,
-                Order.status ==
-                OrderStatus.received.value))).\
-                filter(and_(db.func.datetime(Order.created_at) < before,
-                            db.func.datetime(Order.created_at) > after)).\
-                order_by(Order.ended_transmission_at.desc()).\
+            # For backwards compatibility, the "sent" queue returns orders in
+            # both sent and received state. Namely, any order with an
+            # "ended_transmission_at" timestamp. A new special queue named
+            # "rx-pending" can be used to fetch orders in "sent" state only
+            # (not yet in "received" state).
+            condition = Order.ended_transmission_at.isnot(None)
+            time_field = Order.ended_transmission_at
+            sort_field = Order.ended_transmission_at
+        elif state == 'received':
+            condition = Order.status == OrderStatus[state].value
+            time_field = Order.ended_transmission_at
+            sort_field = Order.ended_transmission_at
+        elif state == 'rx-pending':
+            condition = Order.status == OrderStatus.sent.value
+            time_field = Order.ended_transmission_at
+            sort_field = Order.ended_transmission_at
+
+        if state == 'retransmitting':
+            # Only the retransmitting state needs a different query (joining
+            # the Order and TxRetry tables). The other states use the same
+            # query with different conditions, time and sort fields.
+            condition = Order.id == TxRetry.order_id
+            time_field = Order.started_transmission_at
+            sort_field = Order.started_transmission_at
+            res = db.session.query(Order, TxRetry).filter(
+                and_(Order.channel == channel, condition)).\
+                filter(and_(db.func.datetime(time_field) < before,
+                            db.func.datetime(time_field) > after)).\
+                order_by(sort_field.desc()).\
+                limit(limit)
+            orders = [x[0] for x in res]
+        else:
+            orders = Order.query.filter(and_(Order.channel == channel,
+                                             condition)).\
+                filter(and_(db.func.datetime(time_field) < before,
+                            db.func.datetime(time_field) > after)).\
+                order_by(sort_field.desc()).\
                 limit(limit)
 
         return [order_schema.dump(order) for order in orders]

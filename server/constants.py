@@ -17,6 +17,12 @@ class OrderStatus(Enum):
     confirming = 7  # confirming Tx (between transmitting and sent)
 
 
+ORDER_FETCH_STATES = [
+    'pending', 'paid', 'transmitting', 'confirming', 'queued', 'sent',
+    'rx-pending', 'received', 'retransmitting'
+]
+
+
 class InvoiceStatus(Enum):
     pending = 0
     paid = 1

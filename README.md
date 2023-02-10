@@ -116,17 +116,17 @@ Error codes that can be returned by this endpoint include: `INVALID_AUTH_TOKEN` 
 
 Retrieve a list of up to 20 orders in a given state. The following states are supported:
 
-| State            | Description                                                                                                     |
-| ---------------- | --------------------------------------------------------------------------------------------------------------- |
-| `pending`        | Orders waiting for payment. Sorted by creation time.                                                            |
-| `paid`           | Orders already paid and waiting for transmission. Sorted by creation time.                                      |
-| `transmitting`   | Orders being transmitted over satellite. Sorted by the transmission start time.                                 |
-| `confirming`     | Orders whose transmissions are being confirmed (almost finished). Sorted by the transmission start time.        |
-| `queued`         | Combination of orders in `paid`, `transmitting`, and `confirming` state. Sorted by the order creation time      |
-| `sent`           | Orders already transmitted. Sorted by the transmission end time.                                                |
-| `rx-pending`     | Orders already transmitted but with pending Rx confirmations. Sorted by the transmission end time.              |
-| `retransmitting` | Orders scheduled for retransmission in one or more regions. Sorted by the start time of the first transmission. |
-| `received`       | Orders completely transmitted and received in all targeted regions. Sorted by the transmission end time.        |
+| State            | Description                                                                                                |
+| ---------------- | ---------------------------------------------------------------------------------------------------------- |
+| `pending`        | Orders waiting for payment. Sorted by creation time.                                                       |
+| `paid`           | Orders already paid and waiting for transmission. Sorted by creation time.                                 |
+| `transmitting`   | Orders being transmitted over satellite. Sorted by the transmission start time.                            |
+| `confirming`     | Orders whose transmissions are being confirmed (almost finished). Sorted by the transmission start time.   |
+| `queued`         | Combination of orders in `paid`, `transmitting`, and `confirming` state. Sorted by the order creation time |
+| `sent`           | Orders already transmitted. Sorted by the transmission end time.                                           |
+| `rx-pending`     | Orders already transmitted but with pending Rx confirmations. Sorted by the transmission end time.         |
+| `retransmitting` | Orders under retransmission in one or more regions. Sorted by the time of the last retransmission attempt. |
+| `received`       | Orders completely transmitted and received in all targeted regions. Sorted by the transmission end time.   |
 
 For example:
 ```bash

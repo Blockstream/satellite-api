@@ -63,7 +63,9 @@ def place_orders(client,
         if target_state in ['sent', 'received', 'rx-pending']:
             db_order.ended_transmission_at = tstamp
         if target_state == 'retransmitting':
-            new_retry_tx = TxRetry(order_id=db_order.id, region_code=0)
+            new_retry_tx = TxRetry(order_id=db_order.id,
+                                   region_code=0,
+                                   last_attempt=tstamp)
             db.session.add(new_retry_tx)
         db.session.commit()
         order_list.append(db_order)

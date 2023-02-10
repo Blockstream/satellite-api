@@ -298,8 +298,8 @@ class OrdersResource(Resource):
             # the Order and TxRetry tables). The other states use the same
             # query with different conditions, time and sort fields.
             condition = Order.id == TxRetry.order_id
-            time_field = Order.started_transmission_at
-            sort_field = Order.started_transmission_at
+            time_field = TxRetry.last_attempt
+            sort_field = TxRetry.last_attempt
             res = db.session.query(Order, TxRetry).filter(
                 and_(Order.channel == channel, condition)).\
                 filter(and_(db.func.datetime(time_field) < before,

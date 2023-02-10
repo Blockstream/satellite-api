@@ -74,13 +74,25 @@ def test_uploaded_file_too_small(client):
     assert rv.status_code == HTTPStatus.BAD_REQUEST
 
 
+# Patch the max sizes on each channel to run the test faster
+@patch(
+    'constants.CHANNEL_INFO', {
+        constants.USER_CHANNEL:
+        constants.ChannelInfo('transmissions', ['get', 'post', 'delete'], 1000,
+                              1000),
+        constants.BTC_SRC_CHANNEL:
+        constants.ChannelInfo('btc-src', ['get'], 500, 1500),
+    })
 def test_uploaded_file_too_large(client):
-    n_bytes = constants.DEFAULT_MAX_MESSAGE_SIZE + 1
+
+    max_size_user_chan = 1000
+    max_size_btc_src_chan = 1500
+    n_bytes = max_size_user_chan + 1
     rv = place_order(client, n_bytes)
     assert_error(rv.get_json(), 'MESSAGE_FILE_TOO_LARGE')
     assert rv.status_code == HTTPStatus.REQUEST_ENTITY_TOO_LARGE
 
-    # The limit is different per channel. For instance, the default size would
+    # The limit is different per channel. For instance, the above size should
     # work on the btc-src channel.
     rv = place_order(client,
                      n_bytes,
@@ -88,8 +100,7 @@ def test_uploaded_file_too_large(client):
                      admin=True)
     assert rv.status_code == HTTPStatus.OK
 
-    n_bytes = constants.CHANNEL_INFO[
-        constants.BTC_SRC_CHANNEL].max_msg_size + 1
+    n_bytes = max_size_btc_src_chan + 1
     rv = place_order(client, n_bytes)
     assert_error(rv.get_json(), 'MESSAGE_FILE_TOO_LARGE')
     assert rv.status_code == HTTPStatus.REQUEST_ENTITY_TOO_LARGE

@@ -1,7 +1,7 @@
 import json
-from datetime import datetime, timedelta
 
-from marshmallow import fields, Schema, validate, ValidationError
+from marshmallow import fields, Schema, validate, ValidationError, \
+    validates_schema
 
 from regions import all_region_numbers, region_code_to_number_list, \
     region_id_to_number
@@ -71,16 +71,24 @@ class OrderBumpSchema(Schema):
 
 
 class OrdersSchema(Schema):
-    # When 'before' parameter is missing, set it to a time in near
-    # future (e.g. 5 seconds from now) to make sure none of the
-    # existing orders get filtered
-    before = fields.DateTime(
-        missing=lambda: datetime.utcnow() + timedelta(seconds=5), format='iso')
+    before = fields.DateTime(format='iso')
+    before_delta = fields.TimeDelta('seconds')
+    after = fields.DateTime(format='iso')
+    after_delta = fields.TimeDelta('seconds')
     limit = fields.Int(missing=lambda: constants.PAGE_SIZE,
                        validate=validate.Range(min=1,
                                                max=constants.MAX_PAGE_SIZE))
     channel = fields.Int(missing=constants.USER_CHANNEL,
                          validate=validate.OneOf(constants.CHANNELS))
+
+    @validates_schema
+    def validate_numbers(self, data, **kwargs):
+        if ('before' in data and 'before_delta' in data):
+            raise ValidationError(
+                "Only one of before or before_delta is allowed")
+        if ('after' in data and 'after_delta' in data):
+            raise ValidationError(
+                "Only one of after or after_delta is allowed")
 
 
 class TxConfirmationSchema(Schema):

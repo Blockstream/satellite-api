@@ -1,9 +1,11 @@
-import pytest
+import uuid
 import random
-from datetime import timedelta
+from datetime import datetime, timedelta
 from http import HTTPStatus
 from time import sleep
 from unittest.mock import patch
+
+import pytest
 
 from constants import InvoiceStatus, OrderStatus
 from database import db
@@ -27,20 +29,48 @@ def client(mockredis):
 
 
 @pytest.mark.parametrize("state", ['pending', 'queued', 'sent'])
-def test_get_orders_invalid_before_parameter(client, state):
-    get_rv = client.get(f'/orders/{state}?before=')
+@pytest.mark.parametrize("param", ['before', 'after'])
+def test_get_orders_invalid_before_after_parameter(client, param, state):
+    get_rv = client.get(f'/orders/{state}?{param}=')
     assert get_rv.status_code == HTTPStatus.BAD_REQUEST
-    get_rv = client.get(f'/orders/{state}?before=sometext')
+    get_rv = client.get(f'/orders/{state}?{param}=sometext')
     assert get_rv.status_code == HTTPStatus.BAD_REQUEST
-    get_rv = client.get(f'/orders/{state}?before=2021-13-11')
+    get_rv = client.get(f'/orders/{state}?{param}=2021-13-11')
     assert get_rv.status_code == HTTPStatus.BAD_REQUEST
-    get_rv = client.get(f'/orders/{state}?before=2021.05.10')
+    get_rv = client.get(f'/orders/{state}?{param}=2021.05.10')
     assert get_rv.status_code == HTTPStatus.BAD_REQUEST
-    get_rv = client.get(f'/orders/{state}?before=2021-05-1a0T19:51:45')
+    get_rv = client.get(f'/orders/{state}?{param}=2021-05-1a0T19:51:45')
     assert get_rv.status_code == HTTPStatus.BAD_REQUEST
-    get_rv = client.get(f'/orders/{state}?before=2021.05.10T19:51:45')
+    get_rv = client.get(f'/orders/{state}?{param}=2021.05.10T19:51:45')
     assert get_rv.status_code == HTTPStatus.BAD_REQUEST
-    get_rv = client.get(f'/orders/{state}?before=2021-05-10T25:51:45')
+    get_rv = client.get(f'/orders/{state}?{param}=2021-05-10T25:51:45')
+    assert get_rv.status_code == HTTPStatus.BAD_REQUEST
+    get_rv = client.get(f'/orders/{state}?{param}=2021-05-10T22:51:45')
+    assert get_rv.status_code == HTTPStatus.OK
+    # before and before_delta together should not be allowed. Same for after
+    # and after_delta.
+    get_rv = client.get(
+        f'/orders/{state}?{param}=2021-05-10T22:51:45&{param}_delta=5')
+    assert get_rv.status_code == HTTPStatus.BAD_REQUEST
+
+
+@pytest.mark.parametrize("state", ['pending', 'queued', 'sent'])
+@pytest.mark.parametrize("param", ['before', 'after'])
+def test_get_orders_invalid_before_after_delta_parameter(client, param, state):
+    get_rv = client.get(f'/orders/{state}?{param}_delta=')
+    assert get_rv.status_code == HTTPStatus.BAD_REQUEST
+    get_rv = client.get(f'/orders/{state}?{param}_delta=sometext')
+    assert get_rv.status_code == HTTPStatus.BAD_REQUEST
+    get_rv = client.get(f'/orders/{state}?{param}_delta=2021-05-10T25:51:45')
+    assert get_rv.status_code == HTTPStatus.BAD_REQUEST
+    get_rv = client.get(f'/orders/{state}?{param}_delta=5.2')  # float
+    assert get_rv.status_code == HTTPStatus.BAD_REQUEST
+    get_rv = client.get(f'/orders/{state}?{param}_delta=5')
+    assert get_rv.status_code == HTTPStatus.OK
+    # before and before_delta together should not be allowed. Same for after
+    # and after_delta.
+    get_rv = client.get(
+        f'/orders/{state}?{param}_delta=5&{param}=2021-05-10T22:51:45')
     assert get_rv.status_code == HTTPStatus.BAD_REQUEST
 
 
@@ -65,45 +95,64 @@ def test_try_to_get_invalid_order_state(client):
 
 
 @patch('constants.PAGE_SIZE', 3)  # change PAGE_SIZE to run this test faster
-@patch('orders.new_invoice')
 @pytest.mark.parametrize("state", ['pending', 'queued', 'sent'])
-def test_get_orders_before_parameter(mock_new_invoice, client, state):
-    # Create PAGE_SIZE orders with the target state
+def test_get_orders_date_filtering_parameters(client, state):
+    # Create PAGE_SIZE orders with a fixed interval between them
     n_orders = constants.PAGE_SIZE
-    n_bytes = 500
-    mock_new_invoice.return_value = (True,
-                                     new_invoice(1, InvoiceStatus.pending,
-                                                 bidding.get_min_bid(n_bytes)))
+    order_interval_sec = 60  # interval between consecutive orders
+    order_creation_timestamps = []
     order_uuids = []
+    order_status = OrderStatus.transmitting.value if \
+        state == 'queued' else OrderStatus[state].value
     for i in range(n_orders):
-        post_rv = place_order(client, n_bytes)
-        assert post_rv.status_code == HTTPStatus.OK
-        uuid = post_rv.get_json()['uuid']
-        order_uuids.append(uuid)
-        db_order = Order.query.filter_by(uuid=uuid).first()
-        db_order.status = OrderStatus.transmitting.value if \
-            state == 'queued' else OrderStatus[state].value
-        db.session.commit()
-        sleep(1.0)  # to have different created_at
+        order = Order(uuid=str(uuid.uuid4()),
+                      unpaid_bid=1000,
+                      message_size=10,
+                      message_digest=str(uuid.uuid4()),
+                      status=order_status,
+                      created_at=datetime.utcnow() -
+                      timedelta(seconds=i * order_interval_sec))
+        db.session.add(order)
+        order_creation_timestamps.append(order.created_at)
+        order_uuids.append(order.uuid)
+    db.session.commit()
 
-    # Fetch orders excluding the last
-    last_db_order = Order.query.filter_by(uuid=order_uuids[-1]).first()
-    last_created_at = last_db_order.created_at.isoformat()
-
-    get_rv = client.get(f'/orders/{state}?before={last_created_at}')
+    # Fetch orders excluding the most recent
+    before = order_creation_timestamps[0].isoformat()
+    get_rv = client.get(f'/orders/{state}?before={before}')
     assert get_rv.status_code == HTTPStatus.OK
-    fetched_uuids = [order['uuid'] for order in get_rv.get_json()]
+    assert [x['uuid'] for x in get_rv.get_json()] == order_uuids[1:]
 
-    # The last order should be filtered out by the before filter
-    expected_uuids = order_uuids[:-1]
-    # Expected sorting: /orders/pending endpoint sorts by the created_at
-    # timestamp, /orders/queued by the bid_per_byte ratio, and /orders/sent by
-    # the transmission_at timestamp.
-    if (state == 'pending'):
-        expected_uuids.reverse()
+    # Fetch orders excluding the oldest
+    after = order_creation_timestamps[-1].isoformat()
+    get_rv = client.get(f'/orders/{state}?after={after}')
+    assert get_rv.status_code == HTTPStatus.OK
+    assert [x['uuid'] for x in get_rv.get_json()] == order_uuids[:-1]
 
-    assert len(fetched_uuids) == n_orders - 1
-    assert fetched_uuids == expected_uuids
+    # Fetch the two orders in the middle
+    get_rv = client.get(f'/orders/{state}?after={after}&before={before}')
+    assert get_rv.status_code == HTTPStatus.OK
+    assert [x['uuid'] for x in get_rv.get_json()] == order_uuids[1:-1]
+
+    # Try the same using the delta parameters
+
+    # Fetch orders excluding the most recent
+    before_delta = order_interval_sec - 10
+    get_rv = client.get(f'/orders/{state}?before_delta={before_delta}')
+    assert get_rv.status_code == HTTPStatus.OK
+    assert [x['uuid'] for x in get_rv.get_json()] == order_uuids[1:]
+
+    # Fetch orders excluding the oldest
+    after_delta = (n_orders - 1) * order_interval_sec - 10
+    get_rv = client.get(f'/orders/{state}?after_delta={after_delta}')
+    assert get_rv.status_code == HTTPStatus.OK
+    assert [x['uuid'] for x in get_rv.get_json()] == order_uuids[:-1]
+
+    # Fetch the two orders in the middle
+    get_rv = client.get(f'/orders/{state}?after_delta={after_delta}&' +
+                        f'before_delta={before_delta}')
+    assert get_rv.status_code == HTTPStatus.OK
+    assert [x['uuid'] for x in get_rv.get_json()] == order_uuids[1:-1]
 
 
 @patch('orders.new_invoice')

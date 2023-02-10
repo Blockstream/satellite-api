@@ -116,14 +116,22 @@ Error codes that can be returned by this endpoint include: `INVALID_AUTH_TOKEN` 
 
 ### GET /orders/pending  ###
 
-Retrieve a list of 20 orders awaiting payment ordered by creation time. For pagination, optionally specify a `before` parameter (in ISO 8601 format) that specifies that the 20 orders immediately prior to the given time be returned.
+Retrieve a list of 20 orders awaiting payment sorted by creation time.
 
 ```bash
 curl $SATELLITE_API/orders/pending
 ```
 
+For pagination or time filtering, optionally specify the `before` and/or `after` parameters (in ISO 8601 format) so that only orders created in that time range are returned.
+
 ```bash
-curl $SATELLITE_API/orders/pending?before=2019-01-16T18:13:46-08:00
+curl $SATELLITE_API/orders/pending\?after=2023-02-10T00:00:00\&before=2023-02-10T23:59:59
+```
+
+Alternatively, specify the time range based on deltas in seconds relative to the current time. For instance, the following example returns the pending orders created within a window that starts two minutes ago and ends one minute ago.
+
+```bash
+curl $SATELLITE_API/orders/pending\?after_delta=120\&before_delta=60
 ```
 
 The response is a JSON array of records (one for each queued message). The revealed fields for each record include: `uuid`, `bid`, `bid_per_byte`, `message_size`, `message_digest`, `status`, `created_at`, `started_transmission_at`, and `ended_transmission_at`.
@@ -146,14 +154,22 @@ The response is a JSON array of records (one for each queued message). The revea
 
 ### GET /orders/sent  ###
 
-Retrieves a list of up to 20 sent orders in reverse chronological order. For pagination, optionally specify a `before` parameter (in ISO 8601 format) that specifies that the 20 orders immediately before the given time be returned.
+Retrieves a list of up to 20 sent orders in reverse chronological order.
 
 ```bash
 curl $SATELLITE_API/orders/sent
 ```
 
+For pagination or time filtering, optionally specify the `before` and/or `after` parameters (in ISO 8601 format) so that only orders sent in that time range are returned.
+
 ```bash
-curl $SATELLITE_API/orders/sent?before=2019-01-16T18:13:46-08:00
+curl $SATELLITE_API/orders/sent\?after=2023-02-10T00:00:00\&before=2023-02-10T23:59:59
+```
+
+Alternatively, specify the time range based on deltas in seconds relative to the current time. For instance, the following example returns the orders sent within a window that starts two minutes ago and ends one minute ago.
+
+```bash
+curl $SATELLITE_API/orders/sent\?after_delta=120\&before_delta=60
 ```
 
 The response is a JSON array of records (one for each queued message). The revealed fields for each record include: `uuid`, `bid`, `bid_per_byte`, `message_size`, `message_digest`, `status`, `created_at`, `started_transmission_at`, and `ended_transmission_at`.

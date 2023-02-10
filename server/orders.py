@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from http import HTTPStatus
 from hashlib import sha256
 import json
@@ -233,7 +233,26 @@ class OrdersResource(Resource):
         except ValidationError as error:
             return error.messages, HTTPStatus.BAD_REQUEST
 
-        before = db.func.datetime(args['before'])
+        if 'before' not in args and 'before_delta' not in args:
+            # Set the "before" date to the near future (e.g., 5 secs ahead) to
+            # effectively disable the filtering.
+            _before = datetime.utcnow() + timedelta(seconds=5)
+        elif 'before' in args:
+            _before = args['before']
+        else:
+            _before = datetime.utcnow() - args['before_delta']
+
+        if 'after' not in args and 'after_delta' not in args:
+            # Set the "after" date to the lowest possible datetime to
+            # effectively disable the filtering.
+            _after = datetime(1, 1, 1)
+        elif 'after' in args:
+            _after = args['after']
+        else:
+            _after = datetime.utcnow() - args['after_delta']
+
+        before = db.func.datetime(_before)
+        after = db.func.datetime(_after)
         limit = args['limit']
         channel = args['channel']
 
@@ -246,7 +265,8 @@ class OrdersResource(Resource):
             orders = Order.query.filter(and_(
                 Order.channel == channel,
                 Order.status == OrderStatus[state].value)).\
-                filter(db.func.datetime(Order.created_at) < before).\
+                filter(and_(db.func.datetime(Order.created_at) < before,
+                            db.func.datetime(Order.created_at) > after)).\
                 order_by(Order.created_at.desc()).\
                 limit(limit)
         elif state == 'queued':
@@ -257,7 +277,8 @@ class OrdersResource(Resource):
                 OrderStatus.confirming.value,
                 Order.status ==
                 OrderStatus.paid.value))).\
-                filter(db.func.datetime(Order.created_at) < before).\
+                filter(and_(db.func.datetime(Order.created_at) < before,
+                            db.func.datetime(Order.created_at) > after)).\
                 order_by(Order.bid_per_byte.desc()).limit(limit)
         elif state == 'sent':
             orders = Order.query.filter(and_(Order.channel == channel, or_(
@@ -265,7 +286,8 @@ class OrdersResource(Resource):
                 OrderStatus.sent.value,
                 Order.status ==
                 OrderStatus.received.value))).\
-                filter(db.func.datetime(Order.created_at) < before).\
+                filter(and_(db.func.datetime(Order.created_at) < before,
+                            db.func.datetime(Order.created_at) > after)).\
                 order_by(Order.ended_transmission_at.desc()).\
                 limit(limit)
 

@@ -101,7 +101,9 @@ module "lb" {
   node_exporter_docker = var.node_exporter_docker
   env                  = local.env
   internal_ip_mainnet  = module.blc-mainnet.internal_ip
-  internal_ip_testnet  = local.env == "staging" ? "" : data.terraform_remote_state.blc-testnet.outputs.blc_internal_ip_testnet
+  internal_ip_testnet  = local.env == "staging" ? "127.0.0.1" : data.terraform_remote_state.blc-testnet.outputs.blc_internal_ip_testnet
+  # NOTE: There is no testnet server on staging. The IP is set to 127.0.0.1
+  # above so that the nginx conf does not see an empty IP and fail.
   target_pool          = length(google_compute_target_pool.lb-pool) > 0 ? google_compute_target_pool.lb-pool[0].self_link : ""
   health_check         = length(google_compute_http_health_check.lb-health) > 0 ? google_compute_http_health_check.lb-health[0].self_link : ""
 

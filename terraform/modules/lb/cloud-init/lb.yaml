@@ -85,7 +85,35 @@ write_files:
                 rewrite ^ /index.html break;
             }
 
-            # Client cert authenticated endpoints
+            # ---------- Proxy to mainnet Satellite API server ----------
+
+            location / {
+                add_header 'Access-Control-Allow-Origin' '*' always;
+                add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS, DELETE' always;
+                add_header 'Access-Control-Allow-Headers' 'X-Auth-Token,DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range' always;
+                add_header 'X-XSS-Protection' '1; mode=block' always;
+
+                if ($request_uri ~* "^/$")
+                {
+                  return 301 https://$host;
+                }
+
+                if ($request_method = 'OPTIONS')
+                {
+                  return 200;
+                }
+
+                proxy_pass http://${mainnet_ip}:9292/;
+            }
+
+            location /admin/ {
+                client_max_body_size 16M;
+                if ($ssl_client_verify != SUCCESS) {
+                  return 403;
+                }
+                proxy_pass http://${mainnet_ip}:9292/admin/;
+            }
+
             location /order/tx/ {
                 # Allow base stations only
                 allow ${station1};
@@ -110,35 +138,18 @@ write_files:
                 proxy_pass http://${mainnet_ip}:9292/order/rx/;
             }
 
-            location /admin/ {
-                client_max_body_size 16M;
-                if ($ssl_client_verify != SUCCESS) {
-                  return 403;
-                }
-                proxy_pass http://${mainnet_ip}:9292/admin/;
+            # ---------- Proxy to mainnet SSE container ----------
+
+            location /subscribe/ {
+                chunked_transfer_encoding on;
+                proxy_buffering off;
+                proxy_request_buffering off;
+                proxy_cache off;
+                proxy_http_version 1.1;
+
+                proxy_pass http://${mainnet_ip}:4500/stream?channels=;
             }
 
-            # Proxy to mainnet Satellite API
-            location / {
-                add_header 'Access-Control-Allow-Origin' '*' always;
-                add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS, DELETE' always;
-                add_header 'Access-Control-Allow-Headers' 'X-Auth-Token,DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range' always;
-                add_header 'X-XSS-Protection' '1; mode=block' always;
-
-                if ($request_uri ~* "^/$")
-                {
-                  return 301 https://$host;
-                }
-
-                if ($request_method = 'OPTIONS')
-                {
-                  return 200;
-                }
-
-                proxy_pass http://${mainnet_ip}:9292/;
-            }
-
-            # Proxy to mainnet SSE container
             location /admin/subscribe/ {
                 if ($ssl_client_verify != SUCCESS) {
                   return 403;
@@ -152,17 +163,8 @@ write_files:
                 proxy_pass http://${mainnet_ip}:4500/admin/stream?channels=;
             }
 
-            location /subscribe/ {
-                chunked_transfer_encoding on;
-                proxy_buffering off;
-                proxy_request_buffering off;
-                proxy_cache off;
-                proxy_http_version 1.1;
+            # ---------- Proxy to testnet Satellite API server ----------
 
-                proxy_pass http://${mainnet_ip}:4500/stream?channels=;
-            }
-
-            # Proxy to testnet Satellite API
             location /testnet/ {
                 add_header 'Access-Control-Allow-Origin' '*' always;
                 add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS, DELETE' always;
@@ -182,7 +184,8 @@ write_files:
                 proxy_pass http://${testnet_ip}:9292/;
             }
 
-            # Proxy to testnet SSE container
+            # ---------- Proxy to testnet SSE container ----------
+
             location /testnet/subscribe/ {
                 chunked_transfer_encoding on;
                 proxy_buffering off;

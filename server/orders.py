@@ -315,7 +315,8 @@ class OrdersResource(Resource):
                 order_by(sort_field.desc()).\
                 limit(limit)
 
-        return [order_schema.dump(order) for order in orders]
+        schema = admin_order_schema if admin_mode else order_schema
+        return [schema.dump(order) for order in orders]
 
 
 class GetMessageResource(Resource):

@@ -27,6 +27,10 @@ class Order(db.Model):
     rx_confirmations = db.relationship('RxConfirmation',
                                        backref='order',
                                        lazy=True)
+    retransmission = db.relationship("TxRetry",
+                                     uselist=False,
+                                     backref="order",
+                                     lazy=True)
 
 
 class Invoice(db.Model):

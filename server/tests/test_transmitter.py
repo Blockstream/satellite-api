@@ -211,8 +211,11 @@ def test_startup_sequence(mock_new_invoice, client, mockredis):
 def test_retransmission(mock_new_invoice, client, mockredis):
     # 1) Order that requires retransmission due to not being confirmed
     #    by all Tx regions within the time limit.
-    first_order_uuid = generate_test_order(mock_new_invoice, client,
-                                           bid=1000)['uuid']
+    first_order_gen_resp = generate_test_order(mock_new_invoice,
+                                               client,
+                                               bid=1000)
+    first_order_uuid = first_order_gen_resp['uuid']
+    first_order_auth_token = first_order_gen_resp['auth_token']
 
     # Pay invoice -> State changes from pending to transmitting.
     first_order = Order.query.filter_by(uuid=first_order_uuid).first()
@@ -236,8 +239,11 @@ def test_retransmission(mock_new_invoice, client, mockredis):
 
     # 2) Order that needs retransmission due to not receiving any confirmation
     #    at all within the timeout limit.
-    second_order_uuid = generate_test_order(mock_new_invoice, client,
-                                            bid=2000)['uuid']
+    second_order_gen_resp = generate_test_order(mock_new_invoice,
+                                                client,
+                                                bid=2000)
+    second_order_uuid = second_order_gen_resp['uuid']
+    second_order_auth_token = second_order_gen_resp['auth_token']
 
     # Pay invoice -> State changes from pending to transmitting.
     second_order = Order.query.filter_by(uuid=second_order_uuid).first()
@@ -253,10 +259,12 @@ def test_retransmission(mock_new_invoice, client, mockredis):
 
     # 3) Order that transmits normally with no need for retransmission.
     third_order_regions = [Regions.g18.value, Regions.e113.value]
-    third_order_uuid = generate_test_order(mock_new_invoice,
-                                           client,
-                                           bid=2000,
-                                           regions=third_order_regions)['uuid']
+    third_order_gen_resp = generate_test_order(mock_new_invoice,
+                                               client,
+                                               bid=2000,
+                                               regions=third_order_regions)
+    third_order_uuid = third_order_gen_resp['uuid']
+    third_order_auth_token = third_order_gen_resp['auth_token']
 
     # Pay invoice. In this case, the state changes from pending to paid (not to
     # transmitting) since the Tx line is still blocked by the second order.
@@ -264,15 +272,23 @@ def test_retransmission(mock_new_invoice, client, mockredis):
     pay_invoice(third_order.invoices[0], client)
     assert_order_state(third_order_uuid, 'paid')
 
+    # So far, none of the orders should have retransmission info
+    assert first_order.retransmission is None
+    assert second_order.retransmission is None
+    assert third_order.retransmission is None
+
     # Detect and update all the required retransmissions
     refresh_retransmission_table()
 
     # The first and second orders should require retransmission. Also, the
     # second order should have changed from transmitting to confirming.
-    retry_order = TxRetry.query.all()
-    assert len(retry_order) == 2
-    assert retry_order[0].order_id == first_order.id
-    assert retry_order[1].order_id == second_order.id
+    retry_orders = TxRetry.query.all()
+    assert len(retry_orders) == 2
+    assert retry_orders[0].order_id == first_order.id
+    assert retry_orders[1].order_id == second_order.id
+    assert first_order.retransmission is not None
+    assert second_order.retransmission is not None
+    assert third_order.retransmission is None
     assert_order_state(second_order_uuid, 'confirming')
 
     # Check the next order for retransmission, which should be the highest
@@ -290,6 +306,11 @@ def test_retransmission(mock_new_invoice, client, mockredis):
     assert_order_state(third_order_uuid, 'transmitting')
     assert_redis_call(mockredis, third_order)
 
+    # So, at this point, the retransmissions do not have a timestamp yet.
+    assert first_order.retransmission.last_attempt is None
+    assert second_order.retransmission.last_attempt is None
+    assert third_order.retransmission is None
+
     # Confirm Tx for all regions. That should end the transmission and kick off
     # the next, namely the retransmission of the second order. When the
     # retransmission starts, the second order goes back from confirming to
@@ -299,6 +320,11 @@ def test_retransmission(mock_new_invoice, client, mockredis):
     assert_order_state(second_order_uuid, 'transmitting')
     assert_redis_call(mockredis, second_order)
 
+    # The retransmission that was triggered should have a timestamp
+    assert first_order.retransmission.last_attempt is None
+    assert second_order.retransmission.last_attempt is not None
+    assert third_order.retransmission is None
+
     # Now, pretend the second order received all the required confirmations
     # such that its transmission ended and the next started.
     confirm_tx(second_order.tx_seq_num, all_region_numbers, client)
@@ -307,11 +333,14 @@ def test_retransmission(mock_new_invoice, client, mockredis):
     # tx_end (called under the hood by the Tx confirmation handler) should
     # remove the second order from the tx_retries table and start transmitting
     # the next order, namely the retransmission of the first.
-    retry_order = TxRetry.query.all()
-    assert len(retry_order) == 1
-    assert retry_order[0].order_id == first_order.id
-    assert retry_order[0].retry_count == 1
-    assert retry_order[0].last_attempt is not None
+    retry_orders = TxRetry.query.all()
+    assert len(retry_orders) == 1
+    assert retry_orders[0].order_id == first_order.id
+    assert retry_orders[0].retry_count == 1
+    assert retry_orders[0].last_attempt is not None
+    assert first_order.retransmission.last_attempt is not None
+    assert second_order.retransmission is None  # info removed
+    assert third_order.retransmission is None
     assert_order_state(first_order_uuid, 'transmitting')
 
     # Besides, since the first order was confirmed by the first region before,
@@ -324,8 +353,8 @@ def test_retransmission(mock_new_invoice, client, mockredis):
     # Next, suppose no confirmations are sent for the first retransmission.
     # That should lead to a second retransmission. Manipulate the
     # retransmission info to make that happen.
-    t_last_attempt = retry_order[0].last_attempt
-    retry_order[0].last_attempt = t_last_attempt - \
+    t_last_attempt = first_order.retransmission.last_attempt
+    first_order.retransmission.last_attempt = t_last_attempt - \
         timedelta(seconds=constants.TX_CONFIRM_TIMEOUT_SECS + 1)
     db.session.commit()
 
@@ -342,6 +371,9 @@ def test_retransmission(mock_new_invoice, client, mockredis):
     assert len(retry_order) == 1
     assert retry_order[0].order_id == first_order.id
     assert retry_order[0].retry_count == 2
+    assert first_order.retransmission.retry_count == 2
+    assert second_order.retransmission is None
+    assert third_order.retransmission is None
 
     # Lastly, suppose this second retransmission receives Tx confirmations, but
     # not all of the required ones. Hence, it should be retransmitted one more
@@ -362,6 +394,38 @@ def test_retransmission(mock_new_invoice, client, mockredis):
     assert len(retry_order) == 1
     assert retry_order[0].order_id == first_order.id
     assert retry_order[0].retry_count == 3
+    assert first_order.retransmission.retry_count == 3
+    assert second_order.retransmission is None
+    assert third_order.retransmission is None
+
+    # The retransmission information should be returned by the
+    # /admin/order/:uuid endpoint or the /admin/orders/:state endpoint
+    get_rv1_admin = client.get(
+        f'/admin/order/{first_order_uuid}',
+        headers={'X-Auth-Token': first_order_auth_token})
+    get_rv2_admin = client.get(
+        f'/admin/order/{second_order_uuid}',
+        headers={'X-Auth-Token': second_order_auth_token})
+    get_rv3_admin = client.get(
+        f'/admin/order/{third_order_uuid}',
+        headers={'X-Auth-Token': third_order_auth_token})
+    get_rv4_admin = client.get('/admin/orders/retransmitting')
+    assert get_rv1_admin.get_json()['retransmission']['last_attempt'] == \
+        first_order.retransmission.last_attempt.isoformat()
+    assert get_rv2_admin.get_json()['retransmission'] is None
+    assert get_rv3_admin.get_json()['retransmission'] is None
+    assert len(get_rv4_admin.get_json()) == 1
+    assert get_rv4_admin.get_json()[0]['uuid'] == first_order_uuid
+    assert get_rv4_admin.get_json()[0]['retransmission']['retry_count'] == 3
+
+    # But it should be omitted in the corresponding non-admin endpoints
+    get_rv1_non_admin = client.get(
+        f'/order/{first_order_uuid}',
+        headers={'X-Auth-Token': first_order_auth_token})
+    get_rv4_non_admin = client.get('/orders/retransmitting')
+    assert len(get_rv4_non_admin.get_json()) == 1
+    assert 'retransmission' not in get_rv1_non_admin.get_json()
+    assert 'retransmission' not in get_rv4_non_admin.get_json()[0]
 
 
 @patch('orders.new_invoice')

@@ -26,6 +26,12 @@ class OrderSchema(Schema):
         lambda obj: region_code_to_number_list(obj.region_code))
 
 
+class TxRetrySchema(Schema):
+    last_attempt = fields.DateTime()
+    retry_count = fields.Integer()
+    region_code = fields.Integer()
+
+
 class AdminOrderSchema(OrderSchema):
     channel = fields.Integer()
     tx_confirmations = fields.Function(
@@ -34,6 +40,7 @@ class AdminOrderSchema(OrderSchema):
     rx_confirmations = fields.Function(
         lambda obj:
         [region_id_to_number(x.region_id) for x in obj.rx_confirmations])
+    retransmission = fields.Nested(TxRetrySchema)
 
 
 def must_be_region_number(input):

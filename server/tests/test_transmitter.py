@@ -352,7 +352,7 @@ def test_retransmission(mock_new_invoice, client, mockredis):
     confirm_tx(first_order.tx_seq_num, all_region_numbers[1:3], client)
     assert_order_state(first_order_uuid, 'confirming')
 
-    for order in TxConfirmation.query.filter_by(order_id=first_order.id).all():
+    for order in first_order.tx_confirmations:
         order.created_at = datetime.utcnow() - timedelta(
             seconds=constants.TX_CONFIRM_TIMEOUT_SECS + 1)
     db.session.commit()

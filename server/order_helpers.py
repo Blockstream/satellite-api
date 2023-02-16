@@ -141,10 +141,8 @@ def sent_criteria_met(order):
     order_regions = set(region_code_to_id_list(order.region_code))
 
     # Set of regions with Tx confirmations
-    order_tx_confirmations = TxConfirmation.query.filter_by(
-        order_id=order.id).all()
     confirmed_tx_regions = set(item.region_id
-                               for item in order_tx_confirmations)
+                               for item in order.tx_confirmations)
 
     # All regions in order_regions should confirm Tx
     if not (confirmed_tx_regions.issuperset(order_regions)):
@@ -185,10 +183,8 @@ def received_criteria_met(order):
     expected_rx_confirmations = list(monitored_rx_regions & order_regions)
 
     # Set of regions with Rx confirmations
-    order_rx_confirmations = RxConfirmation.query.filter_by(
-        order_id=order.id).all()
     confirmed_rx_regions = set(item.region_id
-                               for item in order_rx_confirmations)
+                               for item in order.rx_confirmations)
 
     if not (confirmed_rx_regions.issuperset(expected_rx_confirmations)):
         return False
@@ -274,10 +270,8 @@ def get_missing_tx_confirmations(order):
     if order.status != constants.OrderStatus.transmitting.value and\
        order.status != constants.OrderStatus.confirming.value:
         return []
-    order_tx_confirmations = TxConfirmation.query.filter_by(
-        order_id=order.id).all()
     confirmed_tx_regions = set(item.region_id
-                               for item in order_tx_confirmations)
+                               for item in order.tx_confirmations)
     order_regions = set(region_code_to_id_list(order.region_code))
     return list(order_regions - confirmed_tx_regions)
 

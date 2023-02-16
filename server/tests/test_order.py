@@ -8,7 +8,7 @@ from uuid import uuid4
 from constants import InvoiceStatus, OrderStatus
 from database import db
 from error import assert_error, get_http_error_resp
-from models import Invoice, Order, RxConfirmation, TxConfirmation
+from models import Invoice, Order, RxConfirmation
 from order_helpers import adjust_bids, _paid_invoices_total,\
     _unpaid_invoices_total
 from regions import Regions, SATELLITE_REGIONS
@@ -737,11 +737,8 @@ def test_confirm_tx(mock_new_invoice, client):
     # Confirm tx for a single region
     post_rv = client.post('/order/tx/1',
                           data={'regions': [[Regions.t11n_afr.value]]})
-    assert post_rv.status_code == HTTPStatus.OK
-    db_tx_confirmation = TxConfirmation.query.filter_by(
-        order_id=db_order.id).all()
-    assert len(db_tx_confirmation) == 1
-    assert db_tx_confirmation[0].region_id == SATELLITE_REGIONS[
+    assert len(db_order.tx_confirmations) == 1
+    assert db_order.tx_confirmations[0].region_id == SATELLITE_REGIONS[
         Regions.t11n_afr]['id']
 
     # Confirm tx for multiple regions
@@ -752,15 +749,13 @@ def test_confirm_tx(mock_new_invoice, client):
             [[Regions.g18.value, Regions.e113.value, Regions.t11n_afr.value]]
         })
     assert post_rv.status_code == HTTPStatus.OK
-    db_tx_confirmation = TxConfirmation.query.filter_by(
-        order_id=db_order.id).order_by(TxConfirmation.region_id).all()
-    assert len(db_tx_confirmation) == 3
-    assert db_tx_confirmation[0].region_id == SATELLITE_REGIONS[
-        Regions.g18]['id']
-    assert db_tx_confirmation[1].region_id == SATELLITE_REGIONS[
-        Regions.e113]['id']
-    assert db_tx_confirmation[2].region_id == SATELLITE_REGIONS[
+    assert len(db_order.tx_confirmations) == 3
+    assert db_order.tx_confirmations[0].region_id == SATELLITE_REGIONS[
         Regions.t11n_afr]['id']
+    assert db_order.tx_confirmations[1].region_id == SATELLITE_REGIONS[
+        Regions.g18]['id']
+    assert db_order.tx_confirmations[2].region_id == SATELLITE_REGIONS[
+        Regions.e113]['id']
 
 
 @patch('orders.new_invoice')
@@ -788,10 +783,8 @@ def test_confirm_rx(mock_new_invoice, client):
 
     post_rv = client.post('/order/rx/1', data={'region': Regions.g18.value})
     assert post_rv.status_code == HTTPStatus.OK
-    db_rx_confirmation = RxConfirmation.query.filter_by(
-        order_id=db_order.id).all()
-    assert len(db_rx_confirmation) == 1
-    assert db_rx_confirmation[0].region_id == SATELLITE_REGIONS[
+    assert len(db_order.rx_confirmations) == 1
+    assert db_order.rx_confirmations[0].region_id == SATELLITE_REGIONS[
         Regions.g18]['id']
 
 
@@ -909,17 +902,13 @@ def test_confirm_tx_repeated_regions(mock_new_invoice, client):
     post_rv = client.post('/order/tx/1',
                           data={'regions': [[Regions.t11n_afr.value]]})
     assert post_rv.status_code == HTTPStatus.OK
-    db_tx_confirmation = TxConfirmation.query.filter_by(
-        order_id=db_order1.id).all()
-    assert len(db_tx_confirmation) == 1
+    assert len(db_order1.tx_confirmations) == 1
 
     # Re-Confirm tx for the same region
     post_rv = client.post('/order/tx/1',
                           data={'regions': [[Regions.t11n_afr.value]]})
     assert post_rv.status_code == HTTPStatus.OK
-    db_tx_confirmation = TxConfirmation.query.filter_by(
-        order_id=db_order1.id).all()
-    assert len(db_tx_confirmation) == 1
+    assert len(db_order1.tx_confirmations) == 1
 
     # Confirm tx for multiple regions, including t11n_afr again
     post_rv = client.post(
@@ -929,9 +918,7 @@ def test_confirm_tx_repeated_regions(mock_new_invoice, client):
             [[Regions.g18.value, Regions.t18v_c.value, Regions.t11n_afr.value]]
         })
     assert post_rv.status_code == HTTPStatus.OK
-    db_tx_confirmation = TxConfirmation.query.filter_by(
-        order_id=db_order1.id).all()
-    assert len(db_tx_confirmation) == 3
+    assert len(db_order1.tx_confirmations) == 3
 
     # Confirm tx for multiple regions, different order_id
     post_rv = client.post('/order/tx/2',
@@ -942,9 +929,7 @@ def test_confirm_tx_repeated_regions(mock_new_invoice, client):
                               ]]
                           })
     assert post_rv.status_code == HTTPStatus.OK
-    db_tx_confirmation = TxConfirmation.query.filter_by(
-        order_id=db_order2.id).all()
-    assert len(db_tx_confirmation) == 2
+    assert len(db_order2.tx_confirmations) == 2
 
 
 @patch('orders.new_invoice')
@@ -958,23 +943,17 @@ def test_confirm_rx_repeated_regions(mock_new_invoice, client):
     # Confirm rx for a region
     post_rv = client.post('/order/rx/1', data={'region': Regions.g18.value})
     assert post_rv.status_code == HTTPStatus.OK
-    db_rx_confirmation = RxConfirmation.query.filter_by(
-        order_id=db_order1.id).all()
-    assert len(db_rx_confirmation) == 1
+    assert len(db_order1.rx_confirmations) == 1
 
     # Re-Confirm rx for the same region
     post_rv = client.post('/order/rx/1', data={'region': Regions.g18.value})
     assert post_rv.status_code == HTTPStatus.OK
-    db_rx_confirmation = RxConfirmation.query.filter_by(
-        order_id=db_order1.id).all()
-    assert len(db_rx_confirmation) == 1
+    assert len(db_order1.rx_confirmations) == 1
 
     # Confirm rx for the same region, different order_id
     post_rv = client.post('/order/rx/2', data={'region': Regions.g18.value})
     assert post_rv.status_code == HTTPStatus.OK
-    db_rx_confirmation = RxConfirmation.query.filter_by(
-        order_id=db_order2.id).all()
-    assert len(db_rx_confirmation) == 1
+    assert len(db_order2.rx_confirmations) == 1
 
 
 @patch('orders.new_invoice')
@@ -1072,14 +1051,12 @@ def test_sent_or_received_criteria_met_successfully_for_subset_of_regions(
     # order to change into "sent" state.
     post_rv = client.post('/order/tx/1', data={'regions': [selected_regions]})
     assert post_rv.status_code == HTTPStatus.OK
-    db_tx_confirmation = TxConfirmation.query.filter_by(
-        order_id=db_order.id).order_by(TxConfirmation.region_id).all()
-    assert len(db_tx_confirmation) == 3
-    assert db_tx_confirmation[0].region_id == SATELLITE_REGIONS[
+    assert len(db_order.tx_confirmations) == 3
+    assert db_order.tx_confirmations[0].region_id == SATELLITE_REGIONS[
         Regions.g18]['id']
-    assert db_tx_confirmation[1].region_id == SATELLITE_REGIONS[
+    assert db_order.tx_confirmations[1].region_id == SATELLITE_REGIONS[
         Regions.e113]['id']
-    assert db_tx_confirmation[2].region_id == SATELLITE_REGIONS[
+    assert db_order.tx_confirmations[2].region_id == SATELLITE_REGIONS[
         Regions.t11n_afr]['id']
     db_order = Order.query.filter_by(uuid=uuid).first()
     assert db_order.status == OrderStatus.sent.value
@@ -1095,10 +1072,10 @@ def test_sent_or_received_criteria_met_successfully_for_subset_of_regions(
     assert db_order.status == OrderStatus.received.value
 
     # A synthesized Rx confirmation should be created for t11n_afr
-    db_rx_confirmation = RxConfirmation.query.filter_by(
+    synth_rx_confirmations = RxConfirmation.query.filter_by(
         order_id=db_order.id).filter_by(presumed=True).all()
-    assert len(db_rx_confirmation) == 1
-    assert db_rx_confirmation[0].region_id == SATELLITE_REGIONS[
+    assert len(synth_rx_confirmations) == 1
+    assert synth_rx_confirmations[0].region_id == SATELLITE_REGIONS[
         Regions.t11n_afr]['id']
 
 

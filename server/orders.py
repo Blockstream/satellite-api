@@ -14,7 +14,7 @@ from constants import CHANNEL_INFO, ORDER_FETCH_STATES, OrderStatus
 from database import db
 from error import get_http_error_resp
 from invoice_helpers import new_invoice, pay_invoice
-from models import Order, RxConfirmation, TxConfirmation, TxRetry
+from models import Order, TxRetry
 from regions import region_number_list_to_code
 from schemas import admin_order_schema, order_schema, orders_schema,\
     order_upload_req_schema, order_bump_schema,\
@@ -380,20 +380,11 @@ class TxConfirmationResource(Resource):
         if not order:
             return get_http_error_resp('SEQUENCE_NUMBER_NOT_FOUND', tx_seq_num)
 
-        # A Tx confirmation indicates that at least one Tx host finished
-        # transmitting the order. At this point, the other Tx hosts should
-        # complete the order soon. In the meantime, change the order state
-        # from transmitting to confirming so that other pending orders
-        # can be unblocked.
         last_status = order.status
-        if order.status == OrderStatus.transmitting.value:
-            order.status = OrderStatus.confirming.value
-            db.session.commit()
-
         regions_in_request = json.loads(args['regions'])
         for region_number in regions_in_request:
-            order_helpers.add_confirmation_if_not_present(
-                TxConfirmation, order, region_number)
+            order_helpers.add_tx_confirmation_if_not_present(
+                order, region_number)
 
         # Check whether the order is in "sent" or "received" state already. In
         # the positive case, end the current transmission to start a new one.
@@ -434,8 +425,8 @@ class RxConfirmationResource(Resource):
             return get_http_error_resp('SEQUENCE_NUMBER_NOT_FOUND', tx_seq_num)
 
         region_in_request = int(args['region'])
-        order_helpers.add_confirmation_if_not_present(RxConfirmation, order,
-                                                      region_in_request)
+        order_helpers.add_rx_confirmation_if_not_present(
+            order, region_in_request)
 
         # Check whether the order is in "sent" or "received" state already. In
         # the positive case, end the current transmission to start a new one.

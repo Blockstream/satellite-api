@@ -390,6 +390,7 @@ def test_retransmission(mock_new_invoice, client, mockredis):
     db.session.commit()
 
     transmitter.tx_start()
+    assert_order_state(first_order_uuid, 'transmitting')
     retry_order = TxRetry.query.all()
     assert len(retry_order) == 1
     assert retry_order[0].order_id == first_order.id
@@ -397,6 +398,12 @@ def test_retransmission(mock_new_invoice, client, mockredis):
     assert first_order.retransmission.retry_count == 3
     assert second_order.retransmission is None
     assert third_order.retransmission is None
+
+    # A repeated Tx confirmation should not put the order back into confirming
+    # state. Otherwise, another retransmission would be triggered.
+    confirm_tx(first_order.tx_seq_num, all_region_numbers[1:3], client)
+    assert_order_state(first_order_uuid, 'transmitting')
+    assert first_order.retransmission.retry_count == 3
 
     # The retransmission information should be returned by the
     # /admin/order/:uuid endpoint or the /admin/orders/:state endpoint

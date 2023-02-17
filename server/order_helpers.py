@@ -122,8 +122,7 @@ def synthesize_presumed_rx_confirmations(order):
     # 2- If those regions are part of the requested regions by the order
     for region in [Regions.t11n_afr, Regions.t11n_eu]:
         if region.value in order_region_numbers:
-            add_confirmation_if_not_present(RxConfirmation, order, region,
-                                            presumed)
+            add_rx_confirmation_if_not_present(order, region, presumed)
 
 
 def sent_criteria_met(order):
@@ -212,15 +211,29 @@ def confirmation_exists(confirmations_table, order_id, region_id):
     return False
 
 
-def add_confirmation_if_not_present(confirmations_table,
-                                    order,
-                                    region_number,
-                                    presumed=False):
+def add_tx_confirmation_if_not_present(order, region_number, presumed=False):
     region_id = region_number_to_id(region_number)
-    if not confirmation_exists(confirmations_table, order.id, region_id):
-        new_confirmation = confirmations_table(order_id=order.id,
-                                               region_id=region_id,
-                                               presumed=presumed)
+    if not confirmation_exists(TxConfirmation, order.id, region_id):
+        # A Tx confirmation indicates that at least one Tx host finished
+        # transmitting the order. At this point, the expectation is that the
+        # other Tx hosts complete their transmissions soon. In the meantime,
+        # change the order state from transmitting to confirming so that other
+        # pending orders can be unblocked.
+        if order.status == OrderStatus.transmitting.value:
+            order.status = OrderStatus.confirming.value
+        new_confirmation = TxConfirmation(order_id=order.id,
+                                          region_id=region_id,
+                                          presumed=presumed)
+        db.session.add(new_confirmation)
+        db.session.commit()
+
+
+def add_rx_confirmation_if_not_present(order, region_number, presumed=False):
+    region_id = region_number_to_id(region_number)
+    if not confirmation_exists(RxConfirmation, order.id, region_id):
+        new_confirmation = RxConfirmation(order_id=order.id,
+                                          region_id=region_id,
+                                          presumed=presumed)
         db.session.add(new_confirmation)
         db.session.commit()
 

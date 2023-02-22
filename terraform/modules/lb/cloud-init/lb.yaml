@@ -184,6 +184,38 @@ write_files:
                 proxy_pass http://${testnet_ip}:9292/;
             }
 
+            location /testnet/admin/ {
+                client_max_body_size 16M;
+                if ($ssl_client_verify != SUCCESS) {
+                  return 403;
+                }
+                proxy_pass http://${testnet_ip}:9292/admin/;
+            }
+
+            location /testnet/order/tx/ {
+                # Allow base stations only
+                allow ${station1};
+                allow ${station2};
+                deny all;
+
+                if ($ssl_client_verify != SUCCESS) {
+                  return 403;
+                }
+                proxy_pass http://${testnet_ip}:9292/order/tx/;
+            }
+
+            location /testnet/order/rx/ {
+                # Allow base stations only
+                allow ${station1};
+                allow ${station2};
+                deny all;
+
+                if ($ssl_client_verify != SUCCESS) {
+                  return 403;
+                }
+                proxy_pass http://${testnet_ip}:9292/order/rx/;
+            }
+
             # ---------- Proxy to testnet SSE container ----------
 
             location /testnet/subscribe/ {
@@ -194,6 +226,19 @@ write_files:
                 proxy_http_version 1.1;
 
                 proxy_pass http://${testnet_ip}:4500/stream?channels=;
+            }
+
+            location /testnet/admin/subscribe/ {
+                if ($ssl_client_verify != SUCCESS) {
+                  return 403;
+                }
+                chunked_transfer_encoding on;
+                proxy_buffering off;
+                proxy_request_buffering off;
+                proxy_cache off;
+                proxy_http_version 1.1;
+
+                proxy_pass http://${testnet_ip}:4500/admin/stream?channels=;
             }
         }
 

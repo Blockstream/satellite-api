@@ -31,8 +31,8 @@ module "blc-mainnet" {
   network               = "default"
   lightning_docker      = var.lightning_docker
   charge_docker         = var.charge_docker
-  ionosphere_docker     = var.ionosphere_docker
-  ionosphere_sse_docker = var.ionosphere_sse_docker
+  sat_api_docker        = var.sat_api_docker
+  sat_api_sse_docker    = var.sat_api_sse_docker
   node_exporter_docker  = var.node_exporter_docker
   autossh_docker        = var.autossh_docker
   certbot_docker        = var.certbot_docker
@@ -65,8 +65,8 @@ module "blc-testnet" {
   network               = "default"
   lightning_docker      = var.lightning_docker
   charge_docker         = var.charge_docker
-  ionosphere_docker     = var.ionosphere_docker
-  ionosphere_sse_docker = var.ionosphere_sse_docker
+  sat_api_docker        = var.sat_api_docker
+  sat_api_sse_docker    = var.sat_api_sse_docker
   node_exporter_docker  = var.node_exporter_docker
   autossh_docker        = var.autossh_docker
   certbot_docker        = var.certbot_docker

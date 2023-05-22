@@ -88,11 +88,11 @@ variable "lightning_docker" {
   type = string
 }
 
-variable "ionosphere_docker" {
+variable "sat_api_docker" {
   type = string
 }
 
-variable "ionosphere_sse_docker" {
+variable "sat_api_sse_docker" {
   type = string
 }
 

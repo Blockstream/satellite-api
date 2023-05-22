@@ -225,7 +225,7 @@ write_files:
         RestartSec=3
         Environment=HOME=/home/bs
         ExecStartPre=/usr/bin/docker-credential-gcr configure-docker
-        ExecStartPre=/usr/bin/docker pull ${ionosphere_docker}
+        ExecStartPre=/usr/bin/docker pull ${sat_api_docker}
         ExecStartPre=/sbin/iptables -A INPUT -p tcp -s 10.138.0.0/16 --dport 9292 -j ACCEPT
         ExecStart=/usr/bin/docker run \
             --network=host \
@@ -240,7 +240,7 @@ write_files:
             -e "CHARGE_API_TOKEN=${charge_token}" \
             -e "MIN_PER_BYTE_BID=1" \
             -e "REDIS_URI=redis://localhost:6379" \
-            "${ionosphere_docker}"
+            "${sat_api_docker}"
         ExecStop=/usr/bin/docker stop api-server
         ExecStopPost=/usr/bin/docker rm api-server
         ExecStopPost=/sbin/iptables -D INPUT -p tcp -s 10.138.0.0/16 --dport 9292 -j ACCEPT
@@ -259,7 +259,7 @@ write_files:
         RestartSec=3
         Environment=HOME=/home/bs
         ExecStartPre=/usr/bin/docker-credential-gcr configure-docker
-        ExecStartPre=/usr/bin/docker pull ${ionosphere_sse_docker}
+        ExecStartPre=/usr/bin/docker pull ${sat_api_sse_docker}
         ExecStartPre=/sbin/iptables -A INPUT -p tcp -s 10.138.0.0/16 --dport 4500 -j ACCEPT
         ExecStart=/usr/bin/docker run \
             --network=host \
@@ -267,7 +267,7 @@ write_files:
             --name=sse-server \
             -e "SUB_CHANNELS=transmissions,gossip,btc-src,auth" \
             -e "REDIS_URI=redis://localhost:6379" \
-            "${ionosphere_sse_docker}"
+            "${sat_api_sse_docker}"
         ExecStop=/usr/bin/docker stop sse-server
         ExecStopPost=/usr/bin/docker rm sse-server
         ExecStopPost=/sbin/iptables -D INPUT -p tcp -s 10.138.0.0/16 --dport 4500 -j ACCEPT
@@ -292,7 +292,7 @@ write_files:
             -v /mnt/disks/data/ionosphere:/data \
             -e ENV="production" \
             -e "REDIS_URI=redis://localhost:6379" \
-            "${ionosphere_docker}" workers.sh
+            "${sat_api_docker}" workers.sh
         ExecStop=/usr/bin/docker stop api-workers
         ExecStopPost=/usr/bin/docker rm api-workers
 

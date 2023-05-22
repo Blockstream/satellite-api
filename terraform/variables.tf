@@ -201,7 +201,7 @@ variable "ionosphere_sse_docker" {
 # Less frequently updated images
 variable "lightning_docker" {
   type    = string
-  default = "blockstream/lightningd:v0.12.1"
+  default = "blockstream/lightningd:v23.02.2"
 }
 
 variable "charge_docker" {

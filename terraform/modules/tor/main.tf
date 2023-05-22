@@ -64,7 +64,7 @@ resource "google_compute_instance_template" "tor" {
   }
 
   metadata = {
-    user-data              = data.template_cloudinit_config.tor[0].rendered
+    user-data = data.template_cloudinit_config.tor[0].rendered
   }
 
   service_account {

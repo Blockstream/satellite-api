@@ -104,8 +104,8 @@ module "lb" {
   internal_ip_testnet  = local.env == "staging" ? "127.0.0.1" : data.terraform_remote_state.blc-testnet.outputs.blc_internal_ip_testnet
   # NOTE: There is no testnet server on staging. The IP is set to 127.0.0.1
   # above so that the nginx conf does not see an empty IP and fail.
-  target_pool          = length(google_compute_target_pool.lb-pool) > 0 ? google_compute_target_pool.lb-pool[0].self_link : ""
-  health_check         = length(google_compute_http_health_check.lb-health) > 0 ? google_compute_http_health_check.lb-health[0].self_link : ""
+  target_pool  = length(google_compute_target_pool.lb-pool) > 0 ? google_compute_target_pool.lb-pool[0].self_link : ""
+  health_check = length(google_compute_http_health_check.lb-health) > 0 ? google_compute_http_health_check.lb-health[0].self_link : ""
 
   create_resources = local.create_mainnet
 
@@ -131,12 +131,9 @@ module "tor" {
   gcloud_docker        = var.gcloud_docker
   tor_docker           = var.tor_docker
   node_exporter_docker = var.node_exporter_docker
-  kms_key              = element(concat(google_kms_crypto_key.tor-crypto-key.*.name, [""]), 0)
-  kms_key_ring         = element(concat(google_kms_key_ring.tor-key-ring.*.name, [""]), 0)
-  kms_key_link = element(
-    concat(google_kms_crypto_key.tor-crypto-key.*.self_link, [""]),
-    0,
-  )
+  kms_key              = try(google_kms_crypto_key.tor-crypto-key[0].name, null)
+  kms_key_ring         = try(google_kms_key_ring.tor-key-ring[0].name, null)
+  kms_key_link         = try(google_kms_crypto_key.tor-crypto-key[0].id, null)
   tor_lb = element(
     concat(google_compute_global_address.tor-lb.*.address, [""]),
     0,

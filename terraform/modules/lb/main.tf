@@ -16,7 +16,7 @@ resource "google_compute_region_instance_group_manager" "satapi-lb" {
   }
 
   update_policy {
-    type                  = var.env == "staging" ? "PROACTIVE": "OPPORTUNISTIC"
+    type                  = var.env == "staging" ? "PROACTIVE" : "OPPORTUNISTIC"
     minimal_action        = "RESTART"
     replacement_method    = "RECREATE"
     max_surge_fixed       = 0
@@ -57,13 +57,13 @@ resource "google_compute_instance_template" "satapi-lb" {
   }
 
   network_interface {
-    network = data.google_compute_network.satapi-lb.self_link
+    network    = data.google_compute_network.satapi-lb.self_link
     network_ip = google_compute_address.satapi-lb-internal[0].address
     access_config {}
   }
 
   metadata = {
-    user-data              = data.template_cloudinit_config.satapi-lb[0].rendered
+    user-data = data.template_cloudinit_config.satapi-lb[0].rendered
   }
 
   service_account {

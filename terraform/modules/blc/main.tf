@@ -26,7 +26,7 @@ resource "google_compute_instance_group_manager" "blc" {
   }
 
   update_policy {
-    type                  = var.env == "staging" ? "PROACTIVE": "OPPORTUNISTIC"
+    type                  = var.env == "staging" ? "PROACTIVE" : "OPPORTUNISTIC"
     minimal_action        = "RESTART"
     replacement_method    = "RECREATE"
     max_surge_fixed       = 0
@@ -78,7 +78,7 @@ resource "google_compute_instance_template" "blc" {
   }
 
   metadata = {
-    user-data              = data.template_cloudinit_config.blc[0].rendered
+    user-data = data.template_cloudinit_config.blc[0].rendered
   }
 
   service_account {

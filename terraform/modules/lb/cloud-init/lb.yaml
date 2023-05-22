@@ -271,7 +271,6 @@ write_files:
         [Unit]
         Description=Nginx redirect
         Wants=gcr-online.target
-        After=ionosphere.service
 
         [Service]
         Restart=always
@@ -299,7 +298,6 @@ write_files:
         [Unit]
         Description=Nginx redirect
         Wants=gcr-online.target
-        After=ionosphere.service
 
         [Service]
         Restart=always

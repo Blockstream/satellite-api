@@ -30,7 +30,7 @@ unit_tests:
   tags:
     - k8s
   except:
-    - cleanup_staging@satellite/ionosphere
+    - cleanup_staging@satellite/satellite-api
     - /^staging_.*/
     - /^prod_.*/
     - /^testnet_prod_.*/
@@ -52,9 +52,9 @@ docker_build:
   services:
     - docker:20.10.12-dind
   only:
-    - branches@satellite/ionosphere
+    - branches@satellite/satellite-api
   except:
-    - cleanup_staging@satellite/ionosphere
+    - cleanup_staging@satellite/satellite-api
     - /^staging_.*/
     - /^prod_.*/
     - /^misc_.*/
@@ -85,7 +85,7 @@ docker_push:
   services:
     - docker:20.10.12-dind
   only:
-    - branches@satellite/ionosphere
+    - branches@satellite/satellite-api
   parallel:
     matrix:
       - IMAGE: $API_IMAGE
@@ -122,7 +122,7 @@ tag_docker_push:
     - /^prod_.*/
     - /^testnet_prod_.*/
   except:
-    - branches@satellite/ionosphere
+    - branches@satellite/satellite-api
   parallel:
     matrix:
       - IMAGE: $API_IMAGE
@@ -153,9 +153,9 @@ plan_staging:
   tags:
     - k8s
   only:
-    - branches@satellite/ionosphere
+    - branches@satellite/satellite-api
   except:
-    - cleanup_staging@satellite/ionosphere
+    - cleanup_staging@satellite/satellite-api
     - /^staging_.*/
     - /^prod_.*/
     - /^testnet_prod_.*/
@@ -403,7 +403,7 @@ cleanup_staging:
   tags:
     - k8s
   only:
-    - cleanup_staging@satellite/ionosphere
+    - cleanup_staging@satellite/satellite-api
   script:
     - (cd terraform && terraform init -input=false &&
        terraform workspace select staging &&

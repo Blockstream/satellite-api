@@ -16,8 +16,8 @@ data "template_file" "tor" {
     tor_docker           = var.tor_docker
     gcloud_docker        = var.gcloud_docker
     node_exporter_docker = var.node_exporter_docker
-    kms_key              = var.kms_key
-    kms_key_ring         = var.kms_key_ring
+    kms_key              = google_kms_crypto_key.tor-crypto-key[0].name
+    kms_key_ring         = google_kms_key_ring.tor-key-ring[0].id
     kms_location         = var.region
   }
 }

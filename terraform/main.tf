@@ -131,9 +131,6 @@ module "tor" {
   gcloud_docker        = var.gcloud_docker
   tor_docker           = var.tor_docker
   node_exporter_docker = var.node_exporter_docker
-  kms_key              = try(google_kms_crypto_key.tor-crypto-key[0].name, null)
-  kms_key_ring         = try(google_kms_key_ring.tor-key-ring[0].name, null)
-  kms_key_link         = try(google_kms_crypto_key.tor-crypto-key[0].id, null)
   tor_lb = element(
     concat(google_compute_global_address.tor-lb.*.address, [""]),
     0,

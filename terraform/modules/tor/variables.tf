@@ -44,19 +44,6 @@ variable "prom_service_acct" {
   type = string
 }
 
-variable "kms_key_link" {
-  type = string
-}
-
-variable "kms_key" {
-  type = string
-}
-
-variable "kms_key_ring" {
-  type    = string
-  default = ""
-}
-
 variable "tor_docker" {
   type = string
 }

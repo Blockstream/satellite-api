@@ -13,7 +13,7 @@ resource "google_project_iam_member" "tor" {
 }
 
 resource "google_kms_crypto_key_iam_binding" "crypto-key" {
-  crypto_key_id = var.kms_key_link
+  crypto_key_id = google_kms_crypto_key.tor-crypto-key[0].id
   role          = "roles/cloudkms.cryptoKeyDecrypter"
   count         = var.create_resources
 

@@ -36,7 +36,7 @@ unit_tests:
     - /^testnet_prod_.*/
     - /^misc_.*/
   before_script:
-    - pip install flake8 yapf pytest pytest-cov
+    - pip install flake8 "yapf>=0.33" pytest pytest-cov
     - pip install -r server/requirements.txt
     - pip install -r server/test_requirements.txt
   script:

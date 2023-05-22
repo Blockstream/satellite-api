@@ -140,8 +140,8 @@ def expire_unpaid_invoices():
     """
     invoices_to_expire = Invoice.query.filter(
         and_(Invoice.status == constants.InvoiceStatus.pending.value,
-             func.datetime(Invoice.expires_at) <
-             datetime.datetime.utcnow())).all()
+             func.datetime(Invoice.expires_at)
+             < datetime.datetime.utcnow())).all()
     expired_orders = []
     for invoice in invoices_to_expire:
         expire_invoice(invoice)

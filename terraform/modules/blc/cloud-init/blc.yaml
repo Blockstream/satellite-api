@@ -233,7 +233,7 @@ write_files:
             --name=api-server \
             --log-opt max-size=200m \
             --log-opt max-file=3 \
-            -v /mnt/disks/data/ionosphere:/data \
+            -v /mnt/disks/data/satellite-api:/data \
             -e "ENV=production" \
             -e "CHARGE_ROOT=http://api-token:${charge_token}@localhost:9112" \
             -e "CALLBACK_URI_ROOT=http://localhost:9292" \
@@ -289,7 +289,7 @@ write_files:
             --network=host \
             --pid=host \
             --name=api-workers \
-            -v /mnt/disks/data/ionosphere:/data \
+            -v /mnt/disks/data/satellite-api:/data \
             -e ENV="production" \
             -e "REDIS_URI=redis://localhost:6379" \
             "${sat_api_docker}" workers.sh

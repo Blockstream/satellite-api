@@ -148,7 +148,7 @@ write_files:
     content: |
         log-level=debug
         plugin-dir=/opt/plugins
-        alias=ionosphere-${net}
+        alias=satellite-api-${net}
         bitcoin-rpcuser=${net}-def
         bitcoin-rpcpassword=${rpcpass}
         announce-addr=${announce_addr}

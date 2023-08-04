@@ -183,7 +183,7 @@ def test_startup_sequence(mock_new_invoice, client, mockredis):
     transmitting_db_order = \
         Order.query.filter_by(uuid=transmitting_order_uuid).first()
     transmitting_db_order.started_transmission_at = datetime.utcnow(
-    ) - timedelta(seconds=constants.TX_CONFIRM_TIMEOUT_SECS + 1)
+    ) - timedelta(seconds=constants.DEFAULT_TX_CONFIRM_TIMEOUT_SECS + 1)
     db.session.commit()
     refresh_retransmission_table()
     assert_order_state(transmitting_order_uuid, 'confirming')
@@ -234,7 +234,7 @@ def test_retransmission(mock_new_invoice, client, mockredis):
         order_id=first_order.id).order_by(
             TxConfirmation.created_at.desc()).first()
     last_tx_confirmation.created_at = datetime.utcnow() - timedelta(
-        seconds=constants.TX_CONFIRM_TIMEOUT_SECS + 1)
+        seconds=constants.DEFAULT_TX_CONFIRM_TIMEOUT_SECS + 1)
     db.session.commit()
 
     # 2) Order that needs retransmission due to not receiving any confirmation
@@ -254,7 +254,7 @@ def test_retransmission(mock_new_invoice, client, mockredis):
     # Manipulate the Tx start timestamp such that it exceeds the time limit and
     # later leads to a retransmission.
     second_order.started_transmission_at = datetime.utcnow() - timedelta(
-        seconds=constants.TX_CONFIRM_TIMEOUT_SECS + 1)
+        seconds=constants.DEFAULT_TX_CONFIRM_TIMEOUT_SECS + 1)
     db.session.commit()
 
     # 3) Order that transmits normally with no need for retransmission.
@@ -355,7 +355,7 @@ def test_retransmission(mock_new_invoice, client, mockredis):
     # retransmission info to make that happen.
     t_last_attempt = first_order.retransmission.last_attempt
     first_order.retransmission.last_attempt = t_last_attempt - \
-        timedelta(seconds=constants.TX_CONFIRM_TIMEOUT_SECS + 1)
+        timedelta(seconds=constants.DEFAULT_TX_CONFIRM_TIMEOUT_SECS + 1)
     db.session.commit()
 
     # A worker would timeout the order and put it back to confirming state.
@@ -386,7 +386,7 @@ def test_retransmission(mock_new_invoice, client, mockredis):
 
     for order in first_order.tx_confirmations:
         order.created_at = datetime.utcnow() - timedelta(
-            seconds=constants.TX_CONFIRM_TIMEOUT_SECS + 1)
+            seconds=constants.DEFAULT_TX_CONFIRM_TIMEOUT_SECS + 1)
     db.session.commit()
 
     transmitter.tx_start()

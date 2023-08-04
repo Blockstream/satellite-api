@@ -37,7 +37,7 @@ env = os.getenv('ENV', 'development')
 
 EXPIRE_PENDING_ORDERS_AFTER_DAYS = 1
 MESSAGE_FILE_RETENTION_TIME_DAYS = 31
-TX_CONFIRM_TIMEOUT_SECS = 60
+DEFAULT_TX_CONFIRM_TIMEOUT_SECS = 60
 
 SERVER_PORT = 9292
 CALLBACK_URI_ROOT = os.getenv('CALLBACK_URI_ROOT',
@@ -78,7 +78,12 @@ BTC_SRC_CHANNEL = 5
 
 class ChannelInfo:
 
-    def __init__(self, name, user_permissions, tx_rate, max_msg_size):
+    def __init__(self,
+                 name,
+                 user_permissions,
+                 tx_rate,
+                 max_msg_size,
+                 tx_confirm_timeout_secs=DEFAULT_TX_CONFIRM_TIMEOUT_SECS):
         """Construct channel information
 
         Args:
@@ -90,6 +95,8 @@ class ChannelInfo:
             tx_rate (float): Transmit rate in bytes/sec. Used to handle the
                 retransmission timeout intervals independently on each channel.
             max_msg_size (int): Maximum message size on this channel.
+            tx_confirm_timeout_secs (int): Tx confirmation timeout in seconds
+                leading to retransmission decisions.
         """
         assert isinstance(user_permissions, list)
         assert len(user_permissions) == 0 or \
@@ -103,6 +110,7 @@ class ChannelInfo:
         self.requires_payment = 'post' in user_permissions
         self.tx_rate = tx_rate
         self.max_msg_size = max_msg_size
+        self.tx_confirm_timeout_secs = tx_confirm_timeout_secs
 
 
 CHANNEL_INFO = {
@@ -112,11 +120,21 @@ CHANNEL_INFO = {
     AUTH_CHANNEL:
     ChannelInfo('auth', [], 125, DEFAULT_MAX_MESSAGE_SIZE),
     GOSSIP_CHANNEL:
-    ChannelInfo('gossip', ['get'], 500,
-                1800000),  # tx over 1h at 500 bytes/sec
+    ChannelInfo(
+        'gossip',
+        ['get'],
+        500,
+        1800000,  # tx over 1h at 500 bytes/sec
+        300  # Tx confirmation timeout = 5 min
+    ),
     BTC_SRC_CHANNEL:
-    ChannelInfo('btc-src', ['get'], 500,
-                16200000),  # tx over 9h at 500 bytes/sec
+    ChannelInfo(
+        'btc-src',
+        ['get'],
+        500,
+        16200000,  # tx over 9h at 500 bytes/sec
+        300  # Tx confirmation timeout = 5 min
+    ),
 }
 
 CHANNELS = list(CHANNEL_INFO.keys())

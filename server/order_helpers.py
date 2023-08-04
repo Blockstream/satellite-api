@@ -327,14 +327,14 @@ def refresh_retransmission_table():
 
     1) The order is in confirming state due to one or more Tx confirmations,
        but its last (most recent) Tx confirmation was received more than
-       TX_CONFIRM_TIMEOUT_SECS ago, and not all confirmations were received.
+       "tx_confirm_timeout_secs" ago, and not all confirmations were received.
     2) The order is in transmitting state due to a retransmission. It may have
        received Tx confirmations in the past, but not for the retransmission
        (hence why it is in transmitting state). Also, the last retransmission
-       was more than "delay + TX_CONFIRM_TIMEOUT_SECS" seconds ago.
+       was more than "delay + tx_confirm_timeout_secs" seconds ago.
     3) The order has never received any Tx confirmations nor had any
        retransmissions, and it has been like so for more than "delay +
-       TX_CONFIRM_TIMEOUT_SECS" seconds.
+       tx_confirm_timeout_secs" seconds.
 
     In the last two cases, in which the order is in transmitting state, this
     function immediately changes the order into confirming state so that paid
@@ -346,7 +346,7 @@ def refresh_retransmission_table():
     considers the timeout interval only, given that its measurement starts
     after the message is already serialized (after the first Tx confirmation).
     Other sources of delay (propagation, routing, etc.) are neglected in both
-    cases by assuming TX_CONFIRM_TIMEOUT_SECS is big enough to cover them.
+    cases by assuming "tx_confirm_timeout_secs" is big enough to cover them.
 
     In summary, the timeout interval (with or without the serialization delay)
     adds to different starting points, as follows:
@@ -363,8 +363,10 @@ def refresh_retransmission_table():
     orders_to_retry = []
     for order in orders:
         tx_rate = constants.CHANNEL_INFO[order.channel].tx_rate
+        tx_confirm_timeout_secs = constants.CHANNEL_INFO[
+            order.channel].tx_confirm_timeout_secs
         tx_delay = int(ceil(calc_ota_msg_len(order.message_size) / tx_rate))
-        timeout_interval = tx_delay + constants.TX_CONFIRM_TIMEOUT_SECS
+        timeout_interval = tx_delay + tx_confirm_timeout_secs
 
         last_tx_confirmation = TxConfirmation.query.filter_by(
             order_id=order.id).order_by(
@@ -375,7 +377,7 @@ def refresh_retransmission_table():
                 last_tx_confirmation is not None:
             # Case 1
             t_next_retry = last_tx_confirmation.created_at + timedelta(
-                seconds=constants.TX_CONFIRM_TIMEOUT_SECS)
+                seconds=tx_confirm_timeout_secs)
             if datetime.utcnow() > t_next_retry:
                 orders_to_retry.append(order)
         elif retry_info and retry_info.retry_count > 0:

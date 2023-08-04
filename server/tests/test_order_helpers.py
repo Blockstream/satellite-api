@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from http import HTTPStatus
 from unittest.mock import patch
 
-from constants import EXPIRE_PENDING_ORDERS_AFTER_DAYS,\
+from constants import EXPIRE_PENDING_ORDERS_AFTER_DAYS, \
     InvoiceStatus, MESSAGE_FILE_RETENTION_TIME_DAYS, \
     OrderStatus, MSG_STORE_PATH
 from database import db

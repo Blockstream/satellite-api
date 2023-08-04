@@ -11,13 +11,13 @@ from database import db
 from info import InfoResource
 from invoices import InvoiceResource
 from orders import \
-    BumpOrderResource,\
-    GetMessageBySeqNumResource,\
-    GetMessageResource,\
-    OrderResource,\
-    OrdersResource,\
-    OrderUploadResource,\
-    RxConfirmationResource,\
+    BumpOrderResource, \
+    GetMessageBySeqNumResource, \
+    GetMessageResource, \
+    OrderResource, \
+    OrdersResource, \
+    OrderUploadResource, \
+    RxConfirmationResource, \
     TxConfirmationResource
 from queues import QueueResource
 

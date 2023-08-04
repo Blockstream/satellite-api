@@ -11,7 +11,7 @@ import bidding
 import constants
 import server
 
-from common import new_invoice,\
+from common import new_invoice, \
     place_order, rnd_string, upload_test_file
 
 

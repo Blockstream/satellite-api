@@ -11,8 +11,8 @@ from constants import InvoiceStatus, OrderStatus
 from database import db
 from error import get_http_error_resp
 from models import Order, RxConfirmation, TxConfirmation, TxRetry
-from regions import region_number_to_id, monitored_rx_regions,\
-    region_code_to_id_list, region_code_to_number_list,\
+from regions import region_number_to_id, monitored_rx_regions, \
+    region_code_to_id_list, region_code_to_number_list, \
     region_id_to_number, Regions, region_id_list_to_code
 import constants
 from utils import hmac_sha256_digest

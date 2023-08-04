@@ -1,7 +1,7 @@
 from constants import OrderStatus
 from error import get_http_error_resp
 from flask_restful import Resource
-from invoice_helpers import get_and_authenticate_invoice,\
+from invoice_helpers import get_and_authenticate_invoice, \
     pay_invoice
 from models import Order
 import transmitter

@@ -9,7 +9,7 @@ from constants import InvoiceStatus, OrderStatus
 from database import db
 from error import assert_error, get_http_error_resp
 from models import Invoice, Order, RxConfirmation
-from order_helpers import adjust_bids, _paid_invoices_total,\
+from order_helpers import adjust_bids, _paid_invoices_total, \
     _unpaid_invoices_total
 from regions import Regions, SATELLITE_REGIONS
 from utils import hmac_sha256_digest
@@ -17,7 +17,7 @@ import bidding
 import constants
 import server
 
-from common import check_invoice, pay_invoice, check_upload, new_invoice,\
+from common import check_invoice, pay_invoice, check_upload, new_invoice, \
     place_order, generate_test_order, rnd_string, upload_test_file
 
 

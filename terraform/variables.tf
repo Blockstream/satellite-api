@@ -202,7 +202,7 @@ variable "lightning_docker" {
 
 variable "charge_docker" {
   type    = string
-  default = "blockstream/charged:v0.4.23"
+  default = "blockstream/charged:v0.4.24"
 }
 
 variable "tor_docker" {

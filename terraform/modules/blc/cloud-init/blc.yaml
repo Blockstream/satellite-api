@@ -15,29 +15,40 @@ write_files:
     content: |
         #!/bin/bash
 
-        # Save # and names of running containers
-        NUM_RUNNING_CONT=$(docker ps -q | wc -l)
-        NEEDED_CONT=8
-        RUNNING_CONT="$(docker ps --format '{{.Names}}' | tr '\n' ', ' | sed -e 's/,$//g')"
+        # Set the file path
+        output_file="/var/tmp/tempmetrics"
+        scrape_file="/var/tmp/nodeexporter/container_metrics.prom"
 
-        # If less than 8 are running, send alert to opsgenie
-        if [ $${NUM_RUNNING_CONT} != $${NEEDED_CONT} ]
-        then
-               curl -s -X POST https://api.opsgenie.com/v2/alerts \
-                  -H "Content-Type: application/json" \
-                  -H "Authorization: GenieKey ${opsgenie_key}" \
-                  -d \
-              '{
-                  "message": "Satellite API instance does not have all '$${NEEDED_CONT}' containers running",
-                  "alias": "satapi-missing-containers",
-                  "description":"Currently running '$${NUM_RUNNING_CONT}'/'$${NEEDED_CONT}': '$${RUNNING_CONT}'",
-                  "tags": ["SatAPI","Critical"],
-                  "entity":"${announce_addr}",
-                  "priority":"P2"
-              }'
-          else
-                echo "$${NUM_RUNNING_CONT}/$${NEEDED_CONT} containers are running"
+        # Check if the file exists, if not, create it
+        if [[ ! -f "$output_file" ]]; then
+          touch "$output_file"
         fi
+
+        while true; do
+          # Empty the file to start fresh
+          > "$output_file"
+
+          # Fetch the list of all container names and their statuses
+          docker ps -a --format "{{.Names}} {{.Status}}" | while read -r line; do
+              # Split the line into container name and status
+              container_name=$(echo "$line" | awk '{print $1}')
+              status=$(echo "$line" | awk '{print $2}')
+
+              # Check if the container status is Running
+              if [[ "$status" == "Up" ]]; then
+                  echo "running_container{cont=\"$container_name\"} 1" >> "$output_file"
+              else
+                  echo "running_container{cont=\"$container_name\"} 0" >> "$output_file"
+              fi
+          done
+
+          # move file for nodeexporter to scrape when finished writing it
+          mv $output_file $scrape_file
+
+          # Sleep for 30 seconds before the next iteration
+          sleep 30
+        done
+
 
   - path: /etc/systemd/system/check-containers.service
     permissions: 0644
@@ -50,17 +61,19 @@ write_files:
 
         [Service]
         ExecStart=/bin/bash /home/bs/check_containers.sh
+        Restart=always
+        RestartSec=1
+        User=root
 
   - path: /etc/systemd/system/check-containers.timer
     permissions: 0644
     owner: root
     content: |
         [Unit]
-        Description=Run check-containers service every 10 minutes (7 min delay)
+        Description=Run check-containers service after initial 7min delay
 
         [Timer]
         OnBootSec=420s
-        OnUnitActiveSec=10m
         Persistent=true
 
         [Install]
@@ -88,7 +101,7 @@ write_files:
             -v /proc:/host/proc:ro \
             -v /sys:/host/sys:ro \
             -v /:/rootfs:ro \
-            -v metrics:/metrics:ro \
+            -v /var/tmp/nodeexporter:/metrics:ro \
             -v /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket:ro \
             "${node_exporter_docker}" --path.procfs /host/proc --path.sysfs /host/sys --collector.textfile.directory /metrics --collector.filesystem.ignored-mount-points "^/(sys|proc|dev|host|etc($|/))" --collector.systemd
         ExecStop=/usr/bin/docker stop node-exporter

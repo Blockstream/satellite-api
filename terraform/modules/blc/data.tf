@@ -23,7 +23,6 @@ data "template_file" "blc" {
     node_exporter_docker  = var.node_exporter_docker
     autossh_docker        = var.autossh_docker
     certbot_docker        = var.certbot_docker
-    opsgenie_key          = var.opsgenie_key
     k8s_autossh_lb        = var.k8s_autossh_lb
     rpcpass               = var.rpcpass
     k8s_autossh_ssh_port  = var.net == "testnet" ? "2222" : "2223"

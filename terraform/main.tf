@@ -50,7 +50,6 @@ module "blc-mainnet" {
   instance_type     = var.instance_type[1]
   timeout           = var.timeout
   prom_service_acct = var.prom_service_acct
-  opsgenie_key      = var.opsgenie_key
   rpcpass           = var.rpcpass
   charge_token      = var.charge_token
   k8s_autossh_lb    = var.k8s_autossh_lb
@@ -84,7 +83,6 @@ module "blc-testnet" {
   instance_type     = var.instance_type[1]
   timeout           = var.timeout
   prom_service_acct = var.prom_service_acct
-  opsgenie_key      = var.opsgenie_key
   rpcpass           = var.rpcpass
   charge_token      = var.charge_token
   k8s_autossh_lb    = var.k8s_autossh_lb

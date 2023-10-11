@@ -102,10 +102,6 @@ variable "prom_allowed_source_ip" {
   default = []
 }
 
-variable "opsgenie_key" {
-  type    = string
-  default = ""
-}
 
 variable "satellite_lb" {
   type    = string

@@ -41,12 +41,12 @@ DEFAULT_TX_CONFIRM_TIMEOUT_SECS = 60
 
 SERVER_PORT = 9292
 CALLBACK_URI_ROOT = os.getenv('CALLBACK_URI_ROOT',
-                              "http://localhost:{}".format(SERVER_PORT))
+                              "http://127.0.0.1:{}".format(SERVER_PORT))
 CHARGE_API_TOKEN = os.getenv('CHARGE_API_TOKEN', str(uuid.uuid4()))
 LIGHTNING_WEBHOOK_KEY = hmac_sha256_digest('charged-token', CHARGE_API_TOKEN)
 
 CHARGE_ROOT = os.getenv('CHARGE_ROOT',
-                        f'http://api-token:{CHARGE_API_TOKEN}@localhost:9112')
+                        f'http://api-token:{CHARGE_API_TOKEN}@127.0.0.1:9112')
 CONNECTION_TIMEOUT = 2
 DB_FILE = db_conf[env]['database']
 DB_ROOT = os.path.dirname(DB_FILE)

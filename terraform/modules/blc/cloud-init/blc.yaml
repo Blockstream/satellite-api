@@ -248,11 +248,11 @@ write_files:
             --log-opt max-file=3 \
             -v /mnt/disks/data/satellite-api:/data \
             -e "ENV=production" \
-            -e "CHARGE_ROOT=http://api-token:${charge_token}@localhost:9112" \
-            -e "CALLBACK_URI_ROOT=http://localhost:9292" \
+            -e "CHARGE_ROOT=http://api-token:${charge_token}@127.0.0.1:9112" \
+            -e "CALLBACK_URI_ROOT=http://127.0.0.1:9292" \
             -e "CHARGE_API_TOKEN=${charge_token}" \
             -e "MIN_PER_BYTE_BID=1" \
-            -e "REDIS_URI=redis://localhost:6379" \
+            -e "REDIS_URI=redis://127.0.0.1:6379" \
             "${sat_api_docker}"
         ExecStop=/usr/bin/docker stop api-server
         ExecStopPost=/usr/bin/docker rm api-server
@@ -279,7 +279,7 @@ write_files:
             --pid=host \
             --name=sse-server \
             -e "SUB_CHANNELS=transmissions,gossip,btc-src,auth" \
-            -e "REDIS_URI=redis://localhost:6379" \
+            -e "REDIS_URI=redis://127.0.0.1:6379" \
             "${sat_api_sse_docker}"
         ExecStop=/usr/bin/docker stop sse-server
         ExecStopPost=/usr/bin/docker rm sse-server
@@ -304,7 +304,7 @@ write_files:
             --name=api-workers \
             -v /mnt/disks/data/satellite-api:/data \
             -e ENV="production" \
-            -e "REDIS_URI=redis://localhost:6379" \
+            -e "REDIS_URI=redis://127.0.0.1:6379" \
             "${sat_api_docker}" workers.sh
         ExecStop=/usr/bin/docker stop api-workers
         ExecStopPost=/usr/bin/docker rm api-workers

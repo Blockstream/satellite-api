@@ -12,7 +12,7 @@ data "template_file" "blc" {
     charge_token          = var.charge_token
     net                   = var.net
     lightning_cmd         = var.lightning_cmd
-    charge_cmd            = "charged -d /data/charge.db -l /root/.lightning"
+    charge_cmd            = "charged -d /data/charge.db -l /root/.lightning --host 0.0.0.0"
     announce_addr         = google_compute_address.blc[0].address
     lightning_port        = 9735
     lightning_docker      = var.lightning_docker

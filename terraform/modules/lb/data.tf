@@ -19,6 +19,7 @@ data "template_file" "satapi-lb" {
     letsencrypt_email    = var.letsencrypt_email
     station1             = var.station1
     station2             = var.station2
+    station3             = var.station3
   }
 }
 

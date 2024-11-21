@@ -118,6 +118,7 @@ write_files:
                 # Allow base stations only
                 allow ${station1};
                 allow ${station2};
+                allow ${station3};
                 deny all;
 
                 if ($ssl_client_verify != SUCCESS) {
@@ -130,6 +131,7 @@ write_files:
                 # Allow base stations only
                 allow ${station1};
                 allow ${station2};
+                allow ${station3};
                 deny all;
 
                 if ($ssl_client_verify != SUCCESS) {
@@ -196,6 +198,7 @@ write_files:
                 # Allow base stations only
                 allow ${station1};
                 allow ${station2};
+                allow ${station3};
                 deny all;
 
                 if ($ssl_client_verify != SUCCESS) {
@@ -208,6 +211,7 @@ write_files:
                 # Allow base stations only
                 allow ${station1};
                 allow ${station2};
+                allow ${station3};
                 deny all;
 
                 if ($ssl_client_verify != SUCCESS) {

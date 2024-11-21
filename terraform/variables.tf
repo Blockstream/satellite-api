@@ -184,6 +184,11 @@ variable "station2" {
   default = ""
 }
 
+variable "station3" {
+  type    = string
+  default = ""
+}
+
 variable "sat_api_docker" {
   type    = string
   default = ""

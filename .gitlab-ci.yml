@@ -182,6 +182,7 @@ plan_staging:
          -var "k8s_autossh_lb=$GKE_LB"
          -var "station1=$STATION_1"
          -var "station2=$STATION_2"
+         -var "station3=$STATION_3"
          -input=false)
 
 # Tag with staging_v.* to deploy mainnet + LB to staging (e.g. staging_v0.1.1)
@@ -214,6 +215,7 @@ deploy_staging:
          -var "k8s_autossh_lb=$GKE_LB"
          -var "station1=$STATION_1"
          -var "station2=$STATION_2"
+         -var "station3=$STATION_3"
          -input=false -auto-approve)
 
 # Tag with prod_v.* to plan mainnet + LB to production (e.g. prod_v0.1.1)
@@ -245,6 +247,7 @@ plan_production:
          -var "k8s_autossh_lb=$GKE_LB"
          -var "station1=$STATION_1"
          -var "station2=$STATION_2"
+         -var "station3=$STATION_3"
          -input=false)
 
 # Tag with prod_v.* to deploy mainnet + LB to production (e.g. prod_v0.1.1)
@@ -277,6 +280,7 @@ deploy_production:
          -var "k8s_autossh_lb=$GKE_LB"
          -var "station1=$STATION_1"
          -var "station2=$STATION_2"
+         -var "station3=$STATION_3"
          -input=false -auto-approve)
 
 # Tag with testnet_prod_v.* to plan testnet to production (e.g. testnet_prod_v0.1.1)

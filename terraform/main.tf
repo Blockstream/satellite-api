@@ -118,6 +118,7 @@ module "lb" {
   public_bucket_url = var.public_bucket_url
   station1          = var.station1
   station2          = var.station2
+  station3          = var.station3
 }
 
 module "tor" {

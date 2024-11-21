@@ -75,6 +75,10 @@ variable "station2" {
   type = string
 }
 
+variable "station3" {
+  type = string
+}
+
 variable "node_exporter_docker" {
   type = string
 }

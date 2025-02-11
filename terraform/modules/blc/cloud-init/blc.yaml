@@ -2,340 +2,359 @@ bootcmd:
   - blkid /dev/disk/by-id/google-data || mkfs.ext4 -L data /dev/disk/by-id/google-data
   - mkdir -p /mnt/disks/data
 mounts:
-  - [ /dev/disk/by-id/google-data, /mnt/disks/data, auto, "rw,noatime,discard,nobarrier,nodev" ]
+  - [
+      /dev/disk/by-id/google-data,
+      /mnt/disks/data,
+      auto,
+      "rw,noatime,discard,nobarrier,nodev",
+    ]
 
 users:
   - name: bs
     uid: 2000
 
 write_files:
+  - path: /etc/docker/daemon.json
+    permissions: 0644
+    owner: root
+    content: |
+      {
+              "live-restore": true,
+              "log-opts": {
+                      "tag": "{{.Name}}",
+                      "max-size": "1g",
+                      "max-files": "2"
+              },
+              "storage-driver": "overlay2",
+              "mtu": 1460
+      }
+
   - path: /home/bs/check_containers.sh
     permissions: 0744
     owner: root
     content: |
-        #!/bin/bash
+      #!/bin/bash
 
-        # Set the file path
-        output_file="/var/tmp/tempmetrics"
-        scrape_file="/var/tmp/nodeexporter/container_metrics.prom"
+      # Set the file path
+      output_file="/var/tmp/tempmetrics"
+      scrape_file="/var/tmp/nodeexporter/container_metrics.prom"
 
-        # Check if the file exists, if not, create it
-        if [[ ! -f "$output_file" ]]; then
-          touch "$output_file"
-        fi
+      # Check if the file exists, if not, create it
+      if [[ ! -f "$output_file" ]]; then
+        touch "$output_file"
+      fi
 
-        while true; do
-          # Empty the file to start fresh
-          > "$output_file"
+      while true; do
+        # Empty the file to start fresh
+        > "$output_file"
 
-          # Fetch the list of all container names and their statuses
-          docker ps -a --format "{{.Names}} {{.Status}}" | while read -r line; do
-              # Split the line into container name and status
-              container_name=$(echo "$line" | awk '{print $1}')
-              status=$(echo "$line" | awk '{print $2}')
+        # Fetch the list of all container names and their statuses
+        docker ps -a --format "{{.Names}} {{.Status}}" | while read -r line; do
+            # Split the line into container name and status
+            container_name=$(echo "$line" | awk '{print $1}')
+            status=$(echo "$line" | awk '{print $2}')
 
-              # Check if the container status is Running
-              if [[ "$status" == "Up" ]]; then
-                  echo "running_container{cont=\"$container_name\"} 1" >> "$output_file"
-              else
-                  echo "running_container{cont=\"$container_name\"} 0" >> "$output_file"
-              fi
-          done
-
-          # move file for nodeexporter to scrape when finished writing it
-          mv $output_file $scrape_file
-
-          # Sleep for 30 seconds before the next iteration
-          sleep 30
+            # Check if the container status is Running
+            if [[ "$status" == "Up" ]]; then
+                echo "running_container{cont=\"$container_name\"} 1" >> "$output_file"
+            else
+                echo "running_container{cont=\"$container_name\"} 0" >> "$output_file"
+            fi
         done
 
+        # move file for nodeexporter to scrape when finished writing it
+        mv $output_file $scrape_file
+
+        # Sleep for 30 seconds before the next iteration
+        sleep 30
+      done
 
   - path: /etc/systemd/system/check-containers.service
     permissions: 0644
     owner: root
     content: |
-        [Unit]
-        Description=Check # of containers every 10 mins
-        Wants=check-containers.timer
-        Requires=charge.service
+      [Unit]
+      Description=Check # of containers every 10 mins
+      Wants=check-containers.timer
+      Requires=charge.service
 
-        [Service]
-        ExecStart=/bin/bash /home/bs/check_containers.sh
-        Restart=always
-        RestartSec=1
-        User=root
+      [Service]
+      ExecStart=/bin/bash /home/bs/check_containers.sh
+      Restart=always
+      RestartSec=1
+      User=root
 
   - path: /etc/systemd/system/check-containers.timer
     permissions: 0644
     owner: root
     content: |
-        [Unit]
-        Description=Run check-containers service after initial 7min delay
+      [Unit]
+      Description=Run check-containers service after initial 7min delay
 
-        [Timer]
-        OnBootSec=420s
-        Persistent=true
+      [Timer]
+      OnBootSec=420s
+      Persistent=true
 
-        [Install]
-        WantedBy=timers.target
+      [Install]
+      WantedBy=timers.target
 
   - path: /etc/systemd/system/node-exporter.service
     permissions: 0644
     owner: root
     content: |
-        [Unit]
-        Description=Prometheus node-exporter
-        Wants=gcr-online.target docker.service
-        After=gcr-online.service docker.service
+      [Unit]
+      Description=Prometheus node-exporter
+      Wants=gcr-online.target docker.service
+      After=gcr-online.service docker.service
 
-        [Service]
-        Restart=always
-        RestartSec=3
-        Environment=HOME=/home/bs
-        ExecStartPre=/usr/bin/docker pull ${node_exporter_docker}
-        ExecStartPre=/sbin/iptables -A INPUT -m tcp -p tcp --dport 9100 -j ACCEPT
-        ExecStart=/usr/bin/docker run \
-            --name=node-exporter \
-            --network=host \
-            --read-only \
-            -v /proc:/host/proc:ro \
-            -v /sys:/host/sys:ro \
-            -v /:/rootfs:ro \
-            -v /var/tmp/nodeexporter:/metrics:ro \
-            -v /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket:ro \
-            "${node_exporter_docker}" --path.procfs /host/proc --path.sysfs /host/sys --collector.textfile.directory /metrics --collector.filesystem.ignored-mount-points "^/(sys|proc|dev|host|etc($|/))" --collector.systemd
-        ExecStop=/usr/bin/docker stop node-exporter
-        ExecStopPost=/usr/bin/docker rm node-exporter
-        ExecStopPost=/sbin/iptables -D INPUT -m tcp -p tcp --dport 9100 -j ACCEPT
+      [Service]
+      Restart=always
+      RestartSec=3
+      Environment=HOME=/home/bs
+      ExecStartPre=/usr/bin/docker pull ${node_exporter_docker}
+      ExecStartPre=/sbin/iptables -A INPUT -m tcp -p tcp --dport 9100 -j ACCEPT
+      ExecStart=/usr/bin/docker run \
+          --name=node-exporter \
+          --network=host \
+          --read-only \
+          -v /proc:/host/proc:ro \
+          -v /sys:/host/sys:ro \
+          -v /:/rootfs:ro \
+          -v /var/tmp/nodeexporter:/metrics:ro \
+          -v /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket:ro \
+          "${node_exporter_docker}" --path.procfs /host/proc --path.sysfs /host/sys --collector.textfile.directory /metrics --collector.filesystem.ignored-mount-points "^/(sys|proc|dev|host|etc($|/))" --collector.systemd
+      ExecStop=/usr/bin/docker stop node-exporter
+      ExecStopPost=/usr/bin/docker rm node-exporter
+      ExecStopPost=/sbin/iptables -D INPUT -m tcp -p tcp --dport 9100 -j ACCEPT
 
   - path: /etc/systemd/system/autossh-key-downloader.service
     permissions: 0644
     owner: root
     content: |
-        [Unit]
-        Description=Download SSH privkey from GCS
-        Wants=gcr-online.target
-        After=gcr-online.target
+      [Unit]
+      Description=Download SSH privkey from GCS
+      Wants=gcr-online.target
+      After=gcr-online.target
 
-        [Service]
-        Type=oneshot
-        RemainAfterExit=true
-        Environment=HOME=/home/bs
-        ExecStart=/usr/bin/docker run \
-            --name=autosssh-key \
-            --tmpfs /root \
-            --tmpfs /tmp \
-            --rm \
-            -v /home/bs:/mnt/bs:rw \
-            "${certbot_docker}" /google-cloud-sdk/bin/gsutil -m cp -r ${private_bucket}/k8s_keys${ssh_key_net}/* /mnt/bs/
-        ExecStartPost=-/bin/chmod 0600 /home/bs/k8s_autossh.key
-        ExecStopPost=-/bin/chmod 0600 /home/bs/k8s_autossh.key
+      [Service]
+      Type=oneshot
+      RemainAfterExit=true
+      Environment=HOME=/home/bs
+      ExecStart=/usr/bin/docker run \
+          --name=autosssh-key \
+          --tmpfs /root \
+          --tmpfs /tmp \
+          --rm \
+          -v /home/bs:/mnt/bs:rw \
+          "${certbot_docker}" /google-cloud-sdk/bin/gsutil -m cp -r ${private_bucket}/k8s_keys${ssh_key_net}/* /mnt/bs/
+      ExecStartPost=-/bin/chmod 0600 /home/bs/k8s_autossh.key
+      ExecStopPost=-/bin/chmod 0600 /home/bs/k8s_autossh.key
 
   - path: /etc/systemd/system/k8s-autossh.service
     permissions: 0644
     owner: root
     content: |
-        [Unit]
-        Description=SSH tunnel to on-prem K8s node
-        Wants=gcr-online.target
-        After=autossh-key-downloader.service
+      [Unit]
+      Description=SSH tunnel to on-prem K8s node
+      Wants=gcr-online.target
+      After=autossh-key-downloader.service
 
-        [Service]
-        Restart=always
-        RestartSec=5
-        Environment=HOME=/home/bs
-        ExecStartPre=/sbin/iptables -A INPUT -p tcp -s localhost --dport ${k8s_autossh_btc_port} -j ACCEPT
-        ExecStart=/usr/bin/docker run \
-            --network=host \
-            --name=k8s-autossh \
-            -e AUTOSSH_GATETIME=0 \
-            -v /home/bs/k8s_autossh.key:/root/.ssh/id_ed25519:ro \
-            ${autossh_docker} ${k8s_autossh_btc_port}:localhost:${k8s_autossh_btc_port} -p ${k8s_autossh_ssh_port} root@${k8s_autossh_lb}
-        ExecStop=/usr/bin/docker stop k8s-autossh
-        ExecStopPost=/usr/bin/docker rm k8s-autossh
-        ExecStopPost=/sbin/iptables -D INPUT -p tcp -s localhost --dport ${k8s_autossh_btc_port} -j ACCEPT
+      [Service]
+      Restart=always
+      RestartSec=5
+      Environment=HOME=/home/bs
+      ExecStartPre=/sbin/iptables -A INPUT -p tcp -s localhost --dport ${k8s_autossh_btc_port} -j ACCEPT
+      ExecStart=/usr/bin/docker run \
+          --network=host \
+          --name=k8s-autossh \
+          -e AUTOSSH_GATETIME=0 \
+          -v /home/bs/k8s_autossh.key:/root/.ssh/id_ed25519:ro \
+          ${autossh_docker} ${k8s_autossh_btc_port}:localhost:${k8s_autossh_btc_port} -p ${k8s_autossh_ssh_port} root@${k8s_autossh_lb}
+      ExecStop=/usr/bin/docker stop k8s-autossh
+      ExecStopPost=/usr/bin/docker rm k8s-autossh
+      ExecStopPost=/sbin/iptables -D INPUT -p tcp -s localhost --dport ${k8s_autossh_btc_port} -j ACCEPT
 
   - path: /home/bs/lightning.conf
     permissions: 0644
     owner: root
     content: |
-        log-level=debug
-        plugin-dir=/opt/plugins
-        alias=satellite-api-${net}
-        bitcoin-rpcuser=${net}-def
-        bitcoin-rpcpassword=${rpcpass}
-        announce-addr=${announce_addr}
-        bind-addr=0.0.0.0
+      log-level=debug
+      plugin-dir=/opt/plugins
+      alias=satellite-api-${net}
+      bitcoin-rpcuser=${net}-def
+      bitcoin-rpcpassword=${rpcpass}
+      announce-addr=${announce_addr}
+      bind-addr=0.0.0.0
 
   - path: /etc/systemd/system/lightning.service
     permissions: 0644
     owner: root
     content: |
-        [Unit]
-        Description=Lightning node
-        Wants=gcr-online.target
-        After=k8s-autossh.service
+      [Unit]
+      Description=Lightning node
+      Wants=gcr-online.target
+      After=k8s-autossh.service
 
-        [Service]
-        Restart=always
-        RestartSec=3
-        Environment=HOME=/home/bs
-        ExecStartPre=/usr/bin/docker pull ${lightning_docker}
-        ExecStartPre=/sbin/iptables -A INPUT -p tcp --dport ${lightning_port} -j ACCEPT
-        ExecStartPre=/sbin/iptables -A INPUT -m tcp -p tcp --dport 9750 -j ACCEPT
-        ExecStart=/usr/bin/docker run \
-            --network=host \
-            --pid=host \
-            --name=lightning \
-            --cap-add=SYS_PTRACE \
-            --memory=2g \
-            --log-opt max-size=1g \
-            -v /home/bs/lightning.conf:/root/.lightning${network_dir}/lightning.conf:ro \
-            -v /mnt/disks/data/lightning:/root/.lightning:rw \
-            "${lightning_docker}" ${lightning_cmd}
-        ExecStop=/usr/bin/docker exec lightning lightning-cli stop
-        ExecStopPost=/usr/bin/sleep 3
-        ExecStopPost=/usr/bin/docker rm -f lightning
-        ExecStopPost=/sbin/iptables -D INPUT -p tcp --dport ${lightning_port} -j ACCEPT
-        ExecStopPost=/sbin/iptables -D INPUT -m tcp -p tcp --dport 9750 -j ACCEPT
+      [Service]
+      Restart=always
+      RestartSec=3
+      Environment=HOME=/home/bs
+      ExecStartPre=/usr/bin/docker pull ${lightning_docker}
+      ExecStartPre=/sbin/iptables -A INPUT -p tcp --dport ${lightning_port} -j ACCEPT
+      ExecStartPre=/sbin/iptables -A INPUT -m tcp -p tcp --dport 9750 -j ACCEPT
+      ExecStart=/usr/bin/docker run \
+          --network=host \
+          --pid=host \
+          --name=lightning \
+          --cap-add=SYS_PTRACE \
+          --memory=2g \
+          --log-opt max-size=1g \
+          -v /home/bs/lightning.conf:/root/.lightning${network_dir}/lightning.conf:ro \
+          -v /mnt/disks/data/lightning:/root/.lightning:rw \
+          "${lightning_docker}" ${lightning_cmd}
+      ExecStop=/usr/bin/docker exec lightning lightning-cli stop
+      ExecStopPost=/usr/bin/sleep 3
+      ExecStopPost=/usr/bin/docker rm -f lightning
+      ExecStopPost=/sbin/iptables -D INPUT -p tcp --dport ${lightning_port} -j ACCEPT
+      ExecStopPost=/sbin/iptables -D INPUT -m tcp -p tcp --dport 9750 -j ACCEPT
 
   - path: /etc/systemd/system/redis.service
     permissions: 0644
     owner: root
     content: |
-        [Unit]
-        Description=Redis db for server-side events
-        Wants=gcr-online.target
-        After=gcr-online.service
+      [Unit]
+      Description=Redis db for server-side events
+      Wants=gcr-online.target
+      After=gcr-online.service
 
-        [Service]
-        Restart=always
-        RestartSec=3
-        Environment=HOME=/home/bs
-        ExecStartPre=/usr/bin/docker pull redis:latest
-        ExecStartPre=/sbin/iptables -A INPUT -p tcp -s localhost --dport ${redis_port} -j ACCEPT
-        ExecStart=/usr/bin/docker run \
-            --network=host \
-            --pid=host \
-            --name=sse-redis-db \
-            "redis:latest"
-        ExecStop=/usr/bin/docker stop sse-redis-db
-        ExecStopPost=/usr/bin/docker rm sse-redis-db
-        ExecStopPost=/sbin/iptables -D INPUT -p tcp -s localhost --dport ${redis_port} -j ACCEPT
+      [Service]
+      Restart=always
+      RestartSec=3
+      Environment=HOME=/home/bs
+      ExecStartPre=/usr/bin/docker pull redis:latest
+      ExecStartPre=/sbin/iptables -A INPUT -p tcp -s localhost --dport ${redis_port} -j ACCEPT
+      ExecStart=/usr/bin/docker run \
+          --network=host \
+          --pid=host \
+          --name=sse-redis-db \
+          "redis:latest"
+      ExecStop=/usr/bin/docker stop sse-redis-db
+      ExecStopPost=/usr/bin/docker rm sse-redis-db
+      ExecStopPost=/sbin/iptables -D INPUT -p tcp -s localhost --dport ${redis_port} -j ACCEPT
 
   - path: /etc/systemd/system/api-server.service
     permissions: 0644
     owner: root
     content: |
-        [Unit]
-        Description=API server daemon
-        Wants=gcr-online.target
-        Requires=charge.service
-        After=charge.service
+      [Unit]
+      Description=API server daemon
+      Wants=gcr-online.target
+      Requires=charge.service
+      After=charge.service
 
-        [Service]
-        Restart=always
-        RestartSec=3
-        Environment=HOME=/home/bs
-        ExecStartPre=/usr/bin/docker-credential-gcr configure-docker
-        ExecStartPre=/usr/bin/docker pull ${sat_api_docker}
-        ExecStartPre=/sbin/iptables -A INPUT -p tcp -s 10.138.0.0/16 --dport 9292 -j ACCEPT
-        ExecStart=/usr/bin/docker run \
-            --network=host \
-            --pid=host \
-            --name=api-server \
-            --log-opt max-size=200m \
-            --log-opt max-file=3 \
-            -v /mnt/disks/data/satellite-api:/data \
-            -e "ENV=production" \
-            -e "CHARGE_ROOT=http://api-token:${charge_token}@127.0.0.1:9112" \
-            -e "CALLBACK_URI_ROOT=http://127.0.0.1:9292" \
-            -e "CHARGE_API_TOKEN=${charge_token}" \
-            -e "MIN_PER_BYTE_BID=1" \
-            -e "REDIS_URI=redis://127.0.0.1:6379" \
-            "${sat_api_docker}"
-        ExecStop=/usr/bin/docker stop api-server
-        ExecStopPost=/usr/bin/docker rm api-server
-        ExecStopPost=/sbin/iptables -D INPUT -p tcp -s 10.138.0.0/16 --dport 9292 -j ACCEPT
+      [Service]
+      Restart=always
+      RestartSec=3
+      Environment=HOME=/home/bs
+      ExecStartPre=/usr/bin/docker-credential-gcr configure-docker
+      ExecStartPre=/usr/bin/docker pull ${sat_api_docker}
+      ExecStartPre=/sbin/iptables -A INPUT -p tcp -s 10.138.0.0/16 --dport 9292 -j ACCEPT
+      ExecStart=/usr/bin/docker run \
+          --network=host \
+          --pid=host \
+          --name=api-server \
+          --log-opt max-size=200m \
+          --log-opt max-file=3 \
+          -v /mnt/disks/data/satellite-api:/data \
+          -e "ENV=production" \
+          -e "CHARGE_ROOT=http://api-token:${charge_token}@127.0.0.1:9112" \
+          -e "CALLBACK_URI_ROOT=http://127.0.0.1:9292" \
+          -e "CHARGE_API_TOKEN=${charge_token}" \
+          -e "MIN_PER_BYTE_BID=1" \
+          -e "REDIS_URI=redis://127.0.0.1:6379" \
+          "${sat_api_docker}"
+      ExecStop=/usr/bin/docker stop api-server
+      ExecStopPost=/usr/bin/docker rm api-server
+      ExecStopPost=/sbin/iptables -D INPUT -p tcp -s 10.138.0.0/16 --dport 9292 -j ACCEPT
 
   - path: /etc/systemd/system/sse-server.service
     permissions: 0644
     owner: root
     content: |
-        [Unit]
-        Description=Server-Side Events Server
-        Wants=gcr-online.target
-        After=redis.service
+      [Unit]
+      Description=Server-Side Events Server
+      Wants=gcr-online.target
+      After=redis.service
 
-        [Service]
-        Restart=always
-        RestartSec=3
-        Environment=HOME=/home/bs
-        ExecStartPre=/usr/bin/docker-credential-gcr configure-docker
-        ExecStartPre=/usr/bin/docker pull ${sat_api_sse_docker}
-        ExecStartPre=/sbin/iptables -A INPUT -p tcp -s 10.138.0.0/16 --dport 4500 -j ACCEPT
-        ExecStart=/usr/bin/docker run \
-            --network=host \
-            --pid=host \
-            --name=sse-server \
-            -e "SUB_CHANNELS=transmissions,gossip,btc-src,auth" \
-            -e "REDIS_URI=redis://127.0.0.1:6379" \
-            "${sat_api_sse_docker}"
-        ExecStop=/usr/bin/docker stop sse-server
-        ExecStopPost=/usr/bin/docker rm sse-server
-        ExecStopPost=/sbin/iptables -D INPUT -p tcp -s 10.138.0.0/16 --dport 4500 -j ACCEPT
+      [Service]
+      Restart=always
+      RestartSec=3
+      Environment=HOME=/home/bs
+      ExecStartPre=/usr/bin/docker-credential-gcr configure-docker
+      ExecStartPre=/usr/bin/docker pull ${sat_api_sse_docker}
+      ExecStartPre=/sbin/iptables -A INPUT -p tcp -s 10.138.0.0/16 --dport 4500 -j ACCEPT
+      ExecStart=/usr/bin/docker run \
+          --network=host \
+          --pid=host \
+          --name=sse-server \
+          -e "SUB_CHANNELS=transmissions,gossip,btc-src,auth" \
+          -e "REDIS_URI=redis://127.0.0.1:6379" \
+          "${sat_api_sse_docker}"
+      ExecStop=/usr/bin/docker stop sse-server
+      ExecStopPost=/usr/bin/docker rm sse-server
+      ExecStopPost=/sbin/iptables -D INPUT -p tcp -s 10.138.0.0/16 --dport 4500 -j ACCEPT
 
   - path: /etc/systemd/system/api-workers.service
     permissions: 0644
     owner: root
     content: |
-        [Unit]
-        Description=API Server Workers
-        Wants=gcr-online.target
-        After=api-server.service
+      [Unit]
+      Description=API Server Workers
+      Wants=gcr-online.target
+      After=api-server.service
 
-        [Service]
-        Restart=always
-        RestartSec=3
-        Environment=HOME=/home/bs
-        ExecStart=/usr/bin/docker run \
-            --network=host \
-            --pid=host \
-            --name=api-workers \
-            -v /mnt/disks/data/satellite-api:/data \
-            -e ENV="production" \
-            -e "REDIS_URI=redis://127.0.0.1:6379" \
-            "${sat_api_docker}" workers.sh
-        ExecStop=/usr/bin/docker stop api-workers
-        ExecStopPost=/usr/bin/docker rm api-workers
+      [Service]
+      Restart=always
+      RestartSec=3
+      Environment=HOME=/home/bs
+      ExecStart=/usr/bin/docker run \
+          --network=host \
+          --pid=host \
+          --name=api-workers \
+          -v /mnt/disks/data/satellite-api:/data \
+          -e ENV="production" \
+          -e "REDIS_URI=redis://127.0.0.1:6379" \
+          "${sat_api_docker}" workers.sh
+      ExecStop=/usr/bin/docker stop api-workers
+      ExecStopPost=/usr/bin/docker rm api-workers
 
   - path: /etc/systemd/system/charge.service
     permissions: 0644
     owner: root
     content: |
-        [Unit]
-        Description=Charge instance
-        Wants=gcr-online.target
-        Requires=lightning.service
-        After=lightning.service
+      [Unit]
+      Description=Charge instance
+      Wants=gcr-online.target
+      Requires=lightning.service
+      After=lightning.service
 
-        [Service]
-        Restart=always
-        RestartSec=200
-        Environment=HOME=/home/bs
-        ExecStartPre=/usr/bin/docker pull ${charge_docker}
-        ExecStartPre=/sbin/iptables -A INPUT -p tcp -s localhost --dport 9112 -j ACCEPT
-        ExecStart=/usr/bin/docker run \
-            --network=host \
-            --pid=host \
-            --name=charge \
-            -v /mnt/disks/data/lightning${network_dir}:/root/.lightning:ro \
-            -v /mnt/disks/data/charge:/data:rw \
-            -e "API_TOKEN=${charge_token}" \
-            "${charge_docker}" ${charge_cmd}
-        ExecStop=/usr/bin/docker stop charge
-        ExecStopPost=/usr/bin/docker rm charge
-        ExecStopPost=/sbin/iptables -D INPUT -p tcp -s localhost --dport 9112 -j ACCEPT
+      [Service]
+      Restart=always
+      RestartSec=200
+      Environment=HOME=/home/bs
+      ExecStartPre=/usr/bin/docker pull ${charge_docker}
+      ExecStartPre=/sbin/iptables -A INPUT -p tcp -s localhost --dport 9112 -j ACCEPT
+      ExecStart=/usr/bin/docker run \
+          --network=host \
+          --pid=host \
+          --name=charge \
+          -v /mnt/disks/data/lightning${network_dir}:/root/.lightning:ro \
+          -v /mnt/disks/data/charge:/data:rw \
+          -e "API_TOKEN=${charge_token}" \
+          "${charge_docker}" ${charge_cmd}
+      ExecStop=/usr/bin/docker stop charge
+      ExecStopPost=/usr/bin/docker rm charge
+      ExecStopPost=/sbin/iptables -D INPUT -p tcp -s localhost --dport 9112 -j ACCEPT
 
 runcmd:
   - systemctl daemon-reload

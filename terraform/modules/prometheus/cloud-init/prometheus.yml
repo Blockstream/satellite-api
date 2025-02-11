@@ -2,182 +2,197 @@ bootcmd:
   - blkid /dev/disk/by-id/google-data || mkfs.ext4 -L data -E lazy_itable_init=0,lazy_journal_init=0,discard /dev/disk/by-id/google-data
 
 mounts:
-  - [ /dev/disk/by-label/data, /mnt/disks/data, auto, defaults ]
+  - [/dev/disk/by-label/data, /mnt/disks/data, auto, defaults]
 
 users:
   - name: bs
     uid: 2000
 
 write_files:
+  - path: /etc/docker/daemon.json
+    permissions: 0644
+    owner: root
+    content: |
+      {
+              "live-restore": true,
+              "log-opts": {
+                      "tag": "{{.Name}}",
+                      "max-size": "1g",
+                      "max-files": "2"
+              },
+              "storage-driver": "overlay2",
+              "mtu": 1460
+      }
+
   - path: /home/bs/prometheus/prometheus.yml
     permissions: 0644
     owner: root
     content: |
-        global:
-          evaluation_interval: 15s
-          scrape_interval: 15s
-          external_labels:
-            project: satellite-api
+      global:
+        evaluation_interval: 15s
+        scrape_interval: 15s
+        external_labels:
+          project: satellite-api
 
-        scrape_configs:
-        - job_name: prometheus
-          relabel_configs:
-            - source_labels:
-              - '__meta_gce_label_network'
-              target_label: 'network'
-            - source_labels:
-              - '__meta_gce_label_name'
-              target_label: 'name'
-            - source_labels:
-              - '__meta_gce_instance_name'
-              target_label: 'instance_name'
-          gce_sd_configs:
-            - project: satellite-api
-              filter: (labels.type = "prometheus")
-              zone: us-west1-a
-              port: 9100
-            - project: satellite-api
-              filter: (labels.type = "prometheus")
-              zone: us-west1-b
-              port: 9100
-            - project: satellite-api
-              filter: (labels.type = "prometheus")
-              zone: us-west1-c
-              port: 9100
+      scrape_configs:
+      - job_name: prometheus
+        relabel_configs:
+          - source_labels:
+            - '__meta_gce_label_network'
+            target_label: 'network'
+          - source_labels:
+            - '__meta_gce_label_name'
+            target_label: 'name'
+          - source_labels:
+            - '__meta_gce_instance_name'
+            target_label: 'instance_name'
+        gce_sd_configs:
+          - project: satellite-api
+            filter: (labels.type = "prometheus")
+            zone: us-west1-a
+            port: 9100
+          - project: satellite-api
+            filter: (labels.type = "prometheus")
+            zone: us-west1-b
+            port: 9100
+          - project: satellite-api
+            filter: (labels.type = "prometheus")
+            zone: us-west1-c
+            port: 9100
 
-        - job_name: satellite-api-node-exporter
-          relabel_configs:
-            - source_labels:
-              - '__meta_gce_label_network'
-              target_label: 'network'
-            - source_labels:
-              - '__meta_gce_label_name'
-              target_label: 'name'
-            - source_labels:
-              - '__meta_gce_instance_name'
-              target_label: 'instance_name'
-          gce_sd_configs:
-            - project: satellite-api
-              zone: us-west1-a
-              port: 9100
-            - project: satellite-api
-              zone: us-west1-b
-              port: 9100
-            - project: satellite-api
-              zone: us-west1-c
-              port: 9100
+      - job_name: satellite-api-node-exporter
+        relabel_configs:
+          - source_labels:
+            - '__meta_gce_label_network'
+            target_label: 'network'
+          - source_labels:
+            - '__meta_gce_label_name'
+            target_label: 'name'
+          - source_labels:
+            - '__meta_gce_instance_name'
+            target_label: 'instance_name'
+        gce_sd_configs:
+          - project: satellite-api
+            zone: us-west1-a
+            port: 9100
+          - project: satellite-api
+            zone: us-west1-b
+            port: 9100
+          - project: satellite-api
+            zone: us-west1-c
+            port: 9100
 
-        - job_name: iridium-analyzer-node-exporter
-          relabel_configs:
-            - source_labels:
-              - '__meta_gce_label_network'
-              target_label: 'network'
-            - source_labels:
-              - '__meta_gce_label_name'
-              target_label: 'name'
-            - source_labels:
-              - '__meta_gce_instance_name'
-              target_label: 'instance_name'
-          gce_sd_configs:
-            - project: satellite-api
-              zone: us-east1-b
-              port: 9100
-            - project: satellite-api
-              zone: us-east1-c
-              port: 9100
-            - project: satellite-api
-              zone: us-east1-d
-              port: 9100
+      - job_name: iridium-analyzer-node-exporter
+        relabel_configs:
+          - source_labels:
+            - '__meta_gce_label_network'
+            target_label: 'network'
+          - source_labels:
+            - '__meta_gce_label_name'
+            target_label: 'name'
+          - source_labels:
+            - '__meta_gce_instance_name'
+            target_label: 'instance_name'
+        gce_sd_configs:
+          - project: satellite-api
+            zone: us-east1-b
+            port: 9100
+          - project: satellite-api
+            zone: us-east1-c
+            port: 9100
+          - project: satellite-api
+            zone: us-east1-d
+            port: 9100
 
-        - job_name: lightningd
-          relabel_configs:
-            - source_labels:
-              - '__meta_gce_label_network'
-              target_label: 'network'
-            - source_labels:
-              - '__meta_gce_label_name'
-              target_label: 'name'
-            - source_labels:
-              - '__meta_gce_instance_name'
-              target_label: 'instance_name'
-          gce_sd_configs:
-            - project: satellite-api
-              filter: (labels.type = "lightning-app-blc")
-              zone: us-west1-a
-              port: 9750
-            - project: satellite-api
-              filter: (labels.type = "lightning-app-blc")
-              zone: us-west1-b
-              port: 9750
-            - project: satellite-api
-              filter: (labels.type = "lightning-app-blc")
-              zone: us-west1-c
-              port: 9750
+      - job_name: lightningd
+        relabel_configs:
+          - source_labels:
+            - '__meta_gce_label_network'
+            target_label: 'network'
+          - source_labels:
+            - '__meta_gce_label_name'
+            target_label: 'name'
+          - source_labels:
+            - '__meta_gce_instance_name'
+            target_label: 'instance_name'
+        gce_sd_configs:
+          - project: satellite-api
+            filter: (labels.type = "lightning-app-blc")
+            zone: us-west1-a
+            port: 9750
+          - project: satellite-api
+            filter: (labels.type = "lightning-app-blc")
+            zone: us-west1-b
+            port: 9750
+          - project: satellite-api
+            filter: (labels.type = "lightning-app-blc")
+            zone: us-west1-c
+            port: 9750
 
   - path: /etc/systemd/system/prometheus.service
     permissions: 0644
     owner: root
     content: |
-        [Unit]
-        Description=prometheus-server instance
-        Wants=gcr-online.target docker.service
-        After=gcr-online.service docker.service
+      [Unit]
+      Description=prometheus-server instance
+      Wants=gcr-online.target docker.service
+      After=gcr-online.service docker.service
 
-        [Service]
-        Restart=always
-        RestartSec=1
-        Environment=HOME=/home/bs
-        ExecStartPre=/usr/bin/docker pull ${prom_docker}
-        ExecStartPre=/sbin/iptables -A INPUT -m tcp -p tcp --dport 9090 -j ACCEPT
-        ExecStartPre=/sbin/iptables -A INPUT -m tcp -p tcp --dport 80 -j ACCEPT
-        ExecStartPre=/sbin/iptables -A PREROUTING -t nat -p tcp --dport 80 -j REDIRECT --to-port 9090
-        ExecStart=/usr/bin/docker run \
-            --network=host \
-            -v /mnt/disks/data:/data:rw \
-            -v /home/bs/prometheus:/config:ro \
-            --read-only \
-            --name prometheus \
-            "${prom_docker}" --config.file=/config/prometheus.yml --web.enable-lifecycle --web.enable-admin-api --storage.tsdb.path=/data/metrics --storage.tsdb.retention=${retention}
-        ExecStop=/usr/bin/docker stop prometheus
-        ExecStopPost=-/usr/bin/docker rm prometheus
-        ExecStopPost=/sbin/iptables -D INPUT -m tcp -p tcp --dport 9090 -j ACCEPT
-        ExecStopPost=/sbin/iptables -D INPUT -m tcp -p tcp --dport 80 -j ACCEPT
-        ExecStopPost=/sbin/iptables -D PREROUTING -t nat -p tcp --dport 80 -j REDIRECT --to-port 9090
+      [Service]
+      Restart=always
+      RestartSec=1
+      Environment=HOME=/home/bs
+      ExecStartPre=/usr/bin/docker pull ${prom_docker}
+      ExecStartPre=/sbin/iptables -A INPUT -m tcp -p tcp --dport 9090 -j ACCEPT
+      ExecStartPre=/sbin/iptables -A INPUT -m tcp -p tcp --dport 80 -j ACCEPT
+      ExecStartPre=/sbin/iptables -A PREROUTING -t nat -p tcp --dport 80 -j REDIRECT --to-port 9090
+      ExecStart=/usr/bin/docker run \
+          --network=host \
+          -v /mnt/disks/data:/data:rw \
+          -v /home/bs/prometheus:/config:ro \
+          --read-only \
+          --name prometheus \
+          "${prom_docker}" --config.file=/config/prometheus.yml --web.enable-lifecycle --web.enable-admin-api --storage.tsdb.path=/data/metrics --storage.tsdb.retention=${retention}
+      ExecStop=/usr/bin/docker stop prometheus
+      ExecStopPost=-/usr/bin/docker rm prometheus
+      ExecStopPost=/sbin/iptables -D INPUT -m tcp -p tcp --dport 9090 -j ACCEPT
+      ExecStopPost=/sbin/iptables -D INPUT -m tcp -p tcp --dport 80 -j ACCEPT
+      ExecStopPost=/sbin/iptables -D PREROUTING -t nat -p tcp --dport 80 -j REDIRECT --to-port 9090
 
-        [Install]
-        WantedBy=multi-user.target
+      [Install]
+      WantedBy=multi-user.target
 
   - path: /etc/systemd/system/node-exporter.service
     permissions: 0644
     owner: root
     content: |
-        [Unit]
-        Description=prometheus node-exporter
-        Wants=gcr-online.target docker.service
-        After=gcr-online.service docker.service
+      [Unit]
+      Description=prometheus node-exporter
+      Wants=gcr-online.target docker.service
+      After=gcr-online.service docker.service
 
-        [Service]
-        Restart=always
-        RestartSec=1
-        Environment=HOME=/home/bs
-        ExecStartPre=/usr/bin/docker pull ${node_exporter_docker}
-        ExecStartPre=/sbin/iptables -A INPUT -m tcp -p tcp --dport 9100 -j ACCEPT
-        ExecStart=/usr/bin/docker run \
-            --name=node-exporter \
-            --network=host \
-            --read-only \
-            -v /proc:/host/proc:ro \
-            -v /sys:/host/sys:ro \
-            -v /:/rootfs:ro \
-            -v metrics:/metrics:ro \
-            -v /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket:ro \
-            "${node_exporter_docker}" --path.procfs /host/proc --path.sysfs /host/sys --collector.textfile.directory /metrics --collector.filesystem.ignored-mount-points "^/(sys|proc|dev|host|etc($|/))" --collector.systemd
-        ExecStop=/usr/bin/docker stop node-exporter
-        ExecStopPost=-/usr/bin/docker rm node-exporter
-        ExecStopPost=/sbin/iptables -D INPUT -m tcp -p tcp --dport 9100 -j ACCEPT
+      [Service]
+      Restart=always
+      RestartSec=1
+      Environment=HOME=/home/bs
+      ExecStartPre=/usr/bin/docker pull ${node_exporter_docker}
+      ExecStartPre=/sbin/iptables -A INPUT -m tcp -p tcp --dport 9100 -j ACCEPT
+      ExecStart=/usr/bin/docker run \
+          --name=node-exporter \
+          --network=host \
+          --read-only \
+          -v /proc:/host/proc:ro \
+          -v /sys:/host/sys:ro \
+          -v /:/rootfs:ro \
+          -v metrics:/metrics:ro \
+          -v /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket:ro \
+          "${node_exporter_docker}" --path.procfs /host/proc --path.sysfs /host/sys --collector.textfile.directory /metrics --collector.filesystem.ignored-mount-points "^/(sys|proc|dev|host|etc($|/))" --collector.systemd
+      ExecStop=/usr/bin/docker stop node-exporter
+      ExecStopPost=-/usr/bin/docker rm node-exporter
+      ExecStopPost=/sbin/iptables -D INPUT -m tcp -p tcp --dport 9100 -j ACCEPT
 
-        [Install]
-        WantedBy=multi-user.target
+      [Install]
+      WantedBy=multi-user.target
 
 runcmd:
   - /bin/mkdir -p /mnt/disks/data/metrics

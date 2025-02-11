@@ -3,150 +3,165 @@ users:
     uid: 2000
 
 write_files:
+  - path: /etc/docker/daemon.json
+    permissions: 0644
+    owner: root
+    content: |
+      {
+              "live-restore": true,
+              "log-opts": {
+                      "tag": "{{.Name}}",
+                      "max-size": "1g",
+                      "max-files": "2"
+              },
+              "storage-driver": "overlay2",
+              "mtu": 1460
+      }
+
   - path: /home/bs/tor/hidden_service_v3/hs_ed25519_public_key.enc.b64
     permissions: 0600
     owner: root
     content: |
-        ${v3_pubk}
+      ${v3_pubk}
 
   - path: /home/bs/tor/hidden_service_v3/hs_ed25519_secret_key.enc.b64
     permissions: 0600
     owner: root
     content: |
-        ${v3_pk}
+      ${v3_pk}
 
   - path: /home/bs/torrc
     permissions: 0644
     owner: root
     content: |
-        DataDirectory /home/tor/tor
-        PidFile /var/run/tor/tor.pid
+      DataDirectory /home/tor/tor
+      PidFile /var/run/tor/tor.pid
 
-        ControlSocket /var/run/tor/control GroupWritable RelaxDirModeCheck
-        ControlSocketsGroupWritable 1
-        SocksPort 0
+      ControlSocket /var/run/tor/control GroupWritable RelaxDirModeCheck
+      ControlSocketsGroupWritable 1
+      SocksPort 0
 
-        CookieAuthentication 1
-        CookieAuthFileGroupReadable 1
-        CookieAuthFile /var/run/tor/control.authcookie
+      CookieAuthentication 1
+      CookieAuthFileGroupReadable 1
+      CookieAuthFile /var/run/tor/control.authcookie
 
-        Log [*]notice stderr
+      Log [*]notice stderr
 
-        HiddenServiceDir /home/tor/tor/hidden_service_v3/
-        HiddenServiceVersion 3
-        HiddenServicePort 80 ${tor_lb}:80
+      HiddenServiceDir /home/tor/tor/hidden_service_v3/
+      HiddenServiceVersion 3
+      HiddenServicePort 80 ${tor_lb}:80
 
   - path: /home/bs/tor/hidden_service_v3/hostname
     permissions: 0600
     owner: root
     content: |
-        ${v3_host}
+      ${v3_host}
 
   - path: /etc/systemd/system/decrypt.service
     permissions: 0644
     owner: root
     content: |
-        [Unit]
-        Description=decrypt secrets against KMS
-        Wants=gcr-online.target
-        After=gcr-online.target
+      [Unit]
+      Description=decrypt secrets against KMS
+      Wants=gcr-online.target
+      After=gcr-online.target
 
-        [Service]
-        Type=oneshot
-        RemainAfterExit=true
-        Environment=HOME=/home/bs
-        ExecStartPre=/usr/bin/docker-credential-gcr configure-docker
-        ExecStartPre=/usr/bin/docker pull ${gcloud_docker}
-        ExecStart=/usr/bin/docker run \
-            --name=decrypt \
-            --rm \
-            -v /home/bs/tor/hidden_service_v3/:/root/secrets:rw \
-            "${gcloud_docker}" gcloud kms decrypt \
-                --location=${kms_location} \
-                --keyring=${kms_key_ring} \
-                --key=${kms_key} \
-                --ciphertext-file=/root/secrets/hs_ed25519_public_key.enc \
-                --plaintext-file=/root/secrets/hs_ed25519_public_key
-        ExecStart=/usr/bin/docker run \
-            --name=decrypt \
-            --rm \
-            -v /home/bs/tor/hidden_service_v3/:/root/secrets:rw \
-            "${gcloud_docker}" gcloud kms decrypt \
-                --location=${kms_location} \
-                --keyring=${kms_key_ring} \
-                --key=${kms_key} \
-                --ciphertext-file=/root/secrets/hs_ed25519_secret_key.enc \
-                --plaintext-file=/root/secrets/hs_ed25519_secret_key
-        ExecStartPost=-/bin/rm /home/bs/tor/hidden_service_v3/hs_ed25519_public_key.enc /home/bs/tor/hidden_service_v3/hs_ed25519_public_key.enc.b64
-        ExecStartPost=-/bin/rm /home/bs/tor/hidden_service_v3/hs_ed25519_secret_key.enc /home/bs/tor/hidden_service_v3/hs_ed25519_secret_key.enc.b64
+      [Service]
+      Type=oneshot
+      RemainAfterExit=true
+      Environment=HOME=/home/bs
+      ExecStartPre=/usr/bin/docker-credential-gcr configure-docker
+      ExecStartPre=/usr/bin/docker pull ${gcloud_docker}
+      ExecStart=/usr/bin/docker run \
+          --name=decrypt \
+          --rm \
+          -v /home/bs/tor/hidden_service_v3/:/root/secrets:rw \
+          "${gcloud_docker}" gcloud kms decrypt \
+              --location=${kms_location} \
+              --keyring=${kms_key_ring} \
+              --key=${kms_key} \
+              --ciphertext-file=/root/secrets/hs_ed25519_public_key.enc \
+              --plaintext-file=/root/secrets/hs_ed25519_public_key
+      ExecStart=/usr/bin/docker run \
+          --name=decrypt \
+          --rm \
+          -v /home/bs/tor/hidden_service_v3/:/root/secrets:rw \
+          "${gcloud_docker}" gcloud kms decrypt \
+              --location=${kms_location} \
+              --keyring=${kms_key_ring} \
+              --key=${kms_key} \
+              --ciphertext-file=/root/secrets/hs_ed25519_secret_key.enc \
+              --plaintext-file=/root/secrets/hs_ed25519_secret_key
+      ExecStartPost=-/bin/rm /home/bs/tor/hidden_service_v3/hs_ed25519_public_key.enc /home/bs/tor/hidden_service_v3/hs_ed25519_public_key.enc.b64
+      ExecStartPost=-/bin/rm /home/bs/tor/hidden_service_v3/hs_ed25519_secret_key.enc /home/bs/tor/hidden_service_v3/hs_ed25519_secret_key.enc.b64
 
   - path: /etc/systemd/system/tor.service
     permissions: 0644
     owner: root
     content: |
-        [Unit]
-        Description=tor node
-        Wants=gcr-online.target docker.service decrypt.service
-        After=gcr-online.service docker.service decrypt.service
+      [Unit]
+      Description=tor node
+      Wants=gcr-online.target docker.service decrypt.service
+      After=gcr-online.service docker.service decrypt.service
 
-        [Service]
-        Restart=always
-        RestartSec=1
-        Environment=HOME=/home/bs
-        ExecStartPre=/usr/bin/docker-credential-gcr configure-docker
-        ExecStartPre=/usr/bin/docker pull ${tor_docker}
-        ExecStartPre=-/bin/chown -R bs:bs /home/bs/tor/
-        ExecStartPre=-/bin/chmod -R 2700 /home/bs/tor/
-        ExecStartPre=-/bin/chmod 0644 /home/bs/tor/hidden_service_v3/hs_ed25519_public_key
-        ExecStartPre=-/bin/chmod 0600 /home/bs/tor/hidden_service_v3/hs_ed25519_secret_key
-        ExecStartPre=/sbin/iptables -A INPUT -m tcp -p tcp --dport 9050 -j ACCEPT
-        ExecStart=/usr/bin/docker run \
-            --network=host \
-            --pid=host \
-            --name=tor \
-            --tmpfs /tmp/ \
-            -v /home/bs/torrc:/home/tor/torrc:ro \
-            -v /home/bs/tor:/home/tor/tor:rw \
-            "${tor_docker}" tor -f /home/tor/torrc
-        ExecStop=/usr/bin/docker stop tor
-        ExecStopPost=/usr/bin/docker rm tor
-        ExecStopPost=/sbin/iptables -D INPUT -m tcp -p tcp --dport 9050 -j ACCEPT
+      [Service]
+      Restart=always
+      RestartSec=1
+      Environment=HOME=/home/bs
+      ExecStartPre=/usr/bin/docker-credential-gcr configure-docker
+      ExecStartPre=/usr/bin/docker pull ${tor_docker}
+      ExecStartPre=-/bin/chown -R bs:bs /home/bs/tor/
+      ExecStartPre=-/bin/chmod -R 2700 /home/bs/tor/
+      ExecStartPre=-/bin/chmod 0644 /home/bs/tor/hidden_service_v3/hs_ed25519_public_key
+      ExecStartPre=-/bin/chmod 0600 /home/bs/tor/hidden_service_v3/hs_ed25519_secret_key
+      ExecStartPre=/sbin/iptables -A INPUT -m tcp -p tcp --dport 9050 -j ACCEPT
+      ExecStart=/usr/bin/docker run \
+          --network=host \
+          --pid=host \
+          --name=tor \
+          --tmpfs /tmp/ \
+          -v /home/bs/torrc:/home/tor/torrc:ro \
+          -v /home/bs/tor:/home/tor/tor:rw \
+          "${tor_docker}" tor -f /home/tor/torrc
+      ExecStop=/usr/bin/docker stop tor
+      ExecStopPost=/usr/bin/docker rm tor
+      ExecStopPost=/sbin/iptables -D INPUT -m tcp -p tcp --dport 9050 -j ACCEPT
 
-        [Install]
-        WantedBy=multi-user.target
+      [Install]
+      WantedBy=multi-user.target
 
   - path: /etc/systemd/system/node-exporter.service
     permissions: 0644
     owner: root
     content: |
-        [Unit]
-        Description=prometheus node-exporter
-        Wants=gcr-online.target docker.service
-        After=gcr-online.service docker.service
+      [Unit]
+      Description=prometheus node-exporter
+      Wants=gcr-online.target docker.service
+      After=gcr-online.service docker.service
 
-        [Service]
-        Restart=always
-        RestartSec=1
-        Environment=HOME=/home/exec
-        ExecStartPre=/usr/bin/docker-credential-gcr configure-docker
-        ExecStartPre=/usr/bin/docker pull ${node_exporter_docker}
-        ExecStartPre=/sbin/iptables -A INPUT -m tcp -p tcp --dport 9100 -j ACCEPT
-        ExecStart=/usr/bin/docker run \
-            --name=node-exporter \
-            --network=host \
-            --read-only \
-            -v /proc:/host/proc:ro \
-            -v /sys:/host/sys:ro \
-            -v /:/rootfs:ro \
-            -v metrics:/metrics:ro \
-            -v /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket:ro \
-            "${node_exporter_docker}" --path.procfs /host/proc --path.sysfs /host/sys --collector.textfile.directory /metrics --collector.filesystem.ignored-mount-points "^/(sys|proc|dev|host|etc($|/))" --collector.systemd
-        ExecStop=/usr/bin/docker stop node-exporter
-        ExecStopPost=/usr/bin/docker rm node-exporter
-        ExecStopPost=/sbin/iptables -D INPUT -m tcp -p tcp --dport 9100 -j ACCEPT
+      [Service]
+      Restart=always
+      RestartSec=1
+      Environment=HOME=/home/exec
+      ExecStartPre=/usr/bin/docker-credential-gcr configure-docker
+      ExecStartPre=/usr/bin/docker pull ${node_exporter_docker}
+      ExecStartPre=/sbin/iptables -A INPUT -m tcp -p tcp --dport 9100 -j ACCEPT
+      ExecStart=/usr/bin/docker run \
+          --name=node-exporter \
+          --network=host \
+          --read-only \
+          -v /proc:/host/proc:ro \
+          -v /sys:/host/sys:ro \
+          -v /:/rootfs:ro \
+          -v metrics:/metrics:ro \
+          -v /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket:ro \
+          "${node_exporter_docker}" --path.procfs /host/proc --path.sysfs /host/sys --collector.textfile.directory /metrics --collector.filesystem.ignored-mount-points "^/(sys|proc|dev|host|etc($|/))" --collector.systemd
+      ExecStop=/usr/bin/docker stop node-exporter
+      ExecStopPost=/usr/bin/docker rm node-exporter
+      ExecStopPost=/sbin/iptables -D INPUT -m tcp -p tcp --dport 9100 -j ACCEPT
 
-        [Install]
-        WantedBy=multi-user.target
+      [Install]
+      WantedBy=multi-user.target
 
 runcmd:
   - systemctl daemon-reload

@@ -51,7 +51,7 @@ resource "google_compute_instance_template" "tor" {
     source_image = var.boot_image
     boot         = true
     auto_delete  = true
-    disk_type    = "pd-ssd"
+    disk_type    = "pd-standard"
     device_name  = "boot"
     disk_size_gb = "20"
   }

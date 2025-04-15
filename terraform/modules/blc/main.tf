@@ -56,7 +56,7 @@ resource "google_compute_instance_template" "blc" {
 
   disk {
     source_image = var.boot_image
-    disk_type    = "pd-ssd"
+    disk_type    = "pd-balanced"
     auto_delete  = true
     boot         = true
     disk_size_gb = 20

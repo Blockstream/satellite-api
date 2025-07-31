@@ -178,7 +178,6 @@ write_files:
     permissions: 0644
     owner: root
     content: |
-      log-level=debug
       plugin-dir=/opt/plugins
       alias=satellite-api-${net}
       bitcoin-rpcuser=${net}-def

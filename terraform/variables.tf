@@ -202,7 +202,7 @@ variable "sat_api_sse_docker" {
 # Less frequently updated images
 variable "lightning_docker" {
   type    = string
-  default = "blockstream/lightningd:v24.08.2"
+  default = "blockstream/lightningd:v25.05"
 }
 
 variable "charge_docker" {

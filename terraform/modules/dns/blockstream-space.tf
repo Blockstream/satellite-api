@@ -49,3 +49,13 @@ resource "google_dns_record_set" "a-blocksat-mon" {
 
   rrdatas = [var.blocksat_monitoring]
 }
+
+resource "google_dns_record_set" "cname-acme-challenge" {
+  name         = "_acme-challenge.${google_dns_managed_zone.blockstream-space[0].dns_name}"
+  managed_zone = google_dns_managed_zone.blockstream-space[0].name
+  type         = "CNAME"
+  ttl          = 300
+  count        = var.create_resources
+
+  rrdatas = ["9bd98b01-5b5d-40bf-b5a1-f9cd53e8890b.0.authorize.certificatemanager.goog."]
+}

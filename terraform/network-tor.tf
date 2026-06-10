@@ -5,11 +5,12 @@ resource "google_compute_global_address" "tor-lb" {
 }
 
 resource "google_compute_global_forwarding_rule" "tor-rule" {
-  name        = "${var.name}-forwarding-rule"
-  target      = google_compute_target_http_proxy.tor-proxy[0].self_link
-  port_range  = "80"
-  ip_protocol = "TCP"
-  ip_address  = google_compute_global_address.tor-lb[0].address
+  load_balancing_scheme = "EXTERNAL_MANAGED"
+  name                  = "${var.name}-forwarding-rule"
+  target                = google_compute_target_http_proxy.tor-proxy[0].self_link
+  port_range            = "80"
+  ip_protocol           = "TCP"
+  ip_address            = google_compute_global_address.tor-lb[0].address
 
   count = local.create_misc
 }

@@ -6,6 +6,8 @@ variables:
   DOCKER_TLS_CERTDIR: ""
   API_IMAGE: us.gcr.io/satellite-api/satellite-api
   SSE_IMAGE: us.gcr.io/satellite-api/satellite-api-sse
+  TERRAFORM_VERSION: "1.14.8"
+  TERRAFORM_SHA256: "56a5d12f47cbc1c6bedb8f5426ae7d5df984d1929572c24b56f4c82e9f9bf709"
 
 default:
   image: blockstream/gcloud-docker:502.0.0-27.3
@@ -26,6 +28,17 @@ before_script:
   - gcloud auth configure-docker
   - gcloud auth list
   - gcloud --version
+  - |
+      if [ "$CI_JOB_STAGE" = "plan" ] || [ "$CI_JOB_STAGE" = "deploy" ]; then
+        terraform_zip="$(mktemp)"
+        curl --fail --location --silent --show-error \
+          -o "$terraform_zip" \
+          "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip"
+        echo "${TERRAFORM_SHA256}  ${terraform_zip}" | sha256sum -c -
+        unzip -q "$terraform_zip" -d /usr/local/bin
+        rm -f "$terraform_zip"
+        terraform version
+      fi
 
 # Run the unit tests
 unit_tests:
@@ -51,6 +64,10 @@ docker_build:
   stage: build
   tags:
     - cloud
+  retry:
+    max: 2
+    when:
+      - script_failure
   services:
     - docker:27-dind
   only:
@@ -68,13 +85,19 @@ docker_build:
         DIR: sse
   script:
     - cd $DIR
-    - docker pull $IMAGE:$CI_COMMIT_REF_SLUG || docker pull $IMAGE:latest || true
+    - |
+        if docker pull "$IMAGE:$CI_COMMIT_REF_SLUG"; then
+          CACHE_FROM="--cache-from=$IMAGE:$CI_COMMIT_REF_SLUG"
+        elif docker pull "$IMAGE:latest"; then
+          CACHE_FROM="--cache-from=$IMAGE:latest"
+        else
+          CACHE_FROM=""
+        fi
     - >
       docker build
       -f Dockerfile
       --network=host
-      --cache-from $IMAGE:$CI_COMMIT_REF_SLUG
-      --cache-from $IMAGE:latest
+      ${CACHE_FROM}
       --build-arg BUILDKIT_INLINE_CACHE=1
       .
 
@@ -96,13 +119,19 @@ docker_push:
         DIR: sse
   script:
     - cd $DIR
-    - docker pull $IMAGE:$CI_COMMIT_REF_SLUG || docker pull $IMAGE:latest || true
+    - |
+        if docker pull "$IMAGE:$CI_COMMIT_REF_SLUG"; then
+          CACHE_FROM="--cache-from=$IMAGE:$CI_COMMIT_REF_SLUG"
+        elif docker pull "$IMAGE:latest"; then
+          CACHE_FROM="--cache-from=$IMAGE:latest"
+        else
+          CACHE_FROM=""
+        fi
     - >
       docker build
       -f Dockerfile
       --network=host
-      --cache-from $IMAGE:$CI_COMMIT_REF_SLUG
-      --cache-from $IMAGE:latest
+      ${CACHE_FROM}
       --build-arg BUILDKIT_INLINE_CACHE=1
       -t $IMAGE:$CI_COMMIT_SHA
       -t $IMAGE:$CI_COMMIT_REF_SLUG
@@ -133,13 +162,19 @@ tag_docker_push:
         DIR: sse
   script:
     - cd $DIR
-    - docker pull $IMAGE:$CI_COMMIT_REF_SLUG || docker pull $IMAGE:latest || true
+    - |
+        if docker pull "$IMAGE:$CI_COMMIT_REF_SLUG"; then
+          CACHE_FROM="--cache-from=$IMAGE:$CI_COMMIT_REF_SLUG"
+        elif docker pull "$IMAGE:latest"; then
+          CACHE_FROM="--cache-from=$IMAGE:latest"
+        else
+          CACHE_FROM=""
+        fi
     - >
       docker build
       -f Dockerfile
       --network=host
-      --cache-from $IMAGE:$CI_COMMIT_REF_SLUG
-      --cache-from $IMAGE:latest
+      ${CACHE_FROM}
       --build-arg BUILDKIT_INLINE_CACHE=1
       -t $IMAGE:$CI_COMMIT_SHA
       -t $IMAGE:$CI_COMMIT_REF_SLUG

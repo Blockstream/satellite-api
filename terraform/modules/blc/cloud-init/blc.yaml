@@ -163,6 +163,9 @@ write_files:
       Restart=always
       RestartSec=5
       Environment=HOME=/home/bs
+      # Wire docker up for GAR (pkg.dev is not in COS's default credHelpers);
+      # the autossh image moved off Docker Hub to GAR public (tasks#3531).
+      ExecStartPre=-/usr/bin/docker-credential-gcr configure-docker --registries=us-central1-docker.pkg.dev
       ExecStartPre=/sbin/iptables -A INPUT -p tcp -s localhost --dport ${k8s_autossh_btc_port} -j ACCEPT
       ExecStart=/usr/bin/docker run \
           --network=host \

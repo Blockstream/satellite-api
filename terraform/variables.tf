@@ -237,5 +237,5 @@ variable "certbot_docker" {
 
 variable "autossh_docker" {
   type    = string
-  default = "blockstream/autossh@sha256:5e30a60d6ef17aeafdde63bb859238e132fadef174af4092a435bc7325430ebd"
+  default = "us-central1-docker.pkg.dev/blockstream/public/autossh:20260824-r0@sha256:2451636476b76ae3c46db74bd19677443afd44d34a450bd218899460383ce33e"
 }
